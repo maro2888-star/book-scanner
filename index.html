@@ -1,1 +1,173 @@
-<h1>学校選書システム</h1>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width,
+        initial-scale=1.0,
+        maximum-scale=1.0,
+        user-scalable=no">
+
+  <title>スマホde選書 バーコード実証版</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px 15px 30px;
+      background: #f7f7f7;
+      color: #222;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Yu Gothic",
+        "Hiragino Kaku Gothic ProN",
+        Meiryo,
+        sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 5px 0 8px;
+      text-align: center;
+      font-size: 22px;
+    }
+
+    .description {
+      margin: 0 0 18px;
+      text-align: center;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    #reader {
+      width: 100%;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #reader video {
+      width: 100% !important;
+      height: auto !important;
+      display: block;
+    }
+
+    .status {
+      margin-top: 18px;
+      padding: 14px;
+      background: #fff;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .status-label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    #result {
+      font-size: 25px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      word-break: break-all;
+      min-height: 34px;
+    }
+
+    #message {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #555;
+    }
+
+    .error {
+      color: #b00020 !important;
+    }
+
+    .success {
+      color: #146c2e !important;
+    }
+
+    .note {
+      margin-top: 18px;
+      padding: 12px;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #555;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      background: #333;
+      color: #fff;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>バーコード読み取り実証版</h1>
+
+    <p class="description">
+      本のバーコードをカメラにかざしてください。
+    </p>
+
+    <div id="reader"></div>
+
+    <section class="status">
+
+      <div class="status-label">
+        読み取ったコード
+      </div>
+
+      <div id="result">
+        まだありません
+      </div>
+
+      <div id="message">
+        カメラを起動しています…
+      </div>
+
+    </section>
+
+    <button id="restartButton" type="button">
+      カメラを再開する
+    </button>
+
+    <div class="note">
+      ※この画面はバーコード読み取りの実証用です。<br>
+      OpenBDやスプレッドシートへの登録機能はまだありません。
+    </div>
+
+  </main>
+
+  <script
+    src="https://unpkg.com/html5-qrcode"
+    type="text/javascript">
+  </script>
+
+  <script src="scanner.js"></script>
+
+</body>
+</html>
