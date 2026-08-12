@@ -179,8 +179,8 @@ async function startScanner() {
      * 横長バーコードを読み取るため、
      * 極端に縦長の映像にならないようにする。
      */
-    aspectRatio: 1.777778,
 
+    
 
     /*
      * 端末側で利用できる場合の設定。
@@ -201,8 +201,7 @@ async function startScanner() {
     await scanner.start(
 
       {
-        facingMode: {
-          ideal: "environment"
+  facingMode: "environment"
         }
       },
 
