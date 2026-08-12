@@ -2,10 +2,15 @@
 
 /*
  * スマホde選書
- * バーコード読み取り実証版2
+ * バーコード読み取り実証版1
  *
- * 実証版1の基本動作を維持しながら、
- * iPhoneでのEAN-13読み取り改善を検証する。
+ * 目的：
+ * ・スマートフォンのカメラを起動する
+ * ・EAN-13を読み取る
+ * ・978 / 979 で始まるISBNだけを受け付ける
+ * ・読み取ったISBNを画面に表示する
+ *
+ * OpenBDやスプレッドシートにはまだ接続しない。
  */
 
 const readerElementId = "reader";
@@ -68,33 +73,15 @@ async function onScanSuccess(decodedText) {
 
   console.log("読み取ったコード:", code);
 
-  /*
-   * EAN-13として読み取ったが、
-   * ISBNではなかった場合。
-   *
-   * 192から始まる2段目などは
-   * カメラを止めず、そのまま読み取りを続ける。
-   */
   if (!isBookIsbn(code)) {
 
-    if (code.startsWith("192")) {
-
-      setMessage(
-        "2段目のバーコードを読み取りました。1段目のバーコードを読み直してください。",
-        "error"
-      );
-
-    } else {
-
-      setMessage(
-        "ISBN（978または979で始まる13桁）ではありません。",
-        "error"
-      );
-    }
+    setMessage(
+      "ISBN（978または979で始まる13桁）ではありません。",
+      "error"
+    );
 
     return;
   }
-
 
   isProcessing = true;
 
@@ -110,7 +97,7 @@ async function onScanSuccess(decodedText) {
 
 
 function onScanFailure(error) {
-  // 読み取り途中のエラーは表示しない
+  // 読み取り途中のエラーは画面に表示しません。
 }
 
 
@@ -128,35 +115,17 @@ async function startScanner() {
 
   scanner = new Html5Qrcode(readerElementId);
 
-
   const config = {
 
-    /*
-     * 実証版1：10fps
-     * 実証版2：15fps
-     *
-     * iPhoneでも解析する画像数を少し増やして検証する。
-     */
-    fps: 15,
+    fps: 10,
 
-
-    /*
-     * EAN-13は横長の一次元バーコードなので、
-     * 読み取り領域を明確な横長にする。
-     *
-     * 実証版1より高さを抑え、
-     * バーコード全体を横方向に収めやすくする。
-     */
     qrbox: function(viewfinderWidth, viewfinderHeight) {
 
-      const width = Math.floor(viewfinderWidth * 0.92);
+      const width = Math.floor(viewfinderWidth * 0.85);
 
-      const height = Math.max(
-        100,
-        Math.min(
-          140,
-          Math.floor(viewfinderHeight * 0.25)
-        )
+      const height = Math.min(
+        180,
+        Math.floor(viewfinderHeight * 0.35)
       );
 
       return {
@@ -165,26 +134,10 @@ async function startScanner() {
       };
     },
 
-
-    /*
-     * 今回の実証ではEAN-13だけを解析する。
-     */
     formatsToSupport: [
       Html5QrcodeSupportedFormats.EAN_13
     ],
 
-
-    /*
-     * カメラ映像のアスペクト比。
-     * 横長バーコードを読み取るため、
-     * 極端に縦長の映像にならないようにする。
-     */
-
-    
-
-    /*
-     * 端末側で利用できる場合の設定。
-     */
     rememberLastUsedCamera: true,
 
     showTorchButtonIfSupported: true,
@@ -195,14 +148,10 @@ async function startScanner() {
 
   try {
 
-    /*
-     * 背面カメラを優先。
-     */
     await scanner.start(
 
       {
-  facingMode: "environment"
-        }
+        facingMode: "environment"
       },
 
       config,
@@ -213,11 +162,9 @@ async function startScanner() {
 
     );
 
-
     setMessage(
-      "本のバーコードを横長の枠の中に入れてください。"
+      "本のバーコードをかざしてください。"
     );
-
 
   } catch (error) {
 
@@ -234,9 +181,7 @@ async function startScanner() {
 restartButton.addEventListener(
   "click",
   async function() {
-
     await startScanner();
-
   }
 );
 
@@ -244,8 +189,6 @@ restartButton.addEventListener(
 window.addEventListener(
   "load",
   function() {
-
     startScanner();
-
   }
 );
