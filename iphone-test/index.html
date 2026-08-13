@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width,
+        initial-scale=1.0,
+        maximum-scale=1.0,
+        user-scalable=no">
+
+  <title>iPhone バーコード実証版 ZXing-WASM</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px 14px 30px;
+      background: #f7f7f7;
+      color: #222;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 4px 0 8px;
+      text-align: center;
+      font-size: 21px;
+    }
+
+    .description {
+      margin: 0 0 14px;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .camera-wrap {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #000;
+    }
+
+    .scan-guide {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      top: 37%;
+      height: 26%;
+      border: 3px solid rgba(255,255,255,0.9);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    .guide-label {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 7px;
+      text-align: center;
+      color: white;
+      font-size: 13px;
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 14px;
+      background: #fff;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    #result {
+      min-height: 34px;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      word-break: break-all;
+    }
+
+    #message {
+      margin-top: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #555;
+    }
+
+    .success {
+      color: #146c2e !important;
+    }
+
+    .error {
+      color: #b00020 !important;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 14px;
+      padding: 13px;
+      border: 0;
+      border-radius: 8px;
+      background: #333;
+      color: white;
+      font-size: 16px;
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 12px;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #555;
+    }
+
+    canvas {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>iPhone バーコード読み取り実証版</h1>
+
+    <p class="description">
+      本の1段目のバーコードを、白い枠の中に入れてください。
+    </p>
+
+    <div class="camera-wrap">
+
+      <video
+        id="video"
+        autoplay
+        muted
+        playsinline>
+      </video>
+
+      <div class="scan-guide"></div>
+
+      <div class="guide-label">
+        1段目のバーコードをこの枠に合わせてください
+      </div>
+
+    </div>
+
+
+    <section class="status">
+
+      <div class="label">
+        読み取ったコード
+      </div>
+
+      <div id="result">
+        まだありません
+      </div>
+
+      <div id="message">
+        準備しています…
+      </div>
+
+    </section>
+
+
+    <button id="restartButton" type="button">
+      カメラを再開する
+    </button>
+
+
+    <div class="note">
+      ※iPhoneでのEAN-13読み取り性能を確認するための実証版です。<br>
+      Android基準版とは別の読み取り方式を使用しています。
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+  </main>
+
+
+  <!-- ZXing-WASM reader -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/zxing-wasm/dist/iife/reader/index.js">
+  </script>
+
+
+  <script>
+    "use strict";
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d", {
+      willReadFrequently: true
+    });
+
+    const resultElement =
+      document.getElementById("result");
+
+    const messageElement =
+      document.getElementById("message");
+
+    const restartButton =
+      document.getElementById("restartButton");
+
+
+    let stream = null;
+    let scanning = false;
+    let decoding = false;
+    let animationId = null;
+
+    let lastDecodeTime = 0;
+
+    /*
+     * 約120msごとに解析。
+     * iPhoneでCPU負荷が上がりすぎないようにする。
+     */
+    const DECODE_INTERVAL = 120;
+
+
+    function setMessage(text, className = "") {
+
+      messageElement.textContent = text;
+      messageElement.className = className;
+    }
+
+
+    function normalizeCode(text) {
+
+      return String(text || "").replace(/\D/g, "");
+    }
+
+
+    function isIsbn(code) {
+
+      return (
+        /^\d{13}$/.test(code) &&
+        (
+          code.startsWith("978") ||
+          code.startsWith("979")
+        )
+      );
+    }
+
+
+    function isSecondBarcode(code) {
+
+      return (
+        /^\d{13}$/.test(code) &&
+        code.startsWith("192")
+      );
+    }
+
+
+    async function stopCamera() {
+
+      scanning = false;
+
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      if (stream) {
+
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
+
+        stream = null;
+      }
+
+      video.srcObject = null;
+    }
+
+
+    async function startCamera() {
+
+      await stopCamera();
+
+      resultElement.textContent = "まだありません";
+
+      setMessage("カメラを起動しています…");
+
+      try {
+
+        /*
+         * iPhone Safariでも使える
+         * getUserMediaを直接利用。
+         *
+         * 背面カメラを優先。
+         * 解像度はideal指定なので、
+         * 端末が対応できる範囲で選択される。
+         */
+        stream =
+          await navigator.mediaDevices.getUserMedia({
+
+            audio: false,
+
+            video: {
+
+              facingMode: {
+                ideal: "environment"
+              },
+
+              width: {
+                ideal: 1920
+              },
+
+              height: {
+                ideal: 1080
+              }
+            }
+          });
+
+
+        video.srcObject = stream;
+
+        await video.play();
+
+        scanning = true;
+
+        setMessage(
+          "本の1段目のバーコードを白い枠に合わせてください。"
+        );
+
+        requestScan();
+
+      } catch (error) {
+
+        console.error(error);
+
+        setMessage(
+          "カメラを起動できませんでした。Safariのカメラ使用許可を確認してください。",
+          "error"
+        );
+      }
+    }
+
+
+    function requestScan() {
+
+      if (!scanning) {
+        return;
+      }
+
+      animationId =
+        requestAnimationFrame(scanFrame);
+    }
+
+
+    async function scanFrame(timestamp) {
+
+      if (!scanning) {
+        return;
+      }
+
+      /*
+       * videoの準備ができていなければ次へ。
+       */
+      if (
+        video.readyState < 2 ||
+        video.videoWidth === 0 ||
+        video.videoHeight === 0
+      ) {
+
+        requestScan();
+        return;
+      }
+
+
+      /*
+       * デコード間隔を制限する。
+       */
+      if (
+        decoding ||
+        timestamp - lastDecodeTime < DECODE_INTERVAL
+      ) {
+
+        requestScan();
+        return;
+      }
+
+      lastDecodeTime = timestamp;
+      decoding = true;
+
+
+      try {
+
+        /*
+         * 映像全体ではなく、
+         * 中央の横長部分だけを切り出す。
+         *
+         * EAN-13の解析に集中させる。
+         */
+        const sourceWidth =
+          video.videoWidth;
+
+        const sourceHeight =
+          video.videoHeight;
+
+
+        const cropWidth =
+          Math.floor(sourceWidth * 0.90);
+
+        const cropHeight =
+          Math.floor(sourceHeight * 0.30);
+
+        const cropX =
+          Math.floor(
+            (sourceWidth - cropWidth) / 2
+          );
+
+        const cropY =
+          Math.floor(
+            (sourceHeight - cropHeight) / 2
+          );
+
+
+        /*
+         * iPhoneの高解像度映像を
+         * そのまま解析すると重くなるので、
+         * 適度なサイズへ縮小する。
+         */
+        const targetWidth = 1200;
+
+        const scale =
+          targetWidth / cropWidth;
+
+        const targetHeight =
+          Math.max(
+            180,
+            Math.floor(cropHeight * scale)
+          );
+
+
+        canvas.width =
+          targetWidth;
+
+        canvas.height =
+          targetHeight;
+
+
+        context.drawImage(
+
+          video,
+
+          cropX,
+          cropY,
+          cropWidth,
+          cropHeight,
+
+          0,
+          0,
+          targetWidth,
+          targetHeight
+        );
+
+
+        const imageData =
+          context.getImageData(
+            0,
+            0,
+            targetWidth,
+            targetHeight
+          );
+
+
+        /*
+         * ZXing-WASMへImageDataを直接渡す。
+         *
+         * EAN13のみを解析し、
+         * tryHarderを有効にする。
+         */
+        const results =
+          await ZXingWASM.readBarcodes(
+
+            imageData,
+
+            {
+              formats: ["EAN13"],
+              tryHarder: true,
+              maxNumberOfSymbols: 1
+            }
+          );
+
+
+        if (
+          results &&
+          results.length > 0
+        ) {
+
+          const code =
+            normalizeCode(results[0].text);
+
+
+          if (isSecondBarcode(code)) {
+
+            setMessage(
+              "2段目のバーコードを読み取りました。1段目のバーコードを読み直してください。",
+              "error"
+            );
+
+          } else if (isIsbn(code)) {
+
+            resultElement.textContent =
+              code;
+
+            setMessage(
+              "読み取り成功",
+              "success"
+            );
+
+            /*
+             * 1冊成功したら一度停止。
+             *
+             * 比較実験では
+             * 「カメラを再開する」で
+             * 次の本を読む。
+             */
+            await stopCamera();
+
+            decoding = false;
+            return;
+
+          } else {
+
+            setMessage(
+              "ISBNではないバーコードを読み取りました。",
+              "error"
+            );
+          }
+        }
+
+
+      } catch (error) {
+
+        /*
+         * バーコードがないフレームで
+         * エラーが出ても画面には表示しない。
+         *
+         * 開発者用にはコンソールへ残す。
+         */
+        console.debug(
+          "decode:",
+          error
+        );
+
+      } finally {
+
+        decoding = false;
+      }
+
+
+      requestScan();
+    }
+
+
+    restartButton.addEventListener(
+      "click",
+      async function() {
+
+        await startCamera();
+      }
+    );
+
+
+    window.addEventListener(
+      "load",
+      async function() {
+
+        /*
+         * ZXing-WASMの読込確認。
+         */
+        if (
+          typeof ZXingWASM === "undefined" ||
+          typeof ZXingWASM.readBarcodes !== "function"
+        ) {
+
+          setMessage(
+            "バーコード読み取りプログラムを読み込めませんでした。",
+            "error"
+          );
+
+          return;
+        }
+
+        await startCamera();
+      }
+    );
+
+
+    window.addEventListener(
+      "pagehide",
+      function() {
+
+        stopCamera();
+      }
+    );
+
+  </script>
+
+</body>
+</html>
