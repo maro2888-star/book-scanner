@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>iPhone バーコード実証版 ZXing-WASM</title>
+  <title>スマホde選書システム OpenBD接続テスト</title>
 
   <style>
     * {
@@ -123,6 +123,43 @@
       color: #b00020 !important;
     }
 
+    .book-info {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      background: #fff;
+      border-radius: 8px;
+    }
+
+    .book-cover-wrap {
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    #bookCover {
+      display: none;
+      max-width: 180px;
+      max-height: 260px;
+      width: auto;
+      height: auto;
+    }
+
+    .book-row {
+      margin-top: 12px;
+    }
+
+    .book-row-label {
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 3px;
+    }
+
+    .book-row-value {
+      font-size: 17px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
     button {
       width: 100%;
       margin-top: 14px;
@@ -132,6 +169,10 @@
       background: #333;
       color: white;
       font-size: 16px;
+    }
+
+    button.secondary {
+      background: #666;
     }
 
     .note {
@@ -154,7 +195,7 @@
 
   <main class="container">
 
-    <h1>iPhone バーコード読み取り実証版</h1>
+    <h1>スマホde選書システム</h1>
 
     <p class="description">
       本の1段目のバーコードを、白い枠の中に入れてください。
@@ -181,7 +222,7 @@
     <section class="status">
 
       <div class="label">
-        読み取ったコード
+        読み取ったISBN
       </div>
 
       <div id="result">
@@ -195,14 +236,53 @@
     </section>
 
 
-    <button id="restartButton" type="button">
-      カメラを再開する
+    <section id="bookInfo" class="book-info">
+
+      <div class="book-cover-wrap">
+        <img id="bookCover" alt="表紙画像">
+      </div>
+
+      <div class="book-row">
+        <div class="book-row-label">書名</div>
+        <div id="bookTitle" class="book-row-value">－</div>
+      </div>
+
+      <div class="book-row">
+        <div class="book-row-label">出版社</div>
+        <div id="bookPublisher" class="book-row-value">－</div>
+      </div>
+
+      <div class="book-row">
+        <div class="book-row-label">商品コード（ISBN）</div>
+        <div id="bookIsbn" class="book-row-value">－</div>
+      </div>
+
+      <div class="book-row">
+        <div class="book-row-label">本体価格</div>
+        <div id="bookPrice" class="book-row-value">－</div>
+      </div>
+
+    </section>
+
+
+    <button id="retryOpenBdButton"
+            type="button"
+            class="secondary"
+            style="display:none;">
+      もう一度検索
+    </button>
+
+
+    <button id="restartButton"
+            type="button"
+            style="display:none;">
+      次の本を読む
     </button>
 
 
     <div class="note">
-      ※iPhoneでのEAN-13読み取り性能を確認するための実証版です。<br>
-      Android基準版とは別の読み取り方式を使用しています。
+      ※今回は「ISBN読み取り → OpenBD書誌情報取得」の動作確認版です。
+      スプレッドシートへの登録処理はまだ行いません。
     </div>
 
     <canvas id="canvas"></canvas>
@@ -219,8 +299,10 @@
   <script>
     "use strict";
 
+
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
+
     const context = canvas.getContext("2d", {
       willReadFrequently: true
     });
@@ -234,6 +316,27 @@
     const restartButton =
       document.getElementById("restartButton");
 
+    const retryOpenBdButton =
+      document.getElementById("retryOpenBdButton");
+
+    const bookInfoElement =
+      document.getElementById("bookInfo");
+
+    const bookCoverElement =
+      document.getElementById("bookCover");
+
+    const bookTitleElement =
+      document.getElementById("bookTitle");
+
+    const bookPublisherElement =
+      document.getElementById("bookPublisher");
+
+    const bookIsbnElement =
+      document.getElementById("bookIsbn");
+
+    const bookPriceElement =
+      document.getElementById("bookPrice");
+
 
     let stream = null;
     let scanning = false;
@@ -242,10 +345,8 @@
 
     let lastDecodeTime = 0;
 
-    /*
-     * 約120msごとに解析。
-     * iPhoneでCPU負荷が上がりすぎないようにする。
-     */
+    let currentIsbn = "";
+
     const DECODE_INTERVAL = 120;
 
 
@@ -283,11 +384,29 @@
     }
 
 
+    function clearBookInfo() {
+
+      bookInfoElement.style.display = "none";
+
+      bookCoverElement.style.display = "none";
+      bookCoverElement.removeAttribute("src");
+
+      bookTitleElement.textContent = "－";
+      bookPublisherElement.textContent = "－";
+      bookIsbnElement.textContent = "－";
+      bookPriceElement.textContent = "－";
+
+      retryOpenBdButton.style.display = "none";
+      restartButton.style.display = "none";
+    }
+
+
     async function stopCamera() {
 
       scanning = false;
 
       if (animationId) {
+
         cancelAnimationFrame(animationId);
         animationId = null;
       }
@@ -309,20 +428,16 @@
 
       await stopCamera();
 
+      currentIsbn = "";
+
       resultElement.textContent = "まだありません";
+
+      clearBookInfo();
 
       setMessage("カメラを起動しています…");
 
       try {
 
-        /*
-         * iPhone Safariでも使える
-         * getUserMediaを直接利用。
-         *
-         * 背面カメラを優先。
-         * 解像度はideal指定なので、
-         * 端末が対応できる範囲で選択される。
-         */
         stream =
           await navigator.mediaDevices.getUserMedia({
 
@@ -362,7 +477,7 @@
         console.error(error);
 
         setMessage(
-          "カメラを起動できませんでした。Safariのカメラ使用許可を確認してください。",
+          "カメラを起動できませんでした。ブラウザのカメラ使用許可を確認してください。",
           "error"
         );
       }
@@ -380,15 +495,378 @@
     }
 
 
+    async function fetchOpenBd(isbn) {
+
+      currentIsbn = isbn;
+
+      retryOpenBdButton.style.display = "none";
+      restartButton.style.display = "none";
+
+      setMessage(
+        "書誌情報を取得しています…"
+      );
+
+      try {
+
+        const url =
+          "https://api.openbd.jp/v1/get?isbn=" +
+          encodeURIComponent(isbn);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+
+          throw new Error(
+            "OpenBD HTTP error: " +
+            response.status
+          );
+        }
+
+        const data = await response.json();
+
+
+        /*
+         * OpenBDに該当ISBNがない場合、
+         * 配列内がnullになるケースを想定。
+         */
+        if (
+          !Array.isArray(data) ||
+          data.length === 0 ||
+          data[0] === null
+        ) {
+
+          showNoBibliographicData(isbn);
+          return;
+        }
+
+
+        showBookData(data[0], isbn);
+
+      } catch (error) {
+
+        console.error(
+          "OpenBD通信エラー:",
+          error
+        );
+
+        showCommunicationError();
+      }
+    }
+
+
+    function showNoBibliographicData(isbn) {
+
+      bookInfoElement.style.display = "none";
+
+      setMessage(
+        "この本の情報を取得できませんでした。本の情報を手入力してください。",
+        "error"
+      );
+
+      /*
+       * 今回はOpenBD取得テストのため、
+       * 手入力画面への遷移はまだ実装しない。
+       */
+      restartButton.style.display = "block";
+    }
+
+
+    function showCommunicationError() {
+
+      bookInfoElement.style.display = "none";
+
+      setMessage(
+        "書誌情報を取得できませんでした。通信状況を確認して、もう一度お試しください。",
+        "error"
+      );
+
+      retryOpenBdButton.style.display = "block";
+      restartButton.style.display = "block";
+    }
+
+
+    function showBookData(book, isbn) {
+
+      /*
+       * OpenBD Summaryを優先して利用する。
+       */
+      const summary = book.summary || {};
+
+
+      const title =
+        summary.title ||
+        getTitleFromOnix(book) ||
+        "取得できませんでした";
+
+
+      const publisher =
+        summary.publisher ||
+        getPublisherFromOnix(book) ||
+        "取得できませんでした";
+
+
+      const cover =
+        summary.cover || "";
+
+
+      const price =
+        getPriceFromOpenBd(book);
+
+
+      bookTitleElement.textContent =
+        title;
+
+      bookPublisherElement.textContent =
+        publisher;
+
+      bookIsbnElement.textContent =
+        isbn;
+
+
+      if (price !== null) {
+
+        bookPriceElement.textContent =
+          price + "円";
+
+      } else {
+
+        bookPriceElement.textContent =
+          "価格情報なし";
+      }
+
+
+      if (cover) {
+
+        bookCoverElement.src = cover;
+
+        bookCoverElement.style.display =
+          "inline-block";
+
+      } else {
+
+        bookCoverElement.style.display =
+          "none";
+      }
+
+
+      bookInfoElement.style.display =
+        "block";
+
+
+      setMessage(
+        "書誌情報を取得しました。",
+        "success"
+      );
+
+
+      restartButton.style.display =
+        "block";
+    }
+
+
+    function getTitleFromOnix(book) {
+
+      try {
+
+        return (
+          book.onix
+            ?.DescriptiveDetail
+            ?.TitleDetail
+            ?.TitleElement
+            ?.TitleText
+            ?.content ||
+          ""
+        );
+
+      } catch (error) {
+
+        return "";
+      }
+    }
+
+
+    function getPublisherFromOnix(book) {
+
+      try {
+
+        const publishingDetail =
+          book.onix?.PublishingDetail;
+
+        if (!publishingDetail) {
+          return "";
+        }
+
+
+        const publisher =
+          publishingDetail.Publisher;
+
+
+        if (Array.isArray(publisher)) {
+
+          for (const item of publisher) {
+
+            if (item?.PublisherName) {
+
+              return (
+                item.PublisherName.content ||
+                item.PublisherName ||
+                ""
+              );
+            }
+          }
+
+        } else if (
+          publisher?.PublisherName
+        ) {
+
+          return (
+            publisher.PublisherName.content ||
+            publisher.PublisherName ||
+            ""
+          );
+        }
+
+
+        const imprint =
+          publishingDetail.Imprint;
+
+
+        if (
+          Array.isArray(imprint) &&
+          imprint.length > 0
+        ) {
+
+          const name =
+            imprint[0]?.ImprintName;
+
+          return (
+            name?.content ||
+            name ||
+            ""
+          );
+
+        } else if (
+          imprint?.ImprintName
+        ) {
+
+          return (
+            imprint.ImprintName.content ||
+            imprint.ImprintName ||
+            ""
+          );
+        }
+
+
+        return "";
+
+      } catch (error) {
+
+        return "";
+      }
+    }
+
+
+    function getPriceFromOpenBd(book) {
+
+      try {
+
+        const productSupply =
+          book.onix?.ProductSupply;
+
+        if (!productSupply) {
+          return null;
+        }
+
+
+        let supplies =
+          productSupply.SupplyDetail;
+
+        if (!supplies) {
+
+          supplies = productSupply;
+        }
+
+
+        if (!Array.isArray(supplies)) {
+
+          supplies = [supplies];
+        }
+
+
+        for (const supply of supplies) {
+
+          let prices = supply?.Price;
+
+          if (!prices) {
+            continue;
+          }
+
+
+          if (!Array.isArray(prices)) {
+
+            prices = [prices];
+          }
+
+
+          for (const price of prices) {
+
+            /*
+             * JPRO / OpenBDのデータ差異を考慮して、
+             * 複数の価格表現を確認する。
+             */
+            const candidates = [
+              price?.PriceAmount,
+              price?.PriceAmount?.content,
+              price?.PriceAmount?.value,
+              price?.PriceAmount?.["$"],
+              price?.PriceAmount?.["#text"]
+            ];
+
+
+            for (const candidate of candidates) {
+
+              const number =
+                Number(
+                  String(
+                    candidate ?? ""
+                  )
+                  .replace(/[^\d.]/g, "")
+                );
+
+
+              if (
+                Number.isFinite(number) &&
+                number > 0
+              ) {
+
+                return Math.round(number);
+              }
+            }
+          }
+        }
+
+
+        return null;
+
+      } catch (error) {
+
+        console.warn(
+          "価格取得処理:",
+          error
+        );
+
+        return null;
+      }
+    }
+
+
     async function scanFrame(timestamp) {
 
       if (!scanning) {
         return;
       }
 
-      /*
-       * videoの準備ができていなければ次へ。
-       */
+
       if (
         video.readyState < 2 ||
         video.videoWidth === 0 ||
@@ -400,9 +878,6 @@
       }
 
 
-      /*
-       * デコード間隔を制限する。
-       */
       if (
         decoding ||
         timestamp - lastDecodeTime < DECODE_INTERVAL
@@ -412,18 +887,13 @@
         return;
       }
 
+
       lastDecodeTime = timestamp;
       decoding = true;
 
 
       try {
 
-        /*
-         * 映像全体ではなく、
-         * 中央の横長部分だけを切り出す。
-         *
-         * EAN-13の解析に集中させる。
-         */
         const sourceWidth =
           video.videoWidth;
 
@@ -432,10 +902,14 @@
 
 
         const cropWidth =
-          Math.floor(sourceWidth * 0.90);
+          Math.floor(
+            sourceWidth * 0.90
+          );
 
         const cropHeight =
-          Math.floor(sourceHeight * 0.30);
+          Math.floor(
+            sourceHeight * 0.30
+          );
 
         const cropX =
           Math.floor(
@@ -448,11 +922,6 @@
           );
 
 
-        /*
-         * iPhoneの高解像度映像を
-         * そのまま解析すると重くなるので、
-         * 適度なサイズへ縮小する。
-         */
         const targetWidth = 1200;
 
         const scale =
@@ -461,7 +930,9 @@
         const targetHeight =
           Math.max(
             180,
-            Math.floor(cropHeight * scale)
+            Math.floor(
+              cropHeight * scale
+            )
           );
 
 
@@ -497,12 +968,6 @@
           );
 
 
-        /*
-         * ZXing-WASMへImageDataを直接渡す。
-         *
-         * EAN13のみを解析し、
-         * tryHarderを有効にする。
-         */
         const results =
           await ZXingWASM.readBarcodes(
 
@@ -522,17 +987,24 @@
         ) {
 
           const code =
-            normalizeCode(results[0].text);
+            normalizeCode(
+              results[0].text
+            );
 
 
-          if (isSecondBarcode(code)) {
+          if (
+            isSecondBarcode(code)
+          ) {
 
             setMessage(
               "2段目のバーコードを読み取りました。1段目のバーコードを読み直してください。",
               "error"
             );
 
-          } else if (isIsbn(code)) {
+
+          } else if (
+            isIsbn(code)
+          ) {
 
             resultElement.textContent =
               code;
@@ -542,17 +1014,22 @@
               "success"
             );
 
+
             /*
-             * 1冊成功したら一度停止。
+             * ここまでは実証済み部分。
              *
-             * 比較実験では
-             * 「カメラを再開する」で
-             * 次の本を読む。
+             * ISBN読取成功後にカメラを止め、
+             * そのISBNでOpenBDを検索する。
              */
             await stopCamera();
 
             decoding = false;
+
+
+            await fetchOpenBd(code);
+
             return;
+
 
           } else {
 
@@ -566,12 +1043,6 @@
 
       } catch (error) {
 
-        /*
-         * バーコードがないフレームで
-         * エラーが出ても画面には表示しない。
-         *
-         * 開発者用にはコンソールへ残す。
-         */
         console.debug(
           "decode:",
           error
@@ -587,6 +1058,19 @@
     }
 
 
+    retryOpenBdButton.addEventListener(
+      "click",
+      async function() {
+
+        if (!currentIsbn) {
+          return;
+        }
+
+        await fetchOpenBd(currentIsbn);
+      }
+    );
+
+
     restartButton.addEventListener(
       "click",
       async function() {
@@ -600,9 +1084,6 @@
       "load",
       async function() {
 
-        /*
-         * ZXing-WASMの読込確認。
-         */
         if (
           typeof ZXingWASM === "undefined" ||
           typeof ZXingWASM.readBarcodes !== "function"
