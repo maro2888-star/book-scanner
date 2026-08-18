@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム OpenBD接続テスト</title>
+  <title>スマホde選書システム OpenBDデバッグ</title>
 
   <style>
     * {
@@ -86,11 +86,17 @@
       text-shadow: 0 1px 3px #000;
     }
 
-    .status {
+    .status,
+    .book-info,
+    .debug-box,
+    .note {
       margin-top: 16px;
       padding: 14px;
       background: #fff;
       border-radius: 8px;
+    }
+
+    .status {
       text-align: center;
     }
 
@@ -125,10 +131,6 @@
 
     .book-info {
       display: none;
-      margin-top: 16px;
-      padding: 16px;
-      background: #fff;
-      border-radius: 8px;
     }
 
     .book-cover-wrap {
@@ -175,11 +177,27 @@
       background: #666;
     }
 
+    .debug-box {
+      display: none;
+    }
+
+    .debug-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.5;
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
     .note {
-      margin-top: 16px;
-      padding: 12px;
-      background: #fff;
-      border-radius: 8px;
       font-size: 13px;
       line-height: 1.6;
       color: #555;
@@ -265,6 +283,30 @@
     </section>
 
 
+    <section id="debugBox" class="debug-box">
+
+      <div class="debug-title">
+        OpenBDデバッグ表示
+      </div>
+
+      <div class="book-row">
+        <div class="book-row-label">summary</div>
+        <pre id="debugSummary">－</pre>
+      </div>
+
+      <div class="book-row">
+        <div class="book-row-label">PublishingDetail</div>
+        <pre id="debugPublishingDetail">－</pre>
+      </div>
+
+      <div class="book-row">
+        <div class="book-row-label">ProductSupply</div>
+        <pre id="debugProductSupply">－</pre>
+      </div>
+
+    </section>
+
+
     <button id="retryOpenBdButton"
             type="button"
             class="secondary"
@@ -281,7 +323,7 @@
 
 
     <div class="note">
-      ※今回は「ISBN読み取り → OpenBD書誌情報取得」の動作確認版です。
+      ※今回はOpenBDから返されたデータ構造を確認するためのデバッグ版です。
       スプレッドシートへの登録処理はまだ行いません。
     </div>
 
@@ -290,7 +332,6 @@
   </main>
 
 
-  <!-- ZXing-WASM reader -->
   <script
     src="https://cdn.jsdelivr.net/npm/zxing-wasm/dist/iife/reader/index.js">
   </script>
@@ -336,6 +377,18 @@
 
     const bookPriceElement =
       document.getElementById("bookPrice");
+
+    const debugBox =
+      document.getElementById("debugBox");
+
+    const debugSummary =
+      document.getElementById("debugSummary");
+
+    const debugPublishingDetail =
+      document.getElementById("debugPublishingDetail");
+
+    const debugProductSupply =
+      document.getElementById("debugProductSupply");
 
 
     let stream = null;
@@ -386,6 +439,7 @@
     function clearBookInfo() {
 
       bookInfoElement.style.display = "none";
+      debugBox.style.display = "none";
 
       bookCoverElement.style.display = "none";
       bookCoverElement.removeAttribute("src");
@@ -394,6 +448,10 @@
       bookPublisherElement.textContent = "－";
       bookIsbnElement.textContent = "－";
       bookPriceElement.textContent = "－";
+
+      debugSummary.textContent = "－";
+      debugPublishingDetail.textContent = "－";
+      debugProductSupply.textContent = "－";
 
       retryOpenBdButton.style.display = "none";
       restartButton.style.display = "none";
@@ -494,11 +552,6 @@
     }
 
 
-    /*
-     * OpenBDの値は、
-     * 文字列・数値・{content:"..."}など
-     * データによって形が異なる場合がある。
-     */
     function getTextValue(value) {
 
       if (
@@ -543,7 +596,6 @@
           "$"
         ];
 
-
         for (const key of preferredKeys) {
 
           if (
@@ -563,15 +615,10 @@
         }
       }
 
-
       return "";
     }
 
 
-    /*
-     * 指定されたキーを
-     * オブジェクトの中から再帰的に探す。
-     */
     function findValueByKey(
       object,
       targetKeys
@@ -659,7 +706,6 @@
           return "";
         }
 
-
         return findValueByKey(
           descriptiveDetail,
           [
@@ -691,9 +737,6 @@
         }
 
 
-        /*
-         * 発行元出版社（Imprint）を優先。
-         */
         const imprintName =
           findValueByKey(
             publishingDetail.Imprint,
@@ -708,10 +751,6 @@
         }
 
 
-        /*
-         * 発行元が取得できない場合は
-         * 発売元出版社（Publisher）を利用。
-         */
         const publisherName =
           findValueByKey(
             publishingDetail.Publisher,
@@ -726,10 +765,6 @@
         }
 
 
-        /*
-         * データ構造が異なる場合に備えて
-         * PublishingDetail全体から検索。
-         */
         return findValueByKey(
           publishingDetail,
           [
@@ -814,6 +849,30 @@
     }
 
 
+    function safeJson(value) {
+
+      try {
+
+        if (
+          value === undefined ||
+          value === null
+        ) {
+          return "データなし";
+        }
+
+        return JSON.stringify(
+          value,
+          null,
+          2
+        );
+
+      } catch (error) {
+
+        return "JSON表示エラー";
+      }
+    }
+
+
     async function fetchOpenBd(isbn) {
 
       currentIsbn = isbn;
@@ -850,11 +909,6 @@
           await response.json();
 
 
-        /*
-         * 開発確認用。
-         * OpenBDから実際に返ったデータを
-         * ブラウザのConsoleで確認できる。
-         */
         console.log(
           "OpenBD response:",
           data
@@ -885,7 +939,6 @@
           error
         );
 
-
         showCommunicationError();
       }
     }
@@ -896,6 +949,9 @@
       bookInfoElement.style.display =
         "none";
 
+      debugBox.style.display =
+        "none";
+
 
       setMessage(
         "この本の情報を取得できませんでした。本の情報を手入力してください。",
@@ -903,10 +959,6 @@
       );
 
 
-      /*
-       * 今回はOpenBD取得テストなので
-       * 手入力画面はまだ作らない。
-       */
       restartButton.style.display =
         "block";
     }
@@ -915,6 +967,9 @@
     function showCommunicationError() {
 
       bookInfoElement.style.display =
+        "none";
+
+      debugBox.style.display =
         "none";
 
 
@@ -941,20 +996,12 @@
         book.summary || {};
 
 
-      /*
-       * 書名はsummaryを優先し、
-       * なければONIXから取得。
-       */
       const title =
         summary.title ||
         getTitleFromOnix(book) ||
         "取得できませんでした";
 
 
-      /*
-       * 出版社もsummaryを優先し、
-       * なければONIXから取得。
-       */
       const publisher =
         summary.publisher ||
         getPublisherFromOnix(book) ||
@@ -1012,6 +1059,31 @@
         "block";
 
 
+      /*
+       * デバッグ表示
+       */
+      debugSummary.textContent =
+        safeJson(
+          book.summary
+        );
+
+
+      debugPublishingDetail.textContent =
+        safeJson(
+          book.onix?.PublishingDetail
+        );
+
+
+      debugProductSupply.textContent =
+        safeJson(
+          book.onix?.ProductSupply
+        );
+
+
+      debugBox.style.display =
+        "block";
+
+
       setMessage(
         "書誌情報を取得しました。",
         "success"
@@ -1057,10 +1129,6 @@
 
       try {
 
-        /*
-         * 実証済みのカメラ映像切り出し部分。
-         * この部分は変更しない。
-         */
         const sourceWidth =
           video.videoWidth;
 
@@ -1135,9 +1203,6 @@
           );
 
 
-        /*
-         * ZXing-WASMでEAN-13のみ解析。
-         */
         const results =
           await ZXingWASM.readBarcodes(
 
@@ -1186,19 +1251,11 @@
             );
 
 
-            /*
-             * ISBN読取成功後、
-             * カメラを停止。
-             */
             await stopCamera();
 
             decoding = false;
 
 
-            /*
-             * 読み取ったISBNで
-             * OpenBDを検索。
-             */
             await fetchOpenBd(code);
 
             return;
