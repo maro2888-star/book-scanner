@@ -344,7 +344,6 @@
     let animationId = null;
 
     let lastDecodeTime = 0;
-
     let currentIsbn = "";
 
     const DECODE_INTERVAL = 120;
@@ -495,6 +494,326 @@
     }
 
 
+    /*
+     * OpenBDの値は、
+     * 文字列・数値・{content:"..."}など
+     * データによって形が異なる場合がある。
+     */
+    function getTextValue(value) {
+
+      if (
+        value === null ||
+        value === undefined
+      ) {
+        return "";
+      }
+
+
+      if (
+        typeof value === "string" ||
+        typeof value === "number"
+      ) {
+
+        return String(value);
+      }
+
+
+      if (Array.isArray(value)) {
+
+        for (const item of value) {
+
+          const text =
+            getTextValue(item);
+
+          if (text) {
+            return text;
+          }
+        }
+
+        return "";
+      }
+
+
+      if (typeof value === "object") {
+
+        const preferredKeys = [
+          "content",
+          "value",
+          "#text",
+          "$"
+        ];
+
+
+        for (const key of preferredKeys) {
+
+          if (
+            Object.prototype.hasOwnProperty.call(
+              value,
+              key
+            )
+          ) {
+
+            const text =
+              getTextValue(value[key]);
+
+            if (text) {
+              return text;
+            }
+          }
+        }
+      }
+
+
+      return "";
+    }
+
+
+    /*
+     * 指定されたキーを
+     * オブジェクトの中から再帰的に探す。
+     */
+    function findValueByKey(
+      object,
+      targetKeys
+    ) {
+
+      if (
+        object === null ||
+        object === undefined
+      ) {
+        return "";
+      }
+
+
+      if (Array.isArray(object)) {
+
+        for (const item of object) {
+
+          const result =
+            findValueByKey(
+              item,
+              targetKeys
+            );
+
+          if (result) {
+            return result;
+          }
+        }
+
+        return "";
+      }
+
+
+      if (typeof object !== "object") {
+        return "";
+      }
+
+
+      for (const key of targetKeys) {
+
+        if (
+          Object.prototype.hasOwnProperty.call(
+            object,
+            key
+          )
+        ) {
+
+          const text =
+            getTextValue(
+              object[key]
+            );
+
+          if (text) {
+            return text;
+          }
+        }
+      }
+
+
+      for (const key of Object.keys(object)) {
+
+        const result =
+          findValueByKey(
+            object[key],
+            targetKeys
+          );
+
+        if (result) {
+          return result;
+        }
+      }
+
+
+      return "";
+    }
+
+
+    function getTitleFromOnix(book) {
+
+      try {
+
+        const descriptiveDetail =
+          book.onix?.DescriptiveDetail;
+
+        if (!descriptiveDetail) {
+          return "";
+        }
+
+
+        return findValueByKey(
+          descriptiveDetail,
+          [
+            "TitleText"
+          ]
+        );
+
+      } catch (error) {
+
+        console.warn(
+          "書名取得:",
+          error
+        );
+
+        return "";
+      }
+    }
+
+
+    function getPublisherFromOnix(book) {
+
+      try {
+
+        const publishingDetail =
+          book.onix?.PublishingDetail;
+
+        if (!publishingDetail) {
+          return "";
+        }
+
+
+        /*
+         * 発行元出版社（Imprint）を優先。
+         */
+        const imprintName =
+          findValueByKey(
+            publishingDetail.Imprint,
+            [
+              "ImprintName"
+            ]
+          );
+
+
+        if (imprintName) {
+          return imprintName;
+        }
+
+
+        /*
+         * 発行元が取得できない場合は
+         * 発売元出版社（Publisher）を利用。
+         */
+        const publisherName =
+          findValueByKey(
+            publishingDetail.Publisher,
+            [
+              "PublisherName"
+            ]
+          );
+
+
+        if (publisherName) {
+          return publisherName;
+        }
+
+
+        /*
+         * データ構造が異なる場合に備えて
+         * PublishingDetail全体から検索。
+         */
+        return findValueByKey(
+          publishingDetail,
+          [
+            "ImprintName",
+            "PublisherName"
+          ]
+        );
+
+
+      } catch (error) {
+
+        console.warn(
+          "出版社取得:",
+          error
+        );
+
+        return "";
+      }
+    }
+
+
+    function getPriceFromOpenBd(book) {
+
+      try {
+
+        const productSupply =
+          book.onix?.ProductSupply;
+
+        if (!productSupply) {
+          return null;
+        }
+
+
+        const rawPrice =
+          findValueByKey(
+            productSupply,
+            [
+              "PriceAmount"
+            ]
+          );
+
+
+        if (!rawPrice) {
+          return null;
+        }
+
+
+        const cleaned =
+          String(rawPrice)
+            .replace(/[^\d.]/g, "");
+
+
+        if (!cleaned) {
+          return null;
+        }
+
+
+        const number =
+          Number(cleaned);
+
+
+        if (
+          !Number.isFinite(number) ||
+          number <= 0
+        ) {
+          return null;
+        }
+
+
+        return Math.round(number);
+
+
+      } catch (error) {
+
+        console.warn(
+          "価格取得:",
+          error
+        );
+
+        return null;
+      }
+    }
+
+
     async function fetchOpenBd(isbn) {
 
       currentIsbn = isbn;
@@ -506,13 +825,17 @@
         "書誌情報を取得しています…"
       );
 
+
       try {
 
         const url =
           "https://api.openbd.jp/v1/get?isbn=" +
           encodeURIComponent(isbn);
 
-        const response = await fetch(url);
+
+        const response =
+          await fetch(url);
+
 
         if (!response.ok) {
 
@@ -522,13 +845,22 @@
           );
         }
 
-        const data = await response.json();
+
+        const data =
+          await response.json();
 
 
         /*
-         * OpenBDに該当ISBNがない場合、
-         * 配列内がnullになるケースを想定。
+         * 開発確認用。
+         * OpenBDから実際に返ったデータを
+         * ブラウザのConsoleで確認できる。
          */
+        console.log(
+          "OpenBD response:",
+          data
+        );
+
+
         if (
           !Array.isArray(data) ||
           data.length === 0 ||
@@ -540,7 +872,11 @@
         }
 
 
-        showBookData(data[0], isbn);
+        showBookData(
+          data[0],
+          isbn
+        );
+
 
       } catch (error) {
 
@@ -549,6 +885,7 @@
           error
         );
 
+
         showCommunicationError();
       }
     }
@@ -556,49 +893,68 @@
 
     function showNoBibliographicData(isbn) {
 
-      bookInfoElement.style.display = "none";
+      bookInfoElement.style.display =
+        "none";
+
 
       setMessage(
         "この本の情報を取得できませんでした。本の情報を手入力してください。",
         "error"
       );
 
+
       /*
-       * 今回はOpenBD取得テストのため、
-       * 手入力画面への遷移はまだ実装しない。
+       * 今回はOpenBD取得テストなので
+       * 手入力画面はまだ作らない。
        */
-      restartButton.style.display = "block";
+      restartButton.style.display =
+        "block";
     }
 
 
     function showCommunicationError() {
 
-      bookInfoElement.style.display = "none";
+      bookInfoElement.style.display =
+        "none";
+
 
       setMessage(
         "書誌情報を取得できませんでした。通信状況を確認して、もう一度お試しください。",
         "error"
       );
 
-      retryOpenBdButton.style.display = "block";
-      restartButton.style.display = "block";
+
+      retryOpenBdButton.style.display =
+        "block";
+
+      restartButton.style.display =
+        "block";
     }
 
 
-    function showBookData(book, isbn) {
+    function showBookData(
+      book,
+      isbn
+    ) {
+
+      const summary =
+        book.summary || {};
+
 
       /*
-       * OpenBD Summaryを優先して利用する。
+       * 書名はsummaryを優先し、
+       * なければONIXから取得。
        */
-      const summary = book.summary || {};
-
-
       const title =
         summary.title ||
         getTitleFromOnix(book) ||
         "取得できませんでした";
 
 
+      /*
+       * 出版社もsummaryを優先し、
+       * なければONIXから取得。
+       */
       const publisher =
         summary.publisher ||
         getPublisherFromOnix(book) ||
@@ -616,8 +972,10 @@
       bookTitleElement.textContent =
         title;
 
+
       bookPublisherElement.textContent =
         publisher;
+
 
       bookIsbnElement.textContent =
         isbn;
@@ -637,7 +995,8 @@
 
       if (cover) {
 
-        bookCoverElement.src = cover;
+        bookCoverElement.src =
+          cover;
 
         bookCoverElement.style.display =
           "inline-block";
@@ -661,202 +1020,6 @@
 
       restartButton.style.display =
         "block";
-    }
-
-
-    function getTitleFromOnix(book) {
-
-      try {
-
-        return (
-          book.onix
-            ?.DescriptiveDetail
-            ?.TitleDetail
-            ?.TitleElement
-            ?.TitleText
-            ?.content ||
-          ""
-        );
-
-      } catch (error) {
-
-        return "";
-      }
-    }
-
-
-    function getPublisherFromOnix(book) {
-
-      try {
-
-        const publishingDetail =
-          book.onix?.PublishingDetail;
-
-        if (!publishingDetail) {
-          return "";
-        }
-
-
-        const publisher =
-          publishingDetail.Publisher;
-
-
-        if (Array.isArray(publisher)) {
-
-          for (const item of publisher) {
-
-            if (item?.PublisherName) {
-
-              return (
-                item.PublisherName.content ||
-                item.PublisherName ||
-                ""
-              );
-            }
-          }
-
-        } else if (
-          publisher?.PublisherName
-        ) {
-
-          return (
-            publisher.PublisherName.content ||
-            publisher.PublisherName ||
-            ""
-          );
-        }
-
-
-        const imprint =
-          publishingDetail.Imprint;
-
-
-        if (
-          Array.isArray(imprint) &&
-          imprint.length > 0
-        ) {
-
-          const name =
-            imprint[0]?.ImprintName;
-
-          return (
-            name?.content ||
-            name ||
-            ""
-          );
-
-        } else if (
-          imprint?.ImprintName
-        ) {
-
-          return (
-            imprint.ImprintName.content ||
-            imprint.ImprintName ||
-            ""
-          );
-        }
-
-
-        return "";
-
-      } catch (error) {
-
-        return "";
-      }
-    }
-
-
-    function getPriceFromOpenBd(book) {
-
-      try {
-
-        const productSupply =
-          book.onix?.ProductSupply;
-
-        if (!productSupply) {
-          return null;
-        }
-
-
-        let supplies =
-          productSupply.SupplyDetail;
-
-        if (!supplies) {
-
-          supplies = productSupply;
-        }
-
-
-        if (!Array.isArray(supplies)) {
-
-          supplies = [supplies];
-        }
-
-
-        for (const supply of supplies) {
-
-          let prices = supply?.Price;
-
-          if (!prices) {
-            continue;
-          }
-
-
-          if (!Array.isArray(prices)) {
-
-            prices = [prices];
-          }
-
-
-          for (const price of prices) {
-
-            /*
-             * JPRO / OpenBDのデータ差異を考慮して、
-             * 複数の価格表現を確認する。
-             */
-            const candidates = [
-              price?.PriceAmount,
-              price?.PriceAmount?.content,
-              price?.PriceAmount?.value,
-              price?.PriceAmount?.["$"],
-              price?.PriceAmount?.["#text"]
-            ];
-
-
-            for (const candidate of candidates) {
-
-              const number =
-                Number(
-                  String(
-                    candidate ?? ""
-                  )
-                  .replace(/[^\d.]/g, "")
-                );
-
-
-              if (
-                Number.isFinite(number) &&
-                number > 0
-              ) {
-
-                return Math.round(number);
-              }
-            }
-          }
-        }
-
-
-        return null;
-
-      } catch (error) {
-
-        console.warn(
-          "価格取得処理:",
-          error
-        );
-
-        return null;
-      }
     }
 
 
@@ -894,6 +1057,10 @@
 
       try {
 
+        /*
+         * 実証済みのカメラ映像切り出し部分。
+         * この部分は変更しない。
+         */
         const sourceWidth =
           video.videoWidth;
 
@@ -968,6 +1135,9 @@
           );
 
 
+        /*
+         * ZXing-WASMでEAN-13のみ解析。
+         */
         const results =
           await ZXingWASM.readBarcodes(
 
@@ -1009,6 +1179,7 @@
             resultElement.textContent =
               code;
 
+
             setMessage(
               "読み取り成功",
               "success"
@@ -1016,16 +1187,18 @@
 
 
             /*
-             * ここまでは実証済み部分。
-             *
-             * ISBN読取成功後にカメラを止め、
-             * そのISBNでOpenBDを検索する。
+             * ISBN読取成功後、
+             * カメラを停止。
              */
             await stopCamera();
 
             decoding = false;
 
 
+            /*
+             * 読み取ったISBNで
+             * OpenBDを検索。
+             */
             await fetchOpenBd(code);
 
             return;
@@ -1066,7 +1239,9 @@
           return;
         }
 
-        await fetchOpenBd(currentIsbn);
+        await fetchOpenBd(
+          currentIsbn
+        );
       }
     );
 
@@ -1086,7 +1261,8 @@
 
         if (
           typeof ZXingWASM === "undefined" ||
-          typeof ZXingWASM.readBarcodes !== "function"
+          typeof ZXingWASM.readBarcodes !==
+            "function"
         ) {
 
           setMessage(
@@ -1096,6 +1272,7 @@
 
           return;
         }
+
 
         await startCamera();
       }
