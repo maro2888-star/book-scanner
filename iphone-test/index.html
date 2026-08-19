@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム No.20確認版</title>
+  <title>スマホde選書システム No.20確定版</title>
 
   <style>
     * {
@@ -18,7 +18,7 @@
 
     body {
       margin: 0;
-      padding: 18px 14px 30px;
+      padding: 12px 14px 24px;
       background: #f7f7f7;
       color: #222;
       font-family:
@@ -37,7 +37,7 @@
     }
 
     h1 {
-      margin: 4px 0 8px;
+      margin: 2px 0 6px;
       text-align: center;
       font-size: 21px;
     }
@@ -48,15 +48,22 @@
     }
 
     .description {
-      margin: 0 0 14px;
+      margin: 0 0 10px;
       text-align: center;
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.5;
     }
+
+    /* -----------------------------------------
+       カメラ表示
+       実際の映像・解析解像度は変更せず、
+       画面上の表示だけ縦方向を小さくする
+    ------------------------------------------ */
 
     .camera-wrap {
       position: relative;
       width: 100%;
+      height: 270px;
       background: #000;
       border-radius: 10px;
       overflow: hidden;
@@ -65,7 +72,8 @@
     video {
       display: block;
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
       background: #000;
     }
 
@@ -73,8 +81,8 @@
       position: absolute;
       left: 5%;
       right: 5%;
-      top: 37%;
-      height: 26%;
+      top: 29%;
+      height: 34%;
       border: 3px solid rgba(255,255,255,0.9);
       border-radius: 8px;
       pointer-events: none;
@@ -84,7 +92,7 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 7px;
+      bottom: 8px;
       text-align: center;
       color: white;
       font-size: 13px;
@@ -92,8 +100,8 @@
     }
 
     .card {
-      margin-top: 16px;
-      padding: 16px;
+      margin-top: 12px;
+      padding: 14px 16px;
       background: #fff;
       border-radius: 8px;
     }
@@ -105,21 +113,21 @@
     .label {
       font-size: 13px;
       color: #666;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     #result {
-      min-height: 34px;
-      font-size: 24px;
+      min-height: 32px;
+      font-size: 23px;
       font-weight: bold;
       letter-spacing: 1px;
       word-break: break-all;
     }
 
     #message {
-      margin-top: 10px;
+      margin-top: 8px;
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.5;
       color: #555;
     }
 
@@ -142,10 +150,10 @@
     }
 
     .info-value {
+      min-height: 26px;
       font-size: 17px;
       line-height: 1.5;
       word-break: break-word;
-      min-height: 26px;
     }
 
     .empty-value {
@@ -177,12 +185,8 @@
       color: #222;
     }
 
-    button.danger {
-      background: #8b2d2d;
-    }
-
     .manual-button {
-      margin-top: 14px;
+      margin-top: 12px;
     }
 
     .screen {
@@ -240,12 +244,12 @@
     }
 
     .note {
-      margin-top: 16px;
-      padding: 12px;
+      margin-top: 14px;
+      padding: 11px 12px;
       background: #fff;
       border-radius: 8px;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.5;
       color: #555;
     }
 
@@ -262,6 +266,13 @@
     canvas {
       display: none;
     }
+
+    /* 小さめのスマホではさらに少し縮める */
+    @media (max-height: 760px) {
+      .camera-wrap {
+        height: 235px;
+      }
+    }
   </style>
 </head>
 
@@ -275,6 +286,7 @@
     <!-- =========================================
          1. バーコード読み取り画面
     ========================================== -->
+
     <section id="scannerScreen" class="screen active">
 
       <p class="description">
@@ -302,7 +314,7 @@
       <section class="card status">
 
         <div class="label">
-          読み取ったISBN
+          読み取ったコード
         </div>
 
         <div id="result">
@@ -320,7 +332,7 @@
         id="manualEntryButton"
         type="button"
         class="secondary manual-button">
-        バーコードがない・読み取れない本を登録する
+        手入力で登録する
       </button>
 
     </section>
@@ -329,6 +341,7 @@
     <!-- =========================================
          2. 書誌確認画面
     ========================================== -->
+
     <section id="confirmScreen" class="screen">
 
       <section class="card">
@@ -339,40 +352,38 @@
         <div class="info-row">
           <div class="info-label">書名</div>
           <div id="confirmTitle"
-               class="info-value">
-          </div>
+               class="info-value"></div>
         </div>
 
 
         <div class="info-row">
           <div class="info-label">著者名</div>
           <div id="confirmAuthor"
-               class="info-value">
-          </div>
+               class="info-value"></div>
         </div>
 
 
         <div class="info-row">
           <div class="info-label">出版社</div>
           <div id="confirmPublisher"
-               class="info-value">
-          </div>
+               class="info-value"></div>
         </div>
 
 
         <div class="info-row">
-          <div class="info-label">商品コード（ISBN）</div>
-          <div id="confirmIsbn"
-               class="info-value">
+          <div class="info-label">
+            商品コード（ISBN）
           </div>
+
+          <div id="confirmIsbn"
+               class="info-value"></div>
         </div>
 
 
         <div class="info-row">
           <div class="info-label">本体価格</div>
           <div id="confirmPrice"
-               class="info-value">
-          </div>
+               class="info-value"></div>
         </div>
 
 
@@ -407,6 +418,7 @@
     <!-- =========================================
          3. 手入力画面
     ========================================== -->
+
     <section id="manualScreen" class="screen">
 
       <section class="card">
@@ -527,18 +539,21 @@
 
 
     <!-- =========================================
-         4. 通信エラー画面
+         4. OpenBD通信エラー画面
     ========================================== -->
-    <section id="communicationErrorScreen"
-             class="screen">
+
+    <section
+      id="communicationErrorScreen"
+      class="screen">
 
       <section class="card">
 
-        <h2>書誌情報を取得できませんでした</h2>
+        <h2>
+          書誌情報を取得できませんでした
+        </h2>
 
         <p>
-          通信状況を確認して、
-          もう一度お試しください。
+          通信状況を確認して、もう一度お試しください。
         </p>
 
 
@@ -635,10 +650,14 @@
 
 
     const confirmTitle =
-      document.getElementById("confirmTitle");
+      document.getElementById(
+        "confirmTitle"
+      );
 
     const confirmAuthor =
-      document.getElementById("confirmAuthor");
+      document.getElementById(
+        "confirmAuthor"
+      );
 
     const confirmPublisher =
       document.getElementById(
@@ -646,10 +665,15 @@
       );
 
     const confirmIsbn =
-      document.getElementById("confirmIsbn");
+      document.getElementById(
+        "confirmIsbn"
+      );
 
     const confirmPrice =
-      document.getElementById("confirmPrice");
+      document.getElementById(
+        "confirmPrice"
+      );
+
 
     const confirmRegisterButton =
       document.getElementById(
@@ -668,13 +692,19 @@
 
 
     const manualIsbn =
-      document.getElementById("manualIsbn");
+      document.getElementById(
+        "manualIsbn"
+      );
 
     const manualTitle =
-      document.getElementById("manualTitle");
+      document.getElementById(
+        "manualTitle"
+      );
 
     const manualAuthor =
-      document.getElementById("manualAuthor");
+      document.getElementById(
+        "manualAuthor"
+      );
 
     const manualPublisher =
       document.getElementById(
@@ -682,7 +712,10 @@
       );
 
     const manualPrice =
-      document.getElementById("manualPrice");
+      document.getElementById(
+        "manualPrice"
+      );
+
 
     const manualRegisterButton =
       document.getElementById(
@@ -741,14 +774,26 @@
 
     function showScreen(screen) {
 
-      scannerScreen.classList.remove("active");
-      confirmScreen.classList.remove("active");
-      manualScreen.classList.remove("active");
-      communicationErrorScreen.classList.remove(
+      scannerScreen.classList.remove(
         "active"
       );
 
-      screen.classList.add("active");
+      confirmScreen.classList.remove(
+        "active"
+      );
+
+      manualScreen.classList.remove(
+        "active"
+      );
+
+      communicationErrorScreen
+        .classList.remove(
+          "active"
+        );
+
+      screen.classList.add(
+        "active"
+      );
     }
 
 
@@ -757,8 +802,11 @@
       className = ""
     ) {
 
-      messageElement.textContent = text;
-      messageElement.className = className;
+      messageElement.textContent =
+        text;
+
+      messageElement.className =
+        className;
     }
 
 
@@ -793,22 +841,27 @@
     function setDisplayValue(
       element,
       value,
-      emptyText = "未取得"
+      emptyText = ""
     ) {
 
       const text =
         String(value || "").trim();
 
+
       if (text) {
 
-        element.textContent = text;
+        element.textContent =
+          text;
+
         element.classList.remove(
           "empty-value"
         );
 
       } else {
 
-        element.textContent = emptyText;
+        element.textContent =
+          emptyText;
+
         element.classList.add(
           "empty-value"
         );
@@ -823,6 +876,7 @@
     async function stopCamera() {
 
       scanning = false;
+
 
       if (animationId) {
 
@@ -866,7 +920,9 @@
         "カメラを起動しています…"
       );
 
-      showScreen(scannerScreen);
+      showScreen(
+        scannerScreen
+      );
 
 
       try {
@@ -896,7 +952,8 @@
             });
 
 
-        video.srcObject = stream;
+        video.srcObject =
+          stream;
 
         await video.play();
 
@@ -941,7 +998,7 @@
 
 
     /* =========================================
-       OpenBD値取得
+       OpenBDデータ取得
     ========================================== */
 
     function getTextValue(value) {
@@ -1112,6 +1169,7 @@
         book.onix
           ?.PublishingDetail;
 
+
       if (!detail) {
         return "";
       }
@@ -1148,6 +1206,7 @@
         book.onix
           ?.ProductSupply;
 
+
       if (!productSupply) {
         return "";
       }
@@ -1169,7 +1228,10 @@
 
       const cleaned =
         String(rawPrice)
-          .replace(/[^\d.]/g, "");
+          .replace(
+            /[^\d.]/g,
+            ""
+          );
 
 
       const number =
@@ -1201,7 +1263,8 @@
 
       return {
 
-        isbn: isbn,
+        isbn:
+          isbn,
 
         title:
           String(
@@ -1235,16 +1298,21 @@
        OpenBD検索
     ========================================== */
 
-    async function fetchOpenBd(isbn) {
+    async function fetchOpenBd(
+      isbn
+    ) {
 
-      currentIsbn = isbn;
+      currentIsbn =
+        isbn;
 
 
       try {
 
         const url =
           "https://api.openbd.jp/v1/get?isbn=" +
-          encodeURIComponent(isbn);
+          encodeURIComponent(
+            isbn
+          );
 
 
         const response =
@@ -1309,30 +1377,31 @@
        書誌確認画面
     ========================================== */
 
-    function showConfirmScreen(book) {
+    function showConfirmScreen(
+      book
+    ) {
 
       setDisplayValue(
         confirmTitle,
-        book.title,
-        "未取得"
+        book.title
       );
+
 
       setDisplayValue(
         confirmAuthor,
-        book.author,
-        ""
+        book.author
       );
+
 
       setDisplayValue(
         confirmPublisher,
-        book.publisher,
-        ""
+        book.publisher
       );
+
 
       setDisplayValue(
         confirmIsbn,
-        book.isbn,
-        ""
+        book.isbn
       );
 
 
@@ -1340,15 +1409,13 @@
 
         setDisplayValue(
           confirmPrice,
-          book.price + "円",
-          ""
+          book.price + "円"
         );
 
       } else {
 
         setDisplayValue(
           confirmPrice,
-          "",
           ""
         );
       }
@@ -1387,6 +1454,7 @@
 
       manualPrice.value =
         "";
+
 
       manualTemporaryResult
         .style.display =
@@ -1432,7 +1500,10 @@
 
         price:
           manualPrice.value
-            .replace(/\D/g, "")
+            .replace(
+              /\D/g,
+              ""
+            )
 
       };
     }
@@ -1442,7 +1513,9 @@
        スキャン
     ========================================== */
 
-    async function scanFrame(timestamp) {
+    async function scanFrame(
+      timestamp
+    ) {
 
       if (!scanning) {
         return;
@@ -1475,10 +1548,17 @@
       lastDecodeTime =
         timestamp;
 
-      decoding = true;
+      decoding =
+        true;
 
 
       try {
+
+        /*
+         * ここから下の画像切り出し・
+         * ZXing-WASM処理は
+         * 実証済みの設定を維持する。
+         */
 
         const sourceWidth =
           video.videoWidth;
@@ -1596,8 +1676,21 @@
             );
 
 
+          /*
+           * 読み取ったコードは、
+           * ISBNでなくても表示する。
+           */
+          resultElement.textContent =
+            code;
+
+
+          /*
+           * 192で始まる2段目バーコード
+           */
           if (
-            isSecondBarcode(code)
+            isSecondBarcode(
+              code
+            )
           ) {
 
             setMessage(
@@ -1606,17 +1699,17 @@
             );
 
 
+          /*
+           * ISBN
+           */
           } else if (
-            isIsbn(code)
+            isIsbn(
+              code
+            )
           ) {
 
-            resultElement
-              .textContent =
-              code;
-
-
             setMessage(
-              "読み取り成功",
+              "ISBNを読み取りました。",
               "success"
             );
 
@@ -1624,7 +1717,8 @@
             await stopCamera();
 
 
-            decoding = false;
+            decoding =
+              false;
 
 
             await fetchOpenBd(
@@ -1635,10 +1729,14 @@
             return;
 
 
+          /*
+           * 雑誌JANなど、
+           * ISBN以外のEAN-13
+           */
           } else {
 
             setMessage(
-              "ISBNではないバーコードを読み取りました。",
+              "書籍のISBNではありません。必要な場合は、下のボタンから手入力してください。",
               "error"
             );
           }
@@ -1654,7 +1752,8 @@
 
       } finally {
 
-        decoding = false;
+        decoding =
+          false;
       }
 
 
@@ -1696,13 +1795,12 @@
         async function() {
 
           /*
-           * No.20では保存しない。
-           * 登録内容が確定できたことだけ確認する。
+           * No.20ではまだ保存しない。
            */
 
           confirmTemporaryResult
             .textContent =
-            "登録内容を確認しました。※スプレッドシート保存はNo.21で接続します。";
+            "登録内容を確認しました。";
 
 
           confirmTemporaryResult
@@ -1749,9 +1847,11 @@
               .textContent =
               "書名を入力してください。";
 
+
             manualTemporaryResult
               .style.display =
               "block";
+
 
             manualTitle.focus();
 
@@ -1760,21 +1860,25 @@
 
 
           /*
-           * ISBNが入力されている場合のみ
-           * 13桁の978/979を確認。
+           * ISBNは空欄可。
+           * 入力された場合だけ形式確認。
            */
           if (
             book.isbn &&
-            !isIsbn(book.isbn)
+            !isIsbn(
+              book.isbn
+            )
           ) {
 
             manualTemporaryResult
               .textContent =
               "ISBNを入力する場合は、978または979で始まる13桁で入力してください。";
 
+
             manualTemporaryResult
               .style.display =
               "block";
+
 
             manualIsbn.focus();
 
@@ -1784,7 +1888,7 @@
 
           manualTemporaryResult
             .textContent =
-            "登録内容を確認しました。※スプレッドシート保存はNo.21で接続します。";
+            "登録内容を確認しました。";
 
 
           manualTemporaryResult
@@ -1812,7 +1916,10 @@
 
           manualPrice.value =
             manualPrice.value
-              .replace(/\D/g, "");
+              .replace(
+                /\D/g,
+                ""
+              );
 
         }
       );
@@ -1825,8 +1932,14 @@
 
           manualIsbn.value =
             manualIsbn.value
-              .replace(/\D/g, "")
-              .slice(0, 13);
+              .replace(
+                /\D/g,
+                ""
+              )
+              .slice(
+                0,
+                13
+              );
 
         }
       );
