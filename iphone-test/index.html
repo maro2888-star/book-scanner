@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム OpenBDデバッグ</title>
+  <title>スマホde選書システム No.20確認版</title>
 
   <style>
     * {
@@ -40,6 +40,11 @@
       margin: 4px 0 8px;
       text-align: center;
       font-size: 21px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
     }
 
     .description {
@@ -86,12 +91,9 @@
       text-shadow: 0 1px 3px #000;
     }
 
-    .status,
-    .book-info,
-    .debug-box,
-    .note {
+    .card {
       margin-top: 16px;
-      padding: 14px;
+      padding: 16px;
       background: #fff;
       border-radius: 8px;
     }
@@ -129,47 +131,40 @@
       color: #b00020 !important;
     }
 
-    .book-info {
-      display: none;
+    .info-row {
+      margin-top: 14px;
     }
 
-    .book-cover-wrap {
-      text-align: center;
-      margin-bottom: 14px;
-    }
-
-    #bookCover {
-      display: none;
-      max-width: 180px;
-      max-height: 260px;
-      width: auto;
-      height: auto;
-    }
-
-    .book-row {
-      margin-top: 12px;
-    }
-
-    .book-row-label {
+    .info-label {
       font-size: 12px;
       color: #777;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
 
-    .book-row-value {
+    .info-value {
       font-size: 17px;
       line-height: 1.5;
       word-break: break-word;
+      min-height: 26px;
+    }
+
+    .empty-value {
+      color: #999;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     button {
       width: 100%;
-      margin-top: 14px;
       padding: 13px;
       border: 0;
       border-radius: 8px;
       background: #333;
-      color: white;
+      color: #fff;
       font-size: 16px;
     }
 
@@ -177,30 +172,91 @@
       background: #666;
     }
 
-    .debug-box {
+    button.light {
+      background: #ddd;
+      color: #222;
+    }
+
+    button.danger {
+      background: #8b2d2d;
+    }
+
+    .manual-button {
+      margin-top: 14px;
+    }
+
+    .screen {
       display: none;
     }
 
-    .debug-title {
-      font-weight: bold;
-      margin-bottom: 8px;
+    .screen.active {
+      display: block;
     }
 
-    pre {
-      white-space: pre-wrap;
-      word-break: break-word;
+    .form-row {
+      margin-top: 14px;
+    }
+
+    .form-row label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .required {
+      color: #b00020;
       font-size: 12px;
-      line-height: 1.5;
-      background: #f1f1f1;
-      padding: 10px;
-      border-radius: 6px;
-      overflow-x: auto;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+      background: #fff;
+      color: #222;
+      font-size: 16px;
+    }
+
+    input:focus {
+      outline: 2px solid #888;
+      border-color: #888;
+    }
+
+    .price-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .price-input-wrap input {
+      flex: 1;
+    }
+
+    .yen-label {
+      white-space: nowrap;
+      font-size: 16px;
     }
 
     .note {
+      margin-top: 16px;
+      padding: 12px;
+      background: #fff;
+      border-radius: 8px;
       font-size: 13px;
       line-height: 1.6;
       color: #555;
+    }
+
+    .temporary-result {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #eef7ef;
+      color: #245c2c;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
     canvas {
@@ -215,123 +271,316 @@
 
     <h1>スマホde選書システム</h1>
 
-    <p class="description">
-      本の1段目のバーコードを、白い枠の中に入れてください。
-    </p>
 
-    <div class="camera-wrap">
+    <!-- =========================================
+         1. バーコード読み取り画面
+    ========================================== -->
+    <section id="scannerScreen" class="screen active">
 
-      <video
-        id="video"
-        autoplay
-        muted
-        playsinline>
-      </video>
+      <p class="description">
+        本の1段目のバーコードを、白い枠の中に入れてください。
+      </p>
 
-      <div class="scan-guide"></div>
+      <div class="camera-wrap">
 
-      <div class="guide-label">
-        1段目のバーコードをこの枠に合わせてください
+        <video
+          id="video"
+          autoplay
+          muted
+          playsinline>
+        </video>
+
+        <div class="scan-guide"></div>
+
+        <div class="guide-label">
+          1段目のバーコードをこの枠に合わせてください
+        </div>
+
       </div>
 
-    </div>
+
+      <section class="card status">
+
+        <div class="label">
+          読み取ったISBN
+        </div>
+
+        <div id="result">
+          まだありません
+        </div>
+
+        <div id="message">
+          準備しています…
+        </div>
+
+      </section>
 
 
-    <section class="status">
-
-      <div class="label">
-        読み取ったISBN
-      </div>
-
-      <div id="result">
-        まだありません
-      </div>
-
-      <div id="message">
-        準備しています…
-      </div>
+      <button
+        id="manualEntryButton"
+        type="button"
+        class="secondary manual-button">
+        バーコードがない・読み取れない本を登録する
+      </button>
 
     </section>
 
 
-    <section id="bookInfo" class="book-info">
+    <!-- =========================================
+         2. 書誌確認画面
+    ========================================== -->
+    <section id="confirmScreen" class="screen">
 
-      <div class="book-cover-wrap">
-        <img id="bookCover" alt="表紙画像">
-      </div>
+      <section class="card">
 
-      <div class="book-row">
-        <div class="book-row-label">書名</div>
-        <div id="bookTitle" class="book-row-value">－</div>
-      </div>
-
-      <div class="book-row">
-        <div class="book-row-label">出版社</div>
-        <div id="bookPublisher" class="book-row-value">－</div>
-      </div>
-
-      <div class="book-row">
-        <div class="book-row-label">商品コード（ISBN）</div>
-        <div id="bookIsbn" class="book-row-value">－</div>
-      </div>
-
-      <div class="book-row">
-        <div class="book-row-label">本体価格</div>
-        <div id="bookPrice" class="book-row-value">－</div>
-      </div>
-
-    </section>
+        <h2>本の情報を確認してください</h2>
 
 
-    <section id="debugBox" class="debug-box">
-
-      <div class="debug-title">
-        OpenBDデバッグ表示
-      </div>
-
-      <div class="book-row">
-        <div class="book-row-label">summary</div>
-        <pre id="debugSummary">－</pre>
-      </div>
-
-      <div class="book-row">
-        <div class="book-row-label">PublishingDetail</div>
-        <pre id="debugPublishingDetail">－</pre>
-      </div>
-
-      <div class="book-row">
-        <div class="book-row-label">ProductSupply</div>
-        <pre id="debugProductSupply">－</pre>
-      </div>
-
-    </section>
+        <div class="info-row">
+          <div class="info-label">書名</div>
+          <div id="confirmTitle"
+               class="info-value">
+          </div>
+        </div>
 
 
-    <button id="retryOpenBdButton"
+        <div class="info-row">
+          <div class="info-label">著者名</div>
+          <div id="confirmAuthor"
+               class="info-value">
+          </div>
+        </div>
+
+
+        <div class="info-row">
+          <div class="info-label">出版社</div>
+          <div id="confirmPublisher"
+               class="info-value">
+          </div>
+        </div>
+
+
+        <div class="info-row">
+          <div class="info-label">商品コード（ISBN）</div>
+          <div id="confirmIsbn"
+               class="info-value">
+          </div>
+        </div>
+
+
+        <div class="info-row">
+          <div class="info-label">本体価格</div>
+          <div id="confirmPrice"
+               class="info-value">
+          </div>
+        </div>
+
+
+        <div class="button-row">
+
+          <button
+            id="confirmRegisterButton"
+            type="button">
+            登録
+          </button>
+
+          <button
+            id="confirmCancelButton"
             type="button"
-            class="secondary"
-            style="display:none;">
-      もう一度検索
-    </button>
+            class="light">
+            キャンセル
+          </button>
+
+        </div>
 
 
-    <button id="restartButton"
+        <div id="confirmTemporaryResult"
+             class="temporary-result"
+             style="display:none;">
+        </div>
+
+      </section>
+
+    </section>
+
+
+    <!-- =========================================
+         3. 手入力画面
+    ========================================== -->
+    <section id="manualScreen" class="screen">
+
+      <section class="card">
+
+        <h2>本の情報を入力してください</h2>
+
+
+        <div class="form-row">
+
+          <label for="manualIsbn">
+            商品コード（ISBN）
+          </label>
+
+          <input
+            id="manualIsbn"
+            type="text"
+            inputmode="numeric"
+            maxlength="13"
+            autocomplete="off">
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="manualTitle">
+            書名
+            <span class="required">
+              必須
+            </span>
+          </label>
+
+          <input
+            id="manualTitle"
+            type="text"
+            autocomplete="off">
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="manualAuthor">
+            著者名
+          </label>
+
+          <input
+            id="manualAuthor"
+            type="text"
+            autocomplete="off">
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="manualPublisher">
+            出版社
+          </label>
+
+          <input
+            id="manualPublisher"
+            type="text"
+            autocomplete="off">
+
+        </div>
+
+
+        <div class="form-row">
+
+          <label for="manualPrice">
+            本体価格
+          </label>
+
+          <div class="price-input-wrap">
+
+            <input
+              id="manualPrice"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off">
+
+            <span class="yen-label">
+              円
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="button-row">
+
+          <button
+            id="manualRegisterButton"
+            type="button">
+            登録
+          </button>
+
+          <button
+            id="manualCancelButton"
             type="button"
-            style="display:none;">
-      次の本を読む
-    </button>
+            class="light">
+            キャンセル
+          </button>
+
+        </div>
+
+
+        <div id="manualTemporaryResult"
+             class="temporary-result"
+             style="display:none;">
+        </div>
+
+      </section>
+
+    </section>
+
+
+    <!-- =========================================
+         4. 通信エラー画面
+    ========================================== -->
+    <section id="communicationErrorScreen"
+             class="screen">
+
+      <section class="card">
+
+        <h2>書誌情報を取得できませんでした</h2>
+
+        <p>
+          通信状況を確認して、
+          もう一度お試しください。
+        </p>
+
+
+        <button
+          id="retryOpenBdButton"
+          type="button">
+          もう一度検索
+        </button>
+
+
+        <button
+          id="communicationManualButton"
+          type="button"
+          class="secondary manual-button">
+          手入力する
+        </button>
+
+
+        <button
+          id="communicationCancelButton"
+          type="button"
+          class="light manual-button">
+          キャンセル
+        </button>
+
+      </section>
+
+    </section>
 
 
     <div class="note">
-      ※今回はOpenBDから返されたデータ構造を確認するためのデバッグ版です。
-      スプレッドシートへの登録処理はまだ行いません。
+      ※今回はNo.20「書誌確認画面・手入力画面」の確認版です。
+      スプレッドシートへの保存はまだ行いません。
     </div>
+
 
     <canvas id="canvas"></canvas>
 
   </main>
 
 
+  <!-- ZXing-WASM -->
   <script
     src="https://cdn.jsdelivr.net/npm/zxing-wasm/dist/iife/reader/index.js">
   </script>
@@ -341,12 +590,36 @@
     "use strict";
 
 
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
+    /* =========================================
+       DOM
+    ========================================== */
 
-    const context = canvas.getContext("2d", {
-      willReadFrequently: true
-    });
+    const scannerScreen =
+      document.getElementById("scannerScreen");
+
+    const confirmScreen =
+      document.getElementById("confirmScreen");
+
+    const manualScreen =
+      document.getElementById("manualScreen");
+
+    const communicationErrorScreen =
+      document.getElementById(
+        "communicationErrorScreen"
+      );
+
+
+    const video =
+      document.getElementById("video");
+
+    const canvas =
+      document.getElementById("canvas");
+
+    const context =
+      canvas.getContext("2d", {
+        willReadFrequently: true
+      });
+
 
     const resultElement =
       document.getElementById("result");
@@ -354,55 +627,135 @@
     const messageElement =
       document.getElementById("message");
 
-    const restartButton =
-      document.getElementById("restartButton");
+
+    const manualEntryButton =
+      document.getElementById(
+        "manualEntryButton"
+      );
+
+
+    const confirmTitle =
+      document.getElementById("confirmTitle");
+
+    const confirmAuthor =
+      document.getElementById("confirmAuthor");
+
+    const confirmPublisher =
+      document.getElementById(
+        "confirmPublisher"
+      );
+
+    const confirmIsbn =
+      document.getElementById("confirmIsbn");
+
+    const confirmPrice =
+      document.getElementById("confirmPrice");
+
+    const confirmRegisterButton =
+      document.getElementById(
+        "confirmRegisterButton"
+      );
+
+    const confirmCancelButton =
+      document.getElementById(
+        "confirmCancelButton"
+      );
+
+    const confirmTemporaryResult =
+      document.getElementById(
+        "confirmTemporaryResult"
+      );
+
+
+    const manualIsbn =
+      document.getElementById("manualIsbn");
+
+    const manualTitle =
+      document.getElementById("manualTitle");
+
+    const manualAuthor =
+      document.getElementById("manualAuthor");
+
+    const manualPublisher =
+      document.getElementById(
+        "manualPublisher"
+      );
+
+    const manualPrice =
+      document.getElementById("manualPrice");
+
+    const manualRegisterButton =
+      document.getElementById(
+        "manualRegisterButton"
+      );
+
+    const manualCancelButton =
+      document.getElementById(
+        "manualCancelButton"
+      );
+
+    const manualTemporaryResult =
+      document.getElementById(
+        "manualTemporaryResult"
+      );
+
 
     const retryOpenBdButton =
-      document.getElementById("retryOpenBdButton");
+      document.getElementById(
+        "retryOpenBdButton"
+      );
 
-    const bookInfoElement =
-      document.getElementById("bookInfo");
+    const communicationManualButton =
+      document.getElementById(
+        "communicationManualButton"
+      );
 
-    const bookCoverElement =
-      document.getElementById("bookCover");
+    const communicationCancelButton =
+      document.getElementById(
+        "communicationCancelButton"
+      );
 
-    const bookTitleElement =
-      document.getElementById("bookTitle");
 
-    const bookPublisherElement =
-      document.getElementById("bookPublisher");
-
-    const bookIsbnElement =
-      document.getElementById("bookIsbn");
-
-    const bookPriceElement =
-      document.getElementById("bookPrice");
-
-    const debugBox =
-      document.getElementById("debugBox");
-
-    const debugSummary =
-      document.getElementById("debugSummary");
-
-    const debugPublishingDetail =
-      document.getElementById("debugPublishingDetail");
-
-    const debugProductSupply =
-      document.getElementById("debugProductSupply");
-
+    /* =========================================
+       状態
+    ========================================== */
 
     let stream = null;
+
     let scanning = false;
     let decoding = false;
     let animationId = null;
 
     let lastDecodeTime = 0;
+
     let currentIsbn = "";
+
+    let currentBook = null;
 
     const DECODE_INTERVAL = 120;
 
 
-    function setMessage(text, className = "") {
+    /* =========================================
+       共通
+    ========================================== */
+
+    function showScreen(screen) {
+
+      scannerScreen.classList.remove("active");
+      confirmScreen.classList.remove("active");
+      manualScreen.classList.remove("active");
+      communicationErrorScreen.classList.remove(
+        "active"
+      );
+
+      screen.classList.add("active");
+    }
+
+
+    function setMessage(
+      text,
+      className = ""
+    ) {
 
       messageElement.textContent = text;
       messageElement.className = className;
@@ -411,7 +764,8 @@
 
     function normalizeCode(text) {
 
-      return String(text || "").replace(/\D/g, "");
+      return String(text || "")
+        .replace(/\D/g, "");
     }
 
 
@@ -436,27 +790,35 @@
     }
 
 
-    function clearBookInfo() {
+    function setDisplayValue(
+      element,
+      value,
+      emptyText = "未取得"
+    ) {
 
-      bookInfoElement.style.display = "none";
-      debugBox.style.display = "none";
+      const text =
+        String(value || "").trim();
 
-      bookCoverElement.style.display = "none";
-      bookCoverElement.removeAttribute("src");
+      if (text) {
 
-      bookTitleElement.textContent = "－";
-      bookPublisherElement.textContent = "－";
-      bookIsbnElement.textContent = "－";
-      bookPriceElement.textContent = "－";
+        element.textContent = text;
+        element.classList.remove(
+          "empty-value"
+        );
 
-      debugSummary.textContent = "－";
-      debugPublishingDetail.textContent = "－";
-      debugProductSupply.textContent = "－";
+      } else {
 
-      retryOpenBdButton.style.display = "none";
-      restartButton.style.display = "none";
+        element.textContent = emptyText;
+        element.classList.add(
+          "empty-value"
+        );
+      }
     }
 
+
+    /* =========================================
+       カメラ
+    ========================================== */
 
     async function stopCamera() {
 
@@ -464,18 +826,27 @@
 
       if (animationId) {
 
-        cancelAnimationFrame(animationId);
+        cancelAnimationFrame(
+          animationId
+        );
+
         animationId = null;
       }
 
+
       if (stream) {
 
-        stream.getTracks().forEach(track => {
-          track.stop();
-        });
+        stream
+          .getTracks()
+          .forEach(track => {
+
+            track.stop();
+
+          });
 
         stream = null;
       }
+
 
       video.srcObject = null;
     }
@@ -486,35 +857,43 @@
       await stopCamera();
 
       currentIsbn = "";
+      currentBook = null;
 
-      resultElement.textContent = "まだありません";
+      resultElement.textContent =
+        "まだありません";
 
-      clearBookInfo();
+      setMessage(
+        "カメラを起動しています…"
+      );
 
-      setMessage("カメラを起動しています…");
+      showScreen(scannerScreen);
+
 
       try {
 
         stream =
-          await navigator.mediaDevices.getUserMedia({
+          await navigator.mediaDevices
+            .getUserMedia({
 
-            audio: false,
+              audio: false,
 
-            video: {
+              video: {
 
-              facingMode: {
-                ideal: "environment"
-              },
+                facingMode: {
+                  ideal: "environment"
+                },
 
-              width: {
-                ideal: 1920
-              },
+                width: {
+                  ideal: 1920
+                },
 
-              height: {
-                ideal: 1080
+                height: {
+                  ideal: 1080
+                }
+
               }
-            }
-          });
+
+            });
 
 
         video.srcObject = stream;
@@ -523,15 +902,22 @@
 
         scanning = true;
 
+
         setMessage(
           "本の1段目のバーコードを白い枠に合わせてください。"
         );
 
+
         requestScan();
+
 
       } catch (error) {
 
-        console.error(error);
+        console.error(
+          "カメラ起動エラー:",
+          error
+        );
+
 
         setMessage(
           "カメラを起動できませんでした。ブラウザのカメラ使用許可を確認してください。",
@@ -548,9 +934,15 @@
       }
 
       animationId =
-        requestAnimationFrame(scanFrame);
+        requestAnimationFrame(
+          scanFrame
+        );
     }
 
+
+    /* =========================================
+       OpenBD値取得
+    ========================================== */
 
     function getTextValue(value) {
 
@@ -596,17 +988,24 @@
           "$"
         ];
 
-        for (const key of preferredKeys) {
+
+        for (
+          const key of preferredKeys
+        ) {
 
           if (
-            Object.prototype.hasOwnProperty.call(
-              value,
-              key
-            )
+            Object.prototype
+              .hasOwnProperty
+              .call(
+                value,
+                key
+              )
           ) {
 
             const text =
-              getTextValue(value[key]);
+              getTextValue(
+                value[key]
+              );
 
             if (text) {
               return text;
@@ -614,6 +1013,7 @@
           }
         }
       }
+
 
       return "";
     }
@@ -651,18 +1051,24 @@
       }
 
 
-      if (typeof object !== "object") {
+      if (
+        typeof object !== "object"
+      ) {
         return "";
       }
 
 
-      for (const key of targetKeys) {
+      for (
+        const key of targetKeys
+      ) {
 
         if (
-          Object.prototype.hasOwnProperty.call(
-            object,
-            key
-          )
+          Object.prototype
+            .hasOwnProperty
+            .call(
+              object,
+              key
+            )
         ) {
 
           const text =
@@ -677,7 +1083,10 @@
       }
 
 
-      for (const key of Object.keys(object)) {
+      for (
+        const key of
+          Object.keys(object)
+      ) {
 
         const result =
           findValueByKey(
@@ -695,194 +1104,140 @@
     }
 
 
-    function getTitleFromOnix(book) {
+    function getPublisherFromOnix(
+      book
+    ) {
 
-      try {
+      const detail =
+        book.onix
+          ?.PublishingDetail;
 
-        const descriptiveDetail =
-          book.onix?.DescriptiveDetail;
-
-        if (!descriptiveDetail) {
-          return "";
-        }
-
-        return findValueByKey(
-          descriptiveDetail,
-          [
-            "TitleText"
-          ]
-        );
-
-      } catch (error) {
-
-        console.warn(
-          "書名取得:",
-          error
-        );
-
+      if (!detail) {
         return "";
       }
-    }
 
 
-    function getPublisherFromOnix(book) {
-
-      try {
-
-        const publishingDetail =
-          book.onix?.PublishingDetail;
-
-        if (!publishingDetail) {
-          return "";
-        }
-
-
-        const imprintName =
-          findValueByKey(
-            publishingDetail.Imprint,
-            [
-              "ImprintName"
-            ]
-          );
-
-
-        if (imprintName) {
-          return imprintName;
-        }
-
-
-        const publisherName =
-          findValueByKey(
-            publishingDetail.Publisher,
-            [
-              "PublisherName"
-            ]
-          );
-
-
-        if (publisherName) {
-          return publisherName;
-        }
-
-
-        return findValueByKey(
-          publishingDetail,
+      const imprint =
+        findValueByKey(
+          detail.Imprint,
           [
-            "ImprintName",
-            "PublisherName"
+            "ImprintName"
           ]
         );
 
 
-      } catch (error) {
+      if (imprint) {
+        return imprint;
+      }
 
-        console.warn(
-          "出版社取得:",
-          error
-        );
 
+      return findValueByKey(
+        detail,
+        [
+          "PublisherName"
+        ]
+      );
+    }
+
+
+    function getPriceFromOpenBd(
+      book
+    ) {
+
+      const productSupply =
+        book.onix
+          ?.ProductSupply;
+
+      if (!productSupply) {
         return "";
       }
-    }
 
 
-    function getPriceFromOpenBd(book) {
-
-      try {
-
-        const productSupply =
-          book.onix?.ProductSupply;
-
-        if (!productSupply) {
-          return null;
-        }
-
-
-        const rawPrice =
-          findValueByKey(
-            productSupply,
-            [
-              "PriceAmount"
-            ]
-          );
-
-
-        if (!rawPrice) {
-          return null;
-        }
-
-
-        const cleaned =
-          String(rawPrice)
-            .replace(/[^\d.]/g, "");
-
-
-        if (!cleaned) {
-          return null;
-        }
-
-
-        const number =
-          Number(cleaned);
-
-
-        if (
-          !Number.isFinite(number) ||
-          number <= 0
-        ) {
-          return null;
-        }
-
-
-        return Math.round(number);
-
-
-      } catch (error) {
-
-        console.warn(
-          "価格取得:",
-          error
+      const rawPrice =
+        findValueByKey(
+          productSupply,
+          [
+            "PriceAmount"
+          ]
         );
 
-        return null;
+
+      if (!rawPrice) {
+        return "";
       }
+
+
+      const cleaned =
+        String(rawPrice)
+          .replace(/[^\d.]/g, "");
+
+
+      const number =
+        Number(cleaned);
+
+
+      if (
+        !Number.isFinite(number) ||
+        number <= 0
+      ) {
+        return "";
+      }
+
+
+      return String(
+        Math.round(number)
+      );
     }
 
 
-    function safeJson(value) {
+    function createBookData(
+      book,
+      isbn
+    ) {
 
-      try {
+      const summary =
+        book.summary || {};
 
-        if (
-          value === undefined ||
-          value === null
-        ) {
-          return "データなし";
-        }
 
-        return JSON.stringify(
-          value,
-          null,
-          2
-        );
+      return {
 
-      } catch (error) {
+        isbn: isbn,
 
-        return "JSON表示エラー";
-      }
+        title:
+          String(
+            summary.title || ""
+          ).trim(),
+
+        author:
+          String(
+            summary.author || ""
+          ).trim(),
+
+        publisher:
+          String(
+            summary.publisher ||
+            getPublisherFromOnix(
+              book
+            ) ||
+            ""
+          ).trim(),
+
+        price:
+          getPriceFromOpenBd(
+            book
+          )
+
+      };
     }
 
+
+    /* =========================================
+       OpenBD検索
+    ========================================== */
 
     async function fetchOpenBd(isbn) {
 
       currentIsbn = isbn;
-
-      retryOpenBdButton.style.display = "none";
-      restartButton.style.display = "none";
-
-      setMessage(
-        "書誌情報を取得しています…"
-      );
 
 
       try {
@@ -909,26 +1264,29 @@
           await response.json();
 
 
-        console.log(
-          "OpenBD response:",
-          data
-        );
-
-
         if (
           !Array.isArray(data) ||
           data.length === 0 ||
           data[0] === null
         ) {
 
-          showNoBibliographicData(isbn);
+          openManualScreen(
+            isbn
+          );
+
           return;
         }
 
 
-        showBookData(
-          data[0],
-          isbn
+        currentBook =
+          createBookData(
+            data[0],
+            isbn
+          );
+
+
+        showConfirmScreen(
+          currentBook
         );
 
 
@@ -939,161 +1297,150 @@
           error
         );
 
-        showCommunicationError();
+
+        showScreen(
+          communicationErrorScreen
+        );
       }
     }
 
 
-    function showNoBibliographicData(isbn) {
+    /* =========================================
+       書誌確認画面
+    ========================================== */
 
-      bookInfoElement.style.display =
-        "none";
+    function showConfirmScreen(book) {
 
-      debugBox.style.display =
-        "none";
+      setDisplayValue(
+        confirmTitle,
+        book.title,
+        "未取得"
+      );
 
+      setDisplayValue(
+        confirmAuthor,
+        book.author,
+        ""
+      );
 
-      setMessage(
-        "この本の情報を取得できませんでした。本の情報を手入力してください。",
-        "error"
+      setDisplayValue(
+        confirmPublisher,
+        book.publisher,
+        ""
+      );
+
+      setDisplayValue(
+        confirmIsbn,
+        book.isbn,
+        ""
       );
 
 
-      restartButton.style.display =
-        "block";
-    }
+      if (book.price) {
+
+        setDisplayValue(
+          confirmPrice,
+          book.price + "円",
+          ""
+        );
+
+      } else {
+
+        setDisplayValue(
+          confirmPrice,
+          "",
+          ""
+        );
+      }
 
 
-    function showCommunicationError() {
-
-      bookInfoElement.style.display =
+      confirmTemporaryResult
+        .style.display =
         "none";
 
-      debugBox.style.display =
-        "none";
 
-
-      setMessage(
-        "書誌情報を取得できませんでした。通信状況を確認して、もう一度お試しください。",
-        "error"
+      showScreen(
+        confirmScreen
       );
-
-
-      retryOpenBdButton.style.display =
-        "block";
-
-      restartButton.style.display =
-        "block";
     }
 
 
-    function showBookData(
-      book,
-      isbn
+    /* =========================================
+       手入力画面
+    ========================================== */
+
+    function openManualScreen(
+      isbn = ""
     ) {
 
-      const summary =
-        book.summary || {};
-
-
-      const title =
-        summary.title ||
-        getTitleFromOnix(book) ||
-        "取得できませんでした";
-
-
-      const publisher =
-        summary.publisher ||
-        getPublisherFromOnix(book) ||
-        "取得できませんでした";
-
-
-      const cover =
-        summary.cover || "";
-
-
-      const price =
-        getPriceFromOpenBd(book);
-
-
-      bookTitleElement.textContent =
-        title;
-
-
-      bookPublisherElement.textContent =
-        publisher;
-
-
-      bookIsbnElement.textContent =
+      manualIsbn.value =
         isbn;
 
+      manualTitle.value =
+        "";
 
-      if (price !== null) {
+      manualAuthor.value =
+        "";
 
-        bookPriceElement.textContent =
-          price + "円";
+      manualPublisher.value =
+        "";
 
-      } else {
+      manualPrice.value =
+        "";
 
-        bookPriceElement.textContent =
-          "価格情報なし";
-      }
-
-
-      if (cover) {
-
-        bookCoverElement.src =
-          cover;
-
-        bookCoverElement.style.display =
-          "inline-block";
-
-      } else {
-
-        bookCoverElement.style.display =
-          "none";
-      }
+      manualTemporaryResult
+        .style.display =
+        "none";
 
 
-      bookInfoElement.style.display =
-        "block";
-
-
-      /*
-       * デバッグ表示
-       */
-      debugSummary.textContent =
-        safeJson(
-          book.summary
-        );
-
-
-      debugPublishingDetail.textContent =
-        safeJson(
-          book.onix?.PublishingDetail
-        );
-
-
-      debugProductSupply.textContent =
-        safeJson(
-          book.onix?.ProductSupply
-        );
-
-
-      debugBox.style.display =
-        "block";
-
-
-      setMessage(
-        "書誌情報を取得しました。",
-        "success"
+      showScreen(
+        manualScreen
       );
 
 
-      restartButton.style.display =
-        "block";
+      setTimeout(
+        function() {
+
+          manualTitle.focus();
+
+        },
+        100
+      );
     }
 
+
+    function getManualBookData() {
+
+      return {
+
+        isbn:
+          normalizeCode(
+            manualIsbn.value
+          ),
+
+        title:
+          manualTitle.value
+            .trim(),
+
+        author:
+          manualAuthor.value
+            .trim(),
+
+        publisher:
+          manualPublisher.value
+            .trim(),
+
+        price:
+          manualPrice.value
+            .replace(/\D/g, "")
+
+      };
+    }
+
+
+    /* =========================================
+       スキャン
+    ========================================== */
 
     async function scanFrame(timestamp) {
 
@@ -1115,7 +1462,9 @@
 
       if (
         decoding ||
-        timestamp - lastDecodeTime < DECODE_INTERVAL
+        timestamp -
+          lastDecodeTime <
+          DECODE_INTERVAL
       ) {
 
         requestScan();
@@ -1123,7 +1472,9 @@
       }
 
 
-      lastDecodeTime = timestamp;
+      lastDecodeTime =
+        timestamp;
+
       decoding = true;
 
 
@@ -1148,25 +1499,36 @@
 
         const cropX =
           Math.floor(
-            (sourceWidth - cropWidth) / 2
+            (
+              sourceWidth -
+              cropWidth
+            ) / 2
           );
 
         const cropY =
           Math.floor(
-            (sourceHeight - cropHeight) / 2
+            (
+              sourceHeight -
+              cropHeight
+            ) / 2
           );
 
 
-        const targetWidth = 1200;
+        const targetWidth =
+          1200;
+
 
         const scale =
-          targetWidth / cropWidth;
+          targetWidth /
+          cropWidth;
+
 
         const targetHeight =
           Math.max(
             180,
             Math.floor(
-              cropHeight * scale
+              cropHeight *
+              scale
             )
           );
 
@@ -1191,29 +1553,36 @@
           0,
           targetWidth,
           targetHeight
+
         );
 
 
         const imageData =
           context.getImageData(
+
             0,
             0,
             targetWidth,
             targetHeight
+
           );
 
 
         const results =
-          await ZXingWASM.readBarcodes(
+          await ZXingWASM
+            .readBarcodes(
 
-            imageData,
+              imageData,
 
-            {
-              formats: ["EAN13"],
-              tryHarder: true,
-              maxNumberOfSymbols: 1
-            }
-          );
+              {
+                formats: [
+                  "EAN13"
+                ],
+                tryHarder: true,
+                maxNumberOfSymbols: 1
+              }
+
+            );
 
 
         if (
@@ -1241,7 +1610,8 @@
             isIsbn(code)
           ) {
 
-            resultElement.textContent =
+            resultElement
+              .textContent =
               code;
 
 
@@ -1253,10 +1623,14 @@
 
             await stopCamera();
 
+
             decoding = false;
 
 
-            await fetchOpenBd(code);
+            await fetchOpenBd(
+              code
+            );
+
 
             return;
 
@@ -1288,37 +1662,231 @@
     }
 
 
-    retryOpenBdButton.addEventListener(
-      "click",
-      async function() {
+    /* =========================================
+       ボタン
+    ========================================== */
 
-        if (!currentIsbn) {
-          return;
+    manualEntryButton
+      .addEventListener(
+        "click",
+        async function() {
+
+          await stopCamera();
+
+          openManualScreen();
+
         }
-
-        await fetchOpenBd(
-          currentIsbn
-        );
-      }
-    );
+      );
 
 
-    restartButton.addEventListener(
-      "click",
-      async function() {
+    confirmCancelButton
+      .addEventListener(
+        "click",
+        async function() {
 
-        await startCamera();
-      }
-    );
+          await startCamera();
 
+        }
+      );
+
+
+    confirmRegisterButton
+      .addEventListener(
+        "click",
+        async function() {
+
+          /*
+           * No.20では保存しない。
+           * 登録内容が確定できたことだけ確認する。
+           */
+
+          confirmTemporaryResult
+            .textContent =
+            "登録内容を確認しました。※スプレッドシート保存はNo.21で接続します。";
+
+
+          confirmTemporaryResult
+            .style.display =
+            "block";
+
+
+          setTimeout(
+            async function() {
+
+              await startCamera();
+
+            },
+            1000
+          );
+
+        }
+      );
+
+
+    manualCancelButton
+      .addEventListener(
+        "click",
+        async function() {
+
+          await startCamera();
+
+        }
+      );
+
+
+    manualRegisterButton
+      .addEventListener(
+        "click",
+        async function() {
+
+          const book =
+            getManualBookData();
+
+
+          if (!book.title) {
+
+            manualTemporaryResult
+              .textContent =
+              "書名を入力してください。";
+
+            manualTemporaryResult
+              .style.display =
+              "block";
+
+            manualTitle.focus();
+
+            return;
+          }
+
+
+          /*
+           * ISBNが入力されている場合のみ
+           * 13桁の978/979を確認。
+           */
+          if (
+            book.isbn &&
+            !isIsbn(book.isbn)
+          ) {
+
+            manualTemporaryResult
+              .textContent =
+              "ISBNを入力する場合は、978または979で始まる13桁で入力してください。";
+
+            manualTemporaryResult
+              .style.display =
+              "block";
+
+            manualIsbn.focus();
+
+            return;
+          }
+
+
+          manualTemporaryResult
+            .textContent =
+            "登録内容を確認しました。※スプレッドシート保存はNo.21で接続します。";
+
+
+          manualTemporaryResult
+            .style.display =
+            "block";
+
+
+          setTimeout(
+            async function() {
+
+              await startCamera();
+
+            },
+            1000
+          );
+
+        }
+      );
+
+
+    manualPrice
+      .addEventListener(
+        "input",
+        function() {
+
+          manualPrice.value =
+            manualPrice.value
+              .replace(/\D/g, "");
+
+        }
+      );
+
+
+    manualIsbn
+      .addEventListener(
+        "input",
+        function() {
+
+          manualIsbn.value =
+            manualIsbn.value
+              .replace(/\D/g, "")
+              .slice(0, 13);
+
+        }
+      );
+
+
+    retryOpenBdButton
+      .addEventListener(
+        "click",
+        async function() {
+
+          if (!currentIsbn) {
+            return;
+          }
+
+
+          await fetchOpenBd(
+            currentIsbn
+          );
+
+        }
+      );
+
+
+    communicationManualButton
+      .addEventListener(
+        "click",
+        function() {
+
+          openManualScreen(
+            currentIsbn
+          );
+
+        }
+      );
+
+
+    communicationCancelButton
+      .addEventListener(
+        "click",
+        async function() {
+
+          await startCamera();
+
+        }
+      );
+
+
+    /* =========================================
+       起動
+    ========================================== */
 
     window.addEventListener(
       "load",
       async function() {
 
         if (
-          typeof ZXingWASM === "undefined" ||
-          typeof ZXingWASM.readBarcodes !==
+          typeof ZXingWASM ===
+            "undefined" ||
+          typeof ZXingWASM
+            .readBarcodes !==
             "function"
         ) {
 
@@ -1341,6 +1909,7 @@
       function() {
 
         stopCamera();
+
       }
     );
 
