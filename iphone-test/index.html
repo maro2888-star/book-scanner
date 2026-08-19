@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム No.20確定版</title>
+  <title>スマホde選書システム No.20最終確定版</title>
 
   <style>
     * {
@@ -54,11 +54,11 @@
       line-height: 1.5;
     }
 
-    /* -----------------------------------------
+    /* =========================================
        カメラ表示
-       実際の映像・解析解像度は変更せず、
-       画面上の表示だけ縦方向を小さくする
-    ------------------------------------------ */
+       表示サイズだけを小さくする。
+       実際の取得解像度・解析条件は変更しない。
+    ========================================== */
 
     .camera-wrap {
       position: relative;
@@ -185,7 +185,8 @@
       color: #222;
     }
 
-    .manual-button {
+    .manual-button,
+    .camera-retry-button {
       margin-top: 12px;
     }
 
@@ -267,7 +268,6 @@
       display: none;
     }
 
-    /* 小さめのスマホではさらに少し縮める */
     @media (max-height: 760px) {
       .camera-wrap {
         height: 235px;
@@ -292,6 +292,7 @@
       <p class="description">
         本の1段目のバーコードを、白い枠の中に入れてください。
       </p>
+
 
       <div class="camera-wrap">
 
@@ -326,6 +327,15 @@
         </div>
 
       </section>
+
+
+      <button
+        id="cameraRetryButton"
+        type="button"
+        class="camera-retry-button"
+        style="display:none;">
+        カメラを再起動する
+      </button>
 
 
       <button
@@ -596,6 +606,7 @@
 
 
   <!-- ZXing-WASM -->
+
   <script
     src="https://cdn.jsdelivr.net/npm/zxing-wasm/dist/iife/reader/index.js">
   </script>
@@ -642,6 +653,11 @@
     const messageElement =
       document.getElementById("message");
 
+
+    const cameraRetryButton =
+      document.getElementById(
+        "cameraRetryButton"
+      );
 
     const manualEntryButton =
       document.getElementById(
@@ -762,10 +778,28 @@
     let lastDecodeTime = 0;
 
     let currentIsbn = "";
-
     let currentBook = null;
 
+    /*
+     * カメラ起動処理の世代番号。
+     *
+     * 起動が遅れている間に
+     * 「カメラを再起動する」を押した場合、
+     * 古い起動処理が後から完了して
+     * 二重起動するのを防ぐ。
+     */
+    let cameraStartGeneration = 0;
+
+    let cameraStartTimer = null;
+
+
     const DECODE_INTERVAL = 120;
+
+    /*
+     * 10秒たってもカメラが起動しなければ、
+     * 再起動ボタンを表示する。
+     */
+    const CAMERA_START_TIMEOUT = 10000;
 
 
     /* =========================================
@@ -869,6 +903,19 @@
     }
 
 
+    function clearCameraStartTimer() {
+
+      if (cameraStartTimer) {
+
+        clearTimeout(
+          cameraStartTimer
+        );
+
+        cameraStartTimer = null;
+      }
+    }
+
+
     /* =========================================
        カメラ
     ========================================== */
@@ -908,26 +955,88 @@
 
     async function startCamera() {
 
+      /*
+       * 新しい起動処理を開始。
+       */
+      cameraStartGeneration++;
+
+      const thisGeneration =
+        cameraStartGeneration;
+
+
+      clearCameraStartTimer();
+
+
       await stopCamera();
+
 
       currentIsbn = "";
       currentBook = null;
 
+
       resultElement.textContent =
         "まだありません";
+
+
+      /*
+       * 通常状態では
+       * 手入力ボタンを表示。
+       */
+      manualEntryButton.style.display =
+        "block";
+
+
+      /*
+       * 再起動ボタンは一旦隠す。
+       */
+      cameraRetryButton.style.display =
+        "none";
+
 
       setMessage(
         "カメラを起動しています…"
       );
+
 
       showScreen(
         scannerScreen
       );
 
 
+      /*
+       * 10秒たっても同じ起動処理が
+       * 続いている場合だけ、
+       * 再起動ボタンを表示する。
+       */
+      cameraStartTimer =
+        setTimeout(
+          function() {
+
+            if (
+              thisGeneration ===
+                cameraStartGeneration &&
+              !scanning
+            ) {
+
+              setMessage(
+                "カメラの起動に時間がかかっています。下のボタンからもう一度お試しください。",
+                "error"
+              );
+
+
+              cameraRetryButton
+                .style.display =
+                "block";
+            }
+
+          },
+          CAMERA_START_TIMEOUT
+        );
+
+
       try {
 
-        stream =
+        const newStream =
           await navigator.mediaDevices
             .getUserMedia({
 
@@ -952,12 +1061,64 @@
             });
 
 
+        /*
+         * この間に再起動ボタンが押され、
+         * 新しい起動処理が始まっていた場合、
+         * 古いstreamは使わず終了する。
+         */
+        if (
+          thisGeneration !==
+          cameraStartGeneration
+        ) {
+
+          newStream
+            .getTracks()
+            .forEach(track => {
+
+              track.stop();
+
+            });
+
+          return;
+        }
+
+
+        stream =
+          newStream;
+
+
         video.srcObject =
           stream;
 
+
         await video.play();
 
-        scanning = true;
+
+        /*
+         * video.play()の途中で
+         * 新しい起動処理が始まった場合も
+         * 古い処理は終了する。
+         */
+        if (
+          thisGeneration !==
+          cameraStartGeneration
+        ) {
+
+          await stopCamera();
+          return;
+        }
+
+
+        scanning =
+          true;
+
+
+        clearCameraStartTimer();
+
+
+        cameraRetryButton
+          .style.display =
+          "none";
 
 
         setMessage(
@@ -970,6 +1131,21 @@
 
       } catch (error) {
 
+        /*
+         * 古い起動処理のエラーは
+         * 現在の画面へ影響させない。
+         */
+        if (
+          thisGeneration !==
+          cameraStartGeneration
+        ) {
+          return;
+        }
+
+
+        clearCameraStartTimer();
+
+
         console.error(
           "カメラ起動エラー:",
           error
@@ -977,9 +1153,14 @@
 
 
         setMessage(
-          "カメラを起動できませんでした。ブラウザのカメラ使用許可を確認してください。",
+          "カメラを起動できませんでした。ブラウザのカメラ使用許可を確認するか、もう一度お試しください。",
           "error"
         );
+
+
+        cameraRetryButton
+          .style.display =
+          "block";
       }
     }
 
@@ -989,6 +1170,7 @@
       if (!scanning) {
         return;
       }
+
 
       animationId =
         requestAnimationFrame(
@@ -1332,6 +1514,11 @@
           await response.json();
 
 
+        /*
+         * OpenBDに該当書誌がない。
+         * 読み取ったISBNを引き継いで
+         * 手入力画面へ進む。
+         */
         if (
           !Array.isArray(data) ||
           data.length === 0 ||
@@ -1555,9 +1742,8 @@
       try {
 
         /*
-         * ここから下の画像切り出し・
-         * ZXing-WASM処理は
-         * 実証済みの設定を維持する。
+         * 以下は実証済みの
+         * カメラ・ZXing-WASM処理。
          */
 
         const sourceWidth =
@@ -1677,15 +1863,17 @@
 
 
           /*
-           * 読み取ったコードは、
-           * ISBNでなくても表示する。
+           * ISBN以外でも、
+           * 読み取った番号そのものは表示する。
            */
           resultElement.textContent =
             code;
 
 
           /*
-           * 192で始まる2段目バーコード
+           * -------------------------------
+           * 2段目バーコード
+           * -------------------------------
            */
           if (
             isSecondBarcode(
@@ -1699,14 +1887,30 @@
             );
 
 
+            /*
+             * 2段目は単なる読み間違いなので、
+             * 手入力への誘導は出さない。
+             */
+            manualEntryButton
+              .style.display =
+              "none";
+
+
           /*
+           * -------------------------------
            * ISBN
+           * -------------------------------
            */
           } else if (
             isIsbn(
               code
             )
           ) {
+
+            manualEntryButton
+              .style.display =
+              "block";
+
 
             setMessage(
               "ISBNを読み取りました。",
@@ -1730,10 +1934,17 @@
 
 
           /*
-           * 雑誌JANなど、
+           * -------------------------------
+           * 雑誌JANなど
            * ISBN以外のEAN-13
+           * -------------------------------
            */
           } else {
+
+            manualEntryButton
+              .style.display =
+              "block";
+
 
             setMessage(
               "書籍のISBNではありません。必要な場合は、下のボタンから手入力してください。",
@@ -1764,6 +1975,22 @@
     /* =========================================
        ボタン
     ========================================== */
+
+    cameraRetryButton
+      .addEventListener(
+        "click",
+        async function() {
+
+          cameraRetryButton
+            .style.display =
+            "none";
+
+
+          await startCamera();
+
+        }
+      );
+
 
     manualEntryButton
       .addEventListener(
@@ -2020,6 +2247,14 @@
     window.addEventListener(
       "pagehide",
       function() {
+
+        clearCameraStartTimer();
+
+        /*
+         * ページを離れた時点で
+         * 進行中の古い起動処理も無効化。
+         */
+        cameraStartGeneration++;
 
         stopCamera();
 
