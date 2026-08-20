@@ -54,6 +54,10 @@
       line-height: 1.5;
     }
 
+    /* =========================================
+       No.20確定版のカメラ表示を維持
+    ========================================== */
+
     .camera-wrap {
       position: relative;
       width: 100%;
@@ -621,8 +625,9 @@
     const GAS_WEB_APP_URL =
       "https://script.google.com/macros/s/AKfycbz7PgpVIsQjR80eDHRorDqkA8FGO5SLBDiuSaCYjx-wQIlgKllduC0CU3ZD1RrbPxzT/exec";
 
+
     /*
-     * No.21では登録者名機能をまだ接続しないため固定。
+     * No.22以降で本来の登録者名へ変更する。
      */
     const TEST_REGISTRANT_NAME =
       "テスト登録者";
@@ -798,7 +803,12 @@
     let saving = false;
 
 
+    /*
+     * No.20確定値。
+     * 変更しない。
+     */
     const DECODE_INTERVAL = 120;
+
     const CAMERA_START_TIMEOUT = 10000;
 
 
@@ -808,14 +818,26 @@
 
     function showScreen(screen) {
 
-      scannerScreen.classList.remove("active");
-      confirmScreen.classList.remove("active");
-      manualScreen.classList.remove("active");
+      scannerScreen.classList.remove(
+        "active"
+      );
+
+      confirmScreen.classList.remove(
+        "active"
+      );
+
+      manualScreen.classList.remove(
+        "active"
+      );
 
       communicationErrorScreen
-        .classList.remove("active");
+        .classList.remove(
+          "active"
+        );
 
-      screen.classList.add("active");
+      screen.classList.add(
+        "active"
+      );
     }
 
 
@@ -824,8 +846,11 @@
       className = ""
     ) {
 
-      messageElement.textContent = text;
-      messageElement.className = className;
+      messageElement.textContent =
+        text;
+
+      messageElement.className =
+        className;
     }
 
 
@@ -869,7 +894,8 @@
 
       if (text) {
 
-        element.textContent = text;
+        element.textContent =
+          text;
 
         element.classList.remove(
           "empty-value"
@@ -877,7 +903,8 @@
 
       } else {
 
-        element.textContent = emptyText;
+        element.textContent =
+          emptyText;
 
         element.classList.add(
           "empty-value"
@@ -890,9 +917,12 @@
 
       if (cameraStartTimer) {
 
-        clearTimeout(cameraStartTimer);
+        clearTimeout(
+          cameraStartTimer
+        );
 
-        cameraStartTimer = null;
+        cameraStartTimer =
+          null;
       }
     }
 
@@ -903,15 +933,21 @@
       isError = false
     ) {
 
-      element.textContent = text;
+      element.textContent =
+        text;
 
-      element.style.display = "block";
+      element.style.display =
+        "block";
+
 
       if (isError) {
+
         element.classList.add(
           "error-result"
         );
+
       } else {
+
         element.classList.remove(
           "error-result"
         );
@@ -921,7 +957,8 @@
 
     function hideResultBox(element) {
 
-      element.style.display = "none";
+      element.style.display =
+        "none";
 
       element.classList.remove(
         "error-result"
@@ -930,12 +967,13 @@
 
 
     /* =========================================
-       No.21 スプレッドシート保存
+       No.21 保存処理
     ========================================== */
 
     async function saveBook(book) {
 
       const payload = {
+
         registrantName:
           TEST_REGISTRANT_NAME,
 
@@ -968,7 +1006,9 @@
             },
 
             body:
-              JSON.stringify(payload)
+              JSON.stringify(
+                payload
+              )
           }
         );
 
@@ -1001,6 +1041,8 @@
 
     /* =========================================
        カメラ
+
+       No.20最終確定版の処理を維持
     ========================================== */
 
     async function stopCamera() {
@@ -1023,7 +1065,9 @@
         stream
           .getTracks()
           .forEach(track => {
+
             track.stop();
+
           });
 
         stream = null;
@@ -1044,6 +1088,7 @@
 
       clearCameraStartTimer();
 
+
       await stopCamera();
 
 
@@ -1058,6 +1103,7 @@
       manualEntryButton.style.display =
         "block";
 
+
       cameraRetryButton.style.display =
         "none";
 
@@ -1067,7 +1113,9 @@
       );
 
 
-      showScreen(scannerScreen);
+      showScreen(
+        scannerScreen
+      );
 
 
       cameraStartTimer =
@@ -1085,6 +1133,7 @@
                 "error"
               );
 
+
               cameraRetryButton
                 .style.display =
                 "block";
@@ -1096,6 +1145,13 @@
 
 
       try {
+
+        /*
+         * No.20確定条件
+         *
+         * 背面カメラ
+         * 1920 × 1080 ideal
+         */
 
         const newStream =
           await navigator.mediaDevices
@@ -1130,16 +1186,22 @@
           newStream
             .getTracks()
             .forEach(track => {
+
               track.stop();
+
             });
 
           return;
         }
 
 
-        stream = newStream;
+        stream =
+          newStream;
 
-        video.srcObject = stream;
+
+        video.srcObject =
+          stream;
+
 
         await video.play();
 
@@ -1150,14 +1212,17 @@
         ) {
 
           await stopCamera();
+
           return;
         }
 
 
-        scanning = true;
+        scanning =
+          true;
 
 
         clearCameraStartTimer();
+
 
         cameraRetryButton
           .style.display =
@@ -1219,7 +1284,7 @@
 
 
     /* =========================================
-       OpenBDデータ取得
+       OpenBD値取得
     ========================================== */
 
     function getTextValue(value) {
@@ -1246,7 +1311,9 @@
         for (const item of value) {
 
           const text =
-            getTextValue(item);
+            getTextValue(
+              item
+            );
 
           if (text) {
             return text;
@@ -1257,7 +1324,9 @@
       }
 
 
-      if (typeof value === "object") {
+      if (
+        typeof value === "object"
+      ) {
 
         const preferredKeys = [
           "content",
@@ -1268,13 +1337,17 @@
 
 
         for (
-          const key of preferredKeys
+          const key of
+            preferredKeys
         ) {
 
           if (
             Object.prototype
               .hasOwnProperty
-              .call(value, key)
+              .call(
+                value,
+                key
+              )
           ) {
 
             const text =
@@ -1327,18 +1400,25 @@
 
 
       if (
-        typeof object !== "object"
+        typeof object !==
+        "object"
       ) {
         return "";
       }
 
 
-      for (const key of targetKeys) {
+      for (
+        const key of
+          targetKeys
+      ) {
 
         if (
           Object.prototype
             .hasOwnProperty
-            .call(object, key)
+            .call(
+              object,
+              key
+            )
         ) {
 
           const text =
@@ -1391,7 +1471,9 @@
       const imprint =
         findValueByKey(
           detail.Imprint,
-          ["ImprintName"]
+          [
+            "ImprintName"
+          ]
         );
 
 
@@ -1402,7 +1484,9 @@
 
       return findValueByKey(
         detail,
-        ["PublisherName"]
+        [
+          "PublisherName"
+        ]
       );
     }
 
@@ -1424,7 +1508,9 @@
       const rawPrice =
         findValueByKey(
           productSupply,
-          ["PriceAmount"]
+          [
+            "PriceAmount"
+          ]
         );
 
 
@@ -1470,13 +1556,18 @@
 
       return {
 
-        isbn: isbn,
+        isbn:
+          isbn,
 
         title:
           String(
             summary.title || ""
           ).trim(),
 
+        /*
+         * 著者名はOpenBDの値を
+         * 加工せずそのまま使用する。
+         */
         author:
           String(
             summary.author || ""
@@ -1485,12 +1576,16 @@
         publisher:
           String(
             summary.publisher ||
-            getPublisherFromOnix(book) ||
+            getPublisherFromOnix(
+              book
+            ) ||
             ""
           ).trim(),
 
         price:
-          getPriceFromOpenBd(book)
+          getPriceFromOpenBd(
+            book
+          )
 
       };
     }
@@ -1500,20 +1595,27 @@
        OpenBD検索
     ========================================== */
 
-    async function fetchOpenBd(isbn) {
+    async function fetchOpenBd(
+      isbn
+    ) {
 
-      currentIsbn = isbn;
+      currentIsbn =
+        isbn;
 
 
       try {
 
         const url =
           "https://api.openbd.jp/v1/get?isbn=" +
-          encodeURIComponent(isbn);
+          encodeURIComponent(
+            isbn
+          );
 
 
         const response =
-          await fetch(url);
+          await fetch(
+            url
+          );
 
 
         if (!response.ok) {
@@ -1535,7 +1637,9 @@
           data[0] === null
         ) {
 
-          openManualScreen(isbn);
+          openManualScreen(
+            isbn
+          );
 
           return;
         }
@@ -1572,22 +1676,27 @@
        書誌確認画面
     ========================================== */
 
-    function showConfirmScreen(book) {
+    function showConfirmScreen(
+      book
+    ) {
 
       setDisplayValue(
         confirmTitle,
         book.title
       );
 
+
       setDisplayValue(
         confirmAuthor,
         book.author
       );
 
+
       setDisplayValue(
         confirmPublisher,
         book.publisher
       );
+
 
       setDisplayValue(
         confirmIsbn,
@@ -1623,7 +1732,9 @@
         false;
 
 
-      showScreen(confirmScreen);
+      showScreen(
+        confirmScreen
+      );
     }
 
 
@@ -1635,11 +1746,20 @@
       isbn = ""
     ) {
 
-      manualIsbn.value = isbn;
-      manualTitle.value = "";
-      manualAuthor.value = "";
-      manualPublisher.value = "";
-      manualPrice.value = "";
+      manualIsbn.value =
+        isbn;
+
+      manualTitle.value =
+        "";
+
+      manualAuthor.value =
+        "";
+
+      manualPublisher.value =
+        "";
+
+      manualPrice.value =
+        "";
 
 
       hideResultBox(
@@ -1654,12 +1774,16 @@
         false;
 
 
-      showScreen(manualScreen);
+      showScreen(
+        manualScreen
+      );
 
 
       setTimeout(
         function() {
+
           manualTitle.focus();
+
         },
         100
       );
@@ -1676,27 +1800,37 @@
           ),
 
         title:
-          manualTitle.value.trim(),
+          manualTitle.value
+            .trim(),
 
         author:
-          manualAuthor.value.trim(),
+          manualAuthor.value
+            .trim(),
 
         publisher:
-          manualPublisher.value.trim(),
+          manualPublisher.value
+            .trim(),
 
         price:
           manualPrice.value
-            .replace(/\D/g, "")
+            .replace(
+              /\D/g,
+              ""
+            )
 
       };
     }
 
 
     /* =========================================
-       スキャン
+       バーコード解析
+
+       No.20最終確定版と同条件
     ========================================== */
 
-    async function scanFrame(timestamp) {
+    async function scanFrame(
+      timestamp
+    ) {
 
       if (!scanning) {
         return;
@@ -1710,6 +1844,7 @@
       ) {
 
         requestScan();
+
         return;
       }
 
@@ -1722,19 +1857,23 @@
       ) {
 
         requestScan();
+
         return;
       }
 
 
-      lastDecodeTime = timestamp;
-      decoding = true;
+      lastDecodeTime =
+        timestamp;
+
+      decoding =
+        true;
 
 
       try {
 
         /*
-         * No.20で実証済みの
-         * ZXing-WASM読み取り部分。
+         * 映像全体ではなく
+         * 中央の横長部分を解析。
          */
 
         const sourceWidth =
@@ -1754,6 +1893,7 @@
             sourceHeight * 0.30
           );
 
+
         const cropX =
           Math.floor(
             (
@@ -1761,6 +1901,7 @@
               cropWidth
             ) / 2
           );
+
 
         const cropY =
           Math.floor(
@@ -1771,7 +1912,11 @@
           );
 
 
-        const targetWidth = 1200;
+        /*
+         * No.20確定値
+         */
+        const targetWidth =
+          1200;
 
 
         const scale =
@@ -1783,7 +1928,8 @@
           Math.max(
             180,
             Math.floor(
-              cropHeight * scale
+              cropHeight *
+              scale
             )
           );
 
@@ -1814,13 +1960,22 @@
 
         const imageData =
           context.getImageData(
+
             0,
             0,
             targetWidth,
             targetHeight
+
           );
 
 
+        /*
+         * No.20確定値
+         *
+         * EAN13のみ
+         * tryHarder有効
+         * 1コードのみ
+         */
         const results =
           await ZXingWASM
             .readBarcodes(
@@ -1828,9 +1983,15 @@
               imageData,
 
               {
-                formats: ["EAN13"],
-                tryHarder: true,
-                maxNumberOfSymbols: 1
+                formats: [
+                  "EAN13"
+                ],
+
+                tryHarder:
+                  true,
+
+                maxNumberOfSymbols:
+                  1
               }
 
             );
@@ -1855,7 +2016,9 @@
            * 2段目バーコード
            */
           if (
-            isSecondBarcode(code)
+            isSecondBarcode(
+              code
+            )
           ) {
 
             setMessage(
@@ -1873,7 +2036,9 @@
            * ISBN
            */
           } else if (
-            isIsbn(code)
+            isIsbn(
+              code
+            )
           ) {
 
             manualEntryButton
@@ -1887,12 +2052,21 @@
             );
 
 
+            /*
+             * 1冊成功したら
+             * カメラを停止する。
+             */
             await stopCamera();
 
-            decoding = false;
+
+            decoding =
+              false;
 
 
-            await fetchOpenBd(code);
+            await fetchOpenBd(
+              code
+            );
+
 
             return;
 
@@ -1924,7 +2098,8 @@
 
       } finally {
 
-        decoding = false;
+        decoding =
+          false;
       }
 
 
@@ -1944,6 +2119,7 @@
           cameraRetryButton
             .style.display =
             "none";
+
 
           await startCamera();
 
@@ -1973,17 +2149,16 @@
             return;
           }
 
+
           await startCamera();
 
         }
       );
 
 
-    /*
-     * =========================================
-     * OpenBD取得本 → 保存
-     * =========================================
-     */
+    /* =========================================
+       OpenBD取得本を保存
+    ========================================== */
 
     confirmRegisterButton
       .addEventListener(
@@ -1998,7 +2173,8 @@
           }
 
 
-          saving = true;
+          saving =
+            true;
 
 
           confirmRegisterButton.disabled =
@@ -2028,13 +2204,15 @@
 
 
             /*
-             * 保存成功を確認してから
-             * 次の本へ。
+             * 保存成功後だけ
+             * カメラへ戻る。
              */
             setTimeout(
               async function() {
 
-                saving = false;
+                saving =
+                  false;
+
 
                 await startCamera();
 
@@ -2051,7 +2229,8 @@
             );
 
 
-            saving = false;
+            saving =
+              false;
 
 
             confirmRegisterButton.disabled =
@@ -2067,6 +2246,7 @@
               true
             );
           }
+
         }
       );
 
@@ -2080,17 +2260,16 @@
             return;
           }
 
+
           await startCamera();
 
         }
       );
 
 
-    /*
-     * =========================================
-     * 手入力本 → 保存
-     * =========================================
-     */
+    /* =========================================
+       手入力本を保存
+    ========================================== */
 
     manualRegisterButton
       .addEventListener(
@@ -2117,6 +2296,7 @@
               true
             );
 
+
             manualTitle.focus();
 
             return;
@@ -2125,11 +2305,15 @@
 
           /*
            * ISBNは空欄可。
-           * 入力された場合だけ形式確認。
+           *
+           * 入力された場合だけ
+           * ISBN形式を確認する。
            */
           if (
             book.isbn &&
-            !isIsbn(book.isbn)
+            !isIsbn(
+              book.isbn
+            )
           ) {
 
             showResultBox(
@@ -2138,13 +2322,15 @@
               true
             );
 
+
             manualIsbn.focus();
 
             return;
           }
 
 
-          saving = true;
+          saving =
+            true;
 
 
           manualRegisterButton.disabled =
@@ -2162,7 +2348,9 @@
 
           try {
 
-            await saveBook(book);
+            await saveBook(
+              book
+            );
 
 
             showResultBox(
@@ -2174,7 +2362,9 @@
             setTimeout(
               async function() {
 
-                saving = false;
+                saving =
+                  false;
+
 
                 await startCamera();
 
@@ -2191,7 +2381,8 @@
             );
 
 
-            saving = false;
+            saving =
+              false;
 
 
             manualRegisterButton.disabled =
@@ -2207,6 +2398,7 @@
               true
             );
           }
+
         }
       );
 
@@ -2218,7 +2410,10 @@
 
           manualPrice.value =
             manualPrice.value
-              .replace(/\D/g, "");
+              .replace(
+                /\D/g,
+                ""
+              );
 
         }
       );
@@ -2231,8 +2426,14 @@
 
           manualIsbn.value =
             manualIsbn.value
-              .replace(/\D/g, "")
-              .slice(0, 13);
+              .replace(
+                /\D/g,
+                ""
+              )
+              .slice(
+                0,
+                13
+              );
 
         }
       );
@@ -2246,6 +2447,7 @@
           if (!currentIsbn) {
             return;
           }
+
 
           await fetchOpenBd(
             currentIsbn
@@ -2305,6 +2507,7 @@
 
 
         await startCamera();
+
       }
     );
 
@@ -2315,7 +2518,9 @@
 
         clearCameraStartTimer();
 
+
         cameraStartGeneration++;
+
 
         stopCamera();
 
