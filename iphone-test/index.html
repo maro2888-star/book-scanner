@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム No.20最終確定版</title>
+  <title>スマホde選書システム No.21</title>
 
   <style>
     * {
@@ -53,12 +53,6 @@
       font-size: 14px;
       line-height: 1.5;
     }
-
-    /* =========================================
-       カメラ表示
-       表示サイズだけを小さくする。
-       実際の取得解像度・解析条件は変更しない。
-    ========================================== */
 
     .camera-wrap {
       position: relative;
@@ -185,6 +179,10 @@
       color: #222;
     }
 
+    button:disabled {
+      opacity: 0.55;
+    }
+
     .manual-button,
     .camera-retry-button {
       margin-top: 12px;
@@ -264,6 +262,11 @@
       line-height: 1.6;
     }
 
+    .temporary-result.error-result {
+      background: #fff0f0;
+      color: #b00020;
+    }
+
     canvas {
       display: none;
     }
@@ -292,7 +295,6 @@
       <p class="description">
         本の1段目のバーコードを、白い枠の中に入れてください。
       </p>
-
 
       <div class="camera-wrap">
 
@@ -456,9 +458,7 @@
 
           <label for="manualTitle">
             書名
-            <span class="required">
-              必須
-            </span>
+            <span class="required">必須</span>
           </label>
 
           <input
@@ -511,9 +511,7 @@
               inputmode="numeric"
               autocomplete="off">
 
-            <span class="yen-label">
-              円
-            </span>
+            <span class="yen-label">円</span>
 
           </div>
 
@@ -595,8 +593,8 @@
 
 
     <div class="note">
-      ※今回はNo.20「書誌確認画面・手入力画面」の確認版です。
-      スプレッドシートへの保存はまだ行いません。
+      ※No.21 保存接続テスト中です。
+      登録したデータはテスト用スプレッドシートへ保存されます。
     </div>
 
 
@@ -614,6 +612,20 @@
 
   <script>
     "use strict";
+
+
+    /* =========================================
+       No.21 GAS保存先
+    ========================================== */
+
+    const GAS_WEB_APP_URL =
+      "https://script.google.com/macros/s/AKfycbz7PgpVIsQjR80eDHRorDqkA8FGO5SLBDiuSaCYjx-wQIlgKllduC0CU3ZD1RrbPxzT/exec";
+
+    /*
+     * No.21では登録者名機能をまだ接続しないため固定。
+     */
+    const TEST_REGISTRANT_NAME =
+      "テスト登録者";
 
 
     /* =========================================
@@ -780,25 +792,13 @@
     let currentIsbn = "";
     let currentBook = null;
 
-    /*
-     * カメラ起動処理の世代番号。
-     *
-     * 起動が遅れている間に
-     * 「カメラを再起動する」を押した場合、
-     * 古い起動処理が後から完了して
-     * 二重起動するのを防ぐ。
-     */
     let cameraStartGeneration = 0;
-
     let cameraStartTimer = null;
+
+    let saving = false;
 
 
     const DECODE_INTERVAL = 120;
-
-    /*
-     * 10秒たってもカメラが起動しなければ、
-     * 再起動ボタンを表示する。
-     */
     const CAMERA_START_TIMEOUT = 10000;
 
 
@@ -808,26 +808,14 @@
 
     function showScreen(screen) {
 
-      scannerScreen.classList.remove(
-        "active"
-      );
-
-      confirmScreen.classList.remove(
-        "active"
-      );
-
-      manualScreen.classList.remove(
-        "active"
-      );
+      scannerScreen.classList.remove("active");
+      confirmScreen.classList.remove("active");
+      manualScreen.classList.remove("active");
 
       communicationErrorScreen
-        .classList.remove(
-          "active"
-        );
+        .classList.remove("active");
 
-      screen.classList.add(
-        "active"
-      );
+      screen.classList.add("active");
     }
 
 
@@ -836,11 +824,8 @@
       className = ""
     ) {
 
-      messageElement.textContent =
-        text;
-
-      messageElement.className =
-        className;
+      messageElement.textContent = text;
+      messageElement.className = className;
     }
 
 
@@ -884,8 +869,7 @@
 
       if (text) {
 
-        element.textContent =
-          text;
+        element.textContent = text;
 
         element.classList.remove(
           "empty-value"
@@ -893,8 +877,7 @@
 
       } else {
 
-        element.textContent =
-          emptyText;
+        element.textContent = emptyText;
 
         element.classList.add(
           "empty-value"
@@ -907,12 +890,112 @@
 
       if (cameraStartTimer) {
 
-        clearTimeout(
-          cameraStartTimer
-        );
+        clearTimeout(cameraStartTimer);
 
         cameraStartTimer = null;
       }
+    }
+
+
+    function showResultBox(
+      element,
+      text,
+      isError = false
+    ) {
+
+      element.textContent = text;
+
+      element.style.display = "block";
+
+      if (isError) {
+        element.classList.add(
+          "error-result"
+        );
+      } else {
+        element.classList.remove(
+          "error-result"
+        );
+      }
+    }
+
+
+    function hideResultBox(element) {
+
+      element.style.display = "none";
+
+      element.classList.remove(
+        "error-result"
+      );
+    }
+
+
+    /* =========================================
+       No.21 スプレッドシート保存
+    ========================================== */
+
+    async function saveBook(book) {
+
+      const payload = {
+        registrantName:
+          TEST_REGISTRANT_NAME,
+
+        isbn:
+          book.isbn || "",
+
+        publisher:
+          book.publisher || "",
+
+        title:
+          book.title || "",
+
+        author:
+          book.author || "",
+
+        price:
+          book.price || ""
+      };
+
+
+      const response =
+        await fetch(
+          GAS_WEB_APP_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
+            },
+
+            body:
+              JSON.stringify(payload)
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "保存通信エラー: " +
+          response.status
+        );
+      }
+
+
+      const result =
+        await response.json();
+
+
+      if (!result.success) {
+
+        throw new Error(
+          result.message ||
+          "保存に失敗しました。"
+        );
+      }
+
+
+      return result;
     }
 
 
@@ -940,9 +1023,7 @@
         stream
           .getTracks()
           .forEach(track => {
-
             track.stop();
-
           });
 
         stream = null;
@@ -955,9 +1036,6 @@
 
     async function startCamera() {
 
-      /*
-       * 新しい起動処理を開始。
-       */
       cameraStartGeneration++;
 
       const thisGeneration =
@@ -965,7 +1043,6 @@
 
 
       clearCameraStartTimer();
-
 
       await stopCamera();
 
@@ -978,17 +1055,9 @@
         "まだありません";
 
 
-      /*
-       * 通常状態では
-       * 手入力ボタンを表示。
-       */
       manualEntryButton.style.display =
         "block";
 
-
-      /*
-       * 再起動ボタンは一旦隠す。
-       */
       cameraRetryButton.style.display =
         "none";
 
@@ -998,16 +1067,9 @@
       );
 
 
-      showScreen(
-        scannerScreen
-      );
+      showScreen(scannerScreen);
 
 
-      /*
-       * 10秒たっても同じ起動処理が
-       * 続いている場合だけ、
-       * 再起動ボタンを表示する。
-       */
       cameraStartTimer =
         setTimeout(
           function() {
@@ -1022,7 +1084,6 @@
                 "カメラの起動に時間がかかっています。下のボタンからもう一度お試しください。",
                 "error"
               );
-
 
               cameraRetryButton
                 .style.display =
@@ -1061,11 +1122,6 @@
             });
 
 
-        /*
-         * この間に再起動ボタンが押され、
-         * 新しい起動処理が始まっていた場合、
-         * 古いstreamは使わず終了する。
-         */
         if (
           thisGeneration !==
           cameraStartGeneration
@@ -1074,31 +1130,20 @@
           newStream
             .getTracks()
             .forEach(track => {
-
               track.stop();
-
             });
 
           return;
         }
 
 
-        stream =
-          newStream;
+        stream = newStream;
 
-
-        video.srcObject =
-          stream;
-
+        video.srcObject = stream;
 
         await video.play();
 
 
-        /*
-         * video.play()の途中で
-         * 新しい起動処理が始まった場合も
-         * 古い処理は終了する。
-         */
         if (
           thisGeneration !==
           cameraStartGeneration
@@ -1109,12 +1154,10 @@
         }
 
 
-        scanning =
-          true;
+        scanning = true;
 
 
         clearCameraStartTimer();
-
 
         cameraRetryButton
           .style.display =
@@ -1131,10 +1174,6 @@
 
       } catch (error) {
 
-        /*
-         * 古い起動処理のエラーは
-         * 現在の画面へ影響させない。
-         */
         if (
           thisGeneration !==
           cameraStartGeneration
@@ -1235,10 +1274,7 @@
           if (
             Object.prototype
               .hasOwnProperty
-              .call(
-                value,
-                key
-              )
+              .call(value, key)
           ) {
 
             const text =
@@ -1297,17 +1333,12 @@
       }
 
 
-      for (
-        const key of targetKeys
-      ) {
+      for (const key of targetKeys) {
 
         if (
           Object.prototype
             .hasOwnProperty
-            .call(
-              object,
-              key
-            )
+            .call(object, key)
         ) {
 
           const text =
@@ -1360,9 +1391,7 @@
       const imprint =
         findValueByKey(
           detail.Imprint,
-          [
-            "ImprintName"
-          ]
+          ["ImprintName"]
         );
 
 
@@ -1373,9 +1402,7 @@
 
       return findValueByKey(
         detail,
-        [
-          "PublisherName"
-        ]
+        ["PublisherName"]
       );
     }
 
@@ -1397,9 +1424,7 @@
       const rawPrice =
         findValueByKey(
           productSupply,
-          [
-            "PriceAmount"
-          ]
+          ["PriceAmount"]
         );
 
 
@@ -1445,8 +1470,7 @@
 
       return {
 
-        isbn:
-          isbn,
+        isbn: isbn,
 
         title:
           String(
@@ -1461,16 +1485,12 @@
         publisher:
           String(
             summary.publisher ||
-            getPublisherFromOnix(
-              book
-            ) ||
+            getPublisherFromOnix(book) ||
             ""
           ).trim(),
 
         price:
-          getPriceFromOpenBd(
-            book
-          )
+          getPriceFromOpenBd(book)
 
       };
     }
@@ -1480,21 +1500,16 @@
        OpenBD検索
     ========================================== */
 
-    async function fetchOpenBd(
-      isbn
-    ) {
+    async function fetchOpenBd(isbn) {
 
-      currentIsbn =
-        isbn;
+      currentIsbn = isbn;
 
 
       try {
 
         const url =
           "https://api.openbd.jp/v1/get?isbn=" +
-          encodeURIComponent(
-            isbn
-          );
+          encodeURIComponent(isbn);
 
 
         const response =
@@ -1514,20 +1529,13 @@
           await response.json();
 
 
-        /*
-         * OpenBDに該当書誌がない。
-         * 読み取ったISBNを引き継いで
-         * 手入力画面へ進む。
-         */
         if (
           !Array.isArray(data) ||
           data.length === 0 ||
           data[0] === null
         ) {
 
-          openManualScreen(
-            isbn
-          );
+          openManualScreen(isbn);
 
           return;
         }
@@ -1564,27 +1572,22 @@
        書誌確認画面
     ========================================== */
 
-    function showConfirmScreen(
-      book
-    ) {
+    function showConfirmScreen(book) {
 
       setDisplayValue(
         confirmTitle,
         book.title
       );
 
-
       setDisplayValue(
         confirmAuthor,
         book.author
       );
 
-
       setDisplayValue(
         confirmPublisher,
         book.publisher
       );
-
 
       setDisplayValue(
         confirmIsbn,
@@ -1608,14 +1611,19 @@
       }
 
 
-      confirmTemporaryResult
-        .style.display =
-        "none";
-
-
-      showScreen(
-        confirmScreen
+      hideResultBox(
+        confirmTemporaryResult
       );
+
+
+      confirmRegisterButton.disabled =
+        false;
+
+      confirmCancelButton.disabled =
+        false;
+
+
+      showScreen(confirmScreen);
     }
 
 
@@ -1627,37 +1635,31 @@
       isbn = ""
     ) {
 
-      manualIsbn.value =
-        isbn;
-
-      manualTitle.value =
-        "";
-
-      manualAuthor.value =
-        "";
-
-      manualPublisher.value =
-        "";
-
-      manualPrice.value =
-        "";
+      manualIsbn.value = isbn;
+      manualTitle.value = "";
+      manualAuthor.value = "";
+      manualPublisher.value = "";
+      manualPrice.value = "";
 
 
-      manualTemporaryResult
-        .style.display =
-        "none";
-
-
-      showScreen(
-        manualScreen
+      hideResultBox(
+        manualTemporaryResult
       );
+
+
+      manualRegisterButton.disabled =
+        false;
+
+      manualCancelButton.disabled =
+        false;
+
+
+      showScreen(manualScreen);
 
 
       setTimeout(
         function() {
-
           manualTitle.focus();
-
         },
         100
       );
@@ -1674,23 +1676,17 @@
           ),
 
         title:
-          manualTitle.value
-            .trim(),
+          manualTitle.value.trim(),
 
         author:
-          manualAuthor.value
-            .trim(),
+          manualAuthor.value.trim(),
 
         publisher:
-          manualPublisher.value
-            .trim(),
+          manualPublisher.value.trim(),
 
         price:
           manualPrice.value
-            .replace(
-              /\D/g,
-              ""
-            )
+            .replace(/\D/g, "")
 
       };
     }
@@ -1700,9 +1696,7 @@
        スキャン
     ========================================== */
 
-    async function scanFrame(
-      timestamp
-    ) {
+    async function scanFrame(timestamp) {
 
       if (!scanning) {
         return;
@@ -1732,18 +1726,15 @@
       }
 
 
-      lastDecodeTime =
-        timestamp;
-
-      decoding =
-        true;
+      lastDecodeTime = timestamp;
+      decoding = true;
 
 
       try {
 
         /*
-         * 以下は実証済みの
-         * カメラ・ZXing-WASM処理。
+         * No.20で実証済みの
+         * ZXing-WASM読み取り部分。
          */
 
         const sourceWidth =
@@ -1780,8 +1771,7 @@
           );
 
 
-        const targetWidth =
-          1200;
+        const targetWidth = 1200;
 
 
         const scale =
@@ -1793,8 +1783,7 @@
           Math.max(
             180,
             Math.floor(
-              cropHeight *
-              scale
+              cropHeight * scale
             )
           );
 
@@ -1825,12 +1814,10 @@
 
         const imageData =
           context.getImageData(
-
             0,
             0,
             targetWidth,
             targetHeight
-
           );
 
 
@@ -1841,9 +1828,7 @@
               imageData,
 
               {
-                formats: [
-                  "EAN13"
-                ],
+                formats: ["EAN13"],
                 tryHarder: true,
                 maxNumberOfSymbols: 1
               }
@@ -1862,23 +1847,15 @@
             );
 
 
-          /*
-           * ISBN以外でも、
-           * 読み取った番号そのものは表示する。
-           */
           resultElement.textContent =
             code;
 
 
           /*
-           * -------------------------------
            * 2段目バーコード
-           * -------------------------------
            */
           if (
-            isSecondBarcode(
-              code
-            )
+            isSecondBarcode(code)
           ) {
 
             setMessage(
@@ -1887,24 +1864,16 @@
             );
 
 
-            /*
-             * 2段目は単なる読み間違いなので、
-             * 手入力への誘導は出さない。
-             */
             manualEntryButton
               .style.display =
               "none";
 
 
           /*
-           * -------------------------------
            * ISBN
-           * -------------------------------
            */
           } else if (
-            isIsbn(
-              code
-            )
+            isIsbn(code)
           ) {
 
             manualEntryButton
@@ -1920,24 +1889,16 @@
 
             await stopCamera();
 
-
-            decoding =
-              false;
+            decoding = false;
 
 
-            await fetchOpenBd(
-              code
-            );
-
+            await fetchOpenBd(code);
 
             return;
 
 
           /*
-           * -------------------------------
            * 雑誌JANなど
-           * ISBN以外のEAN-13
-           * -------------------------------
            */
           } else {
 
@@ -1963,8 +1924,7 @@
 
       } finally {
 
-        decoding =
-          false;
+        decoding = false;
       }
 
 
@@ -1984,7 +1944,6 @@
           cameraRetryButton
             .style.display =
             "none";
-
 
           await startCamera();
 
@@ -2010,40 +1969,104 @@
         "click",
         async function() {
 
+          if (saving) {
+            return;
+          }
+
           await startCamera();
 
         }
       );
 
 
+    /*
+     * =========================================
+     * OpenBD取得本 → 保存
+     * =========================================
+     */
+
     confirmRegisterButton
       .addEventListener(
         "click",
         async function() {
 
-          /*
-           * No.20ではまだ保存しない。
-           */
-
-          confirmTemporaryResult
-            .textContent =
-            "登録内容を確認しました。";
-
-
-          confirmTemporaryResult
-            .style.display =
-            "block";
+          if (
+            saving ||
+            !currentBook
+          ) {
+            return;
+          }
 
 
-          setTimeout(
-            async function() {
+          saving = true;
 
-              await startCamera();
 
-            },
-            1000
+          confirmRegisterButton.disabled =
+            true;
+
+          confirmCancelButton.disabled =
+            true;
+
+
+          showResultBox(
+            confirmTemporaryResult,
+            "登録しています…"
           );
 
+
+          try {
+
+            await saveBook(
+              currentBook
+            );
+
+
+            showResultBox(
+              confirmTemporaryResult,
+              "登録しました"
+            );
+
+
+            /*
+             * 保存成功を確認してから
+             * 次の本へ。
+             */
+            setTimeout(
+              async function() {
+
+                saving = false;
+
+                await startCamera();
+
+              },
+              900
+            );
+
+
+          } catch (error) {
+
+            console.error(
+              "保存エラー:",
+              error
+            );
+
+
+            saving = false;
+
+
+            confirmRegisterButton.disabled =
+              false;
+
+            confirmCancelButton.disabled =
+              false;
+
+
+            showResultBox(
+              confirmTemporaryResult,
+              "登録できませんでした。通信状況を確認して、もう一度お試しください。",
+              true
+            );
+          }
         }
       );
 
@@ -2053,32 +2076,46 @@
         "click",
         async function() {
 
+          if (saving) {
+            return;
+          }
+
           await startCamera();
 
         }
       );
 
 
+    /*
+     * =========================================
+     * 手入力本 → 保存
+     * =========================================
+     */
+
     manualRegisterButton
       .addEventListener(
         "click",
         async function() {
 
+          if (saving) {
+            return;
+          }
+
+
           const book =
             getManualBookData();
 
 
+          /*
+           * 書名のみ必須
+           */
           if (!book.title) {
 
-            manualTemporaryResult
-              .textContent =
-              "書名を入力してください。";
-
-
-            manualTemporaryResult
-              .style.display =
-              "block";
-
+            showResultBox(
+              manualTemporaryResult,
+              "書名を入力してください。",
+              true
+            );
 
             manualTitle.focus();
 
@@ -2092,20 +2129,14 @@
            */
           if (
             book.isbn &&
-            !isIsbn(
-              book.isbn
-            )
+            !isIsbn(book.isbn)
           ) {
 
-            manualTemporaryResult
-              .textContent =
-              "ISBNを入力する場合は、978または979で始まる13桁で入力してください。";
-
-
-            manualTemporaryResult
-              .style.display =
-              "block";
-
+            showResultBox(
+              manualTemporaryResult,
+              "ISBNを入力する場合は、978または979で始まる13桁で入力してください。",
+              true
+            );
 
             manualIsbn.focus();
 
@@ -2113,25 +2144,69 @@
           }
 
 
-          manualTemporaryResult
-            .textContent =
-            "登録内容を確認しました。";
+          saving = true;
 
 
-          manualTemporaryResult
-            .style.display =
-            "block";
+          manualRegisterButton.disabled =
+            true;
+
+          manualCancelButton.disabled =
+            true;
 
 
-          setTimeout(
-            async function() {
-
-              await startCamera();
-
-            },
-            1000
+          showResultBox(
+            manualTemporaryResult,
+            "登録しています…"
           );
 
+
+          try {
+
+            await saveBook(book);
+
+
+            showResultBox(
+              manualTemporaryResult,
+              "登録しました"
+            );
+
+
+            setTimeout(
+              async function() {
+
+                saving = false;
+
+                await startCamera();
+
+              },
+              900
+            );
+
+
+          } catch (error) {
+
+            console.error(
+              "保存エラー:",
+              error
+            );
+
+
+            saving = false;
+
+
+            manualRegisterButton.disabled =
+              false;
+
+            manualCancelButton.disabled =
+              false;
+
+
+            showResultBox(
+              manualTemporaryResult,
+              "登録できませんでした。通信状況を確認して、もう一度お試しください。",
+              true
+            );
+          }
         }
       );
 
@@ -2143,10 +2218,7 @@
 
           manualPrice.value =
             manualPrice.value
-              .replace(
-                /\D/g,
-                ""
-              );
+              .replace(/\D/g, "");
 
         }
       );
@@ -2159,14 +2231,8 @@
 
           manualIsbn.value =
             manualIsbn.value
-              .replace(
-                /\D/g,
-                ""
-              )
-              .slice(
-                0,
-                13
-              );
+              .replace(/\D/g, "")
+              .slice(0, 13);
 
         }
       );
@@ -2180,7 +2246,6 @@
           if (!currentIsbn) {
             return;
           }
-
 
           await fetchOpenBd(
             currentIsbn
@@ -2250,10 +2315,6 @@
 
         clearCameraStartTimer();
 
-        /*
-         * ページを離れた時点で
-         * 進行中の古い起動処理も無効化。
-         */
         cameraStartGeneration++;
 
         stopCamera();
