@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム No.21</title>
+  <title>スマホde選書システム No.22</title>
 
   <style>
     * {
@@ -47,16 +47,32 @@
       font-size: 20px;
     }
 
+    .event-box {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .event-label {
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 3px;
+    }
+
+    .event-name {
+      font-size: 17px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
     .description {
       margin: 0 0 10px;
       text-align: center;
       font-size: 14px;
       line-height: 1.5;
     }
-
-    /* =========================================
-       No.20確定版のカメラ表示を維持
-    ========================================== */
 
     .camera-wrap {
       position: relative;
@@ -271,6 +287,19 @@
       color: #b00020;
     }
 
+    .startup-box {
+      margin-top: 18px;
+      padding: 18px;
+      background: #fff;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .startup-message {
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
     canvas {
       display: none;
     }
@@ -291,14 +320,69 @@
 
 
     <!-- =========================================
+         0. 選書会確認中
+    ========================================== -->
+
+    <section id="startupScreen" class="screen active">
+
+      <div class="startup-box">
+
+        <div id="startupMessage"
+             class="startup-message">
+          登録先を確認しています…
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================================
+         0-2. 選書会エラー
+    ========================================== -->
+
+    <section id="eventErrorScreen" class="screen">
+
+      <div class="startup-box">
+
+        <h2>登録先を確認できませんでした</h2>
+
+        <div id="eventErrorMessage"
+             class="startup-message error">
+        </div>
+
+        <p class="note">
+          選書会のQRコードをもう一度読み取ってください。
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================================
          1. バーコード読み取り画面
     ========================================== -->
 
-    <section id="scannerScreen" class="screen active">
+    <section id="scannerScreen" class="screen">
+
+      <div class="event-box">
+
+        <div class="event-label">
+          登録先
+        </div>
+
+        <div id="eventName"
+             class="event-name">
+        </div>
+
+      </div>
+
 
       <p class="description">
         本の1段目のバーコードを、白い枠の中に入れてください。
       </p>
+
 
       <div class="camera-wrap">
 
@@ -359,6 +443,19 @@
     ========================================== -->
 
     <section id="confirmScreen" class="screen">
+
+      <div class="event-box">
+
+        <div class="event-label">
+          登録先
+        </div>
+
+        <div id="confirmEventName"
+             class="event-name">
+        </div>
+
+      </div>
+
 
       <section class="card">
 
@@ -437,6 +534,19 @@
 
     <section id="manualScreen" class="screen">
 
+      <div class="event-box">
+
+        <div class="event-label">
+          登録先
+        </div>
+
+        <div id="manualEventName"
+             class="event-name">
+        </div>
+
+      </div>
+
+
       <section class="card">
 
         <h2>本の情報を入力してください</h2>
@@ -462,7 +572,9 @@
 
           <label for="manualTitle">
             書名
-            <span class="required">必須</span>
+            <span class="required">
+              必須
+            </span>
           </label>
 
           <input
@@ -515,7 +627,9 @@
               inputmode="numeric"
               autocomplete="off">
 
-            <span class="yen-label">円</span>
+            <span class="yen-label">
+              円
+            </span>
 
           </div>
 
@@ -558,6 +672,19 @@
       id="communicationErrorScreen"
       class="screen">
 
+      <div class="event-box">
+
+        <div class="event-label">
+          登録先
+        </div>
+
+        <div id="errorEventName"
+             class="event-name">
+        </div>
+
+      </div>
+
+
       <section class="card">
 
         <h2>
@@ -597,8 +724,7 @@
 
 
     <div class="note">
-      ※No.21 保存接続テスト中です。
-      登録したデータはテスト用スプレッドシートへ保存されます。
+      ※No.22 選書会識別テスト中です。
     </div>
 
 
@@ -619,7 +745,7 @@
 
 
     /* =========================================
-       No.21 GAS保存先
+       GAS
     ========================================== */
 
     const GAS_WEB_APP_URL =
@@ -627,7 +753,8 @@
 
 
     /*
-     * No.22以降で本来の登録者名へ変更する。
+     * No.22ではまだ登録者名画面を接続しないため、
+     * 登録者名は固定。
      */
     const TEST_REGISTRANT_NAME =
       "テスト登録者";
@@ -637,14 +764,30 @@
        DOM
     ========================================== */
 
+    const startupScreen =
+      document.getElementById(
+        "startupScreen"
+      );
+
+    const eventErrorScreen =
+      document.getElementById(
+        "eventErrorScreen"
+      );
+
     const scannerScreen =
-      document.getElementById("scannerScreen");
+      document.getElementById(
+        "scannerScreen"
+      );
 
     const confirmScreen =
-      document.getElementById("confirmScreen");
+      document.getElementById(
+        "confirmScreen"
+      );
 
     const manualScreen =
-      document.getElementById("manualScreen");
+      document.getElementById(
+        "manualScreen"
+      );
 
     const communicationErrorScreen =
       document.getElementById(
@@ -652,23 +795,66 @@
       );
 
 
+    const startupMessage =
+      document.getElementById(
+        "startupMessage"
+      );
+
+    const eventErrorMessage =
+      document.getElementById(
+        "eventErrorMessage"
+      );
+
+
+    const eventNameElement =
+      document.getElementById(
+        "eventName"
+      );
+
+    const confirmEventName =
+      document.getElementById(
+        "confirmEventName"
+      );
+
+    const manualEventName =
+      document.getElementById(
+        "manualEventName"
+      );
+
+    const errorEventName =
+      document.getElementById(
+        "errorEventName"
+      );
+
+
     const video =
-      document.getElementById("video");
+      document.getElementById(
+        "video"
+      );
 
     const canvas =
-      document.getElementById("canvas");
+      document.getElementById(
+        "canvas"
+      );
 
     const context =
-      canvas.getContext("2d", {
-        willReadFrequently: true
-      });
+      canvas.getContext(
+        "2d",
+        {
+          willReadFrequently: true
+        }
+      );
 
 
     const resultElement =
-      document.getElementById("result");
+      document.getElementById(
+        "result"
+      );
 
     const messageElement =
-      document.getElementById("message");
+      document.getElementById(
+        "message"
+      );
 
 
     const cameraRetryButton =
@@ -804,19 +990,33 @@
 
 
     /*
-     * No.20確定値。
-     * 変更しない。
+     * URLから取得する。
      */
-    const DECODE_INTERVAL = 120;
+    let currentEventId = "";
 
+    /*
+     * GASから取得する。
+     */
+    let currentEventName = "";
+
+
+    const DECODE_INTERVAL = 120;
     const CAMERA_START_TIMEOUT = 10000;
 
 
     /* =========================================
-       共通
+       画面
     ========================================== */
 
     function showScreen(screen) {
+
+      startupScreen.classList.remove(
+        "active"
+      );
+
+      eventErrorScreen.classList.remove(
+        "active"
+      );
 
       scannerScreen.classList.remove(
         "active"
@@ -835,9 +1035,26 @@
           "active"
         );
 
+
       screen.classList.add(
         "active"
       );
+    }
+
+
+    function updateEventNameDisplays() {
+
+      eventNameElement.textContent =
+        currentEventName;
+
+      confirmEventName.textContent =
+        currentEventName;
+
+      manualEventName.textContent =
+        currentEventName;
+
+      errorEventName.textContent =
+        currentEventName;
     }
 
 
@@ -921,8 +1138,7 @@
           cameraStartTimer
         );
 
-        cameraStartTimer =
-          null;
+        cameraStartTimer = null;
       }
     }
 
@@ -967,12 +1183,144 @@
 
 
     /* =========================================
-       No.21 保存処理
+       No.22
+       URL → 選書会ID
+    ========================================== */
+
+    function getEventIdFromUrl() {
+
+      const params =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      return String(
+        params.get("event") || ""
+      ).trim();
+    }
+
+
+    /* =========================================
+       No.22
+       選書会確認
+    ========================================== */
+
+    async function loadEventInfo() {
+
+      currentEventId =
+        getEventIdFromUrl();
+
+
+      if (!currentEventId) {
+
+        eventErrorMessage.textContent =
+          "選書会IDが指定されていません。";
+
+        showScreen(
+          eventErrorScreen
+        );
+
+        return false;
+      }
+
+
+      startupMessage.textContent =
+        "登録先を確認しています…";
+
+
+      try {
+
+        const url =
+          GAS_WEB_APP_URL +
+          "?event=" +
+          encodeURIComponent(
+            currentEventId
+          );
+
+
+        const response =
+          await fetch(url);
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "登録先確認通信エラー: " +
+            response.status
+          );
+        }
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "登録先を確認できませんでした。"
+          );
+        }
+
+
+        currentEventName =
+          String(
+            result.eventName || ""
+          ).trim();
+
+
+        if (!currentEventName) {
+
+          throw new Error(
+            "選書会名を取得できませんでした。"
+          );
+        }
+
+
+        updateEventNameDisplays();
+
+
+        return true;
+
+
+      } catch (error) {
+
+        console.error(
+          "選書会確認エラー:",
+          error
+        );
+
+
+        eventErrorMessage.textContent =
+          error.message;
+
+
+        showScreen(
+          eventErrorScreen
+        );
+
+
+        return false;
+      }
+    }
+
+
+    /* =========================================
+       No.22 保存
     ========================================== */
 
     async function saveBook(book) {
 
       const payload = {
+
+        /*
+         * ★No.22
+         * 保存先を指定する選書会ID
+         */
+        eventId:
+          currentEventId,
 
         registrantName:
           TEST_REGISTRANT_NAME,
@@ -998,7 +1346,8 @@
         await fetch(
           GAS_WEB_APP_URL,
           {
-            method: "POST",
+            method:
+              "POST",
 
             headers: {
               "Content-Type":
@@ -1041,8 +1390,6 @@
 
     /* =========================================
        カメラ
-
-       No.20最終確定版の処理を維持
     ========================================== */
 
     async function stopCamera() {
@@ -1074,7 +1421,8 @@
       }
 
 
-      video.srcObject = null;
+      video.srcObject =
+        null;
     }
 
 
@@ -1092,8 +1440,11 @@
       await stopCamera();
 
 
-      currentIsbn = "";
-      currentBook = null;
+      currentIsbn =
+        "";
+
+      currentBook =
+        null;
 
 
       resultElement.textContent =
@@ -1146,31 +1497,28 @@
 
       try {
 
-        /*
-         * No.20確定条件
-         *
-         * 背面カメラ
-         * 1920 × 1080 ideal
-         */
-
         const newStream =
           await navigator.mediaDevices
             .getUserMedia({
 
-              audio: false,
+              audio:
+                false,
 
               video: {
 
                 facingMode: {
-                  ideal: "environment"
+                  ideal:
+                    "environment"
                 },
 
                 width: {
-                  ideal: 1920
+                  ideal:
+                    1920
                 },
 
                 height: {
-                  ideal: 1080
+                  ideal:
+                    1080
                 }
 
               }
@@ -1284,7 +1632,7 @@
 
 
     /* =========================================
-       OpenBD値取得
+       OpenBD
     ========================================== */
 
     function getTextValue(value) {
@@ -1298,17 +1646,27 @@
 
 
       if (
-        typeof value === "string" ||
-        typeof value === "number"
+        typeof value ===
+          "string" ||
+        typeof value ===
+          "number"
       ) {
 
-        return String(value);
+        return String(
+          value
+        );
       }
 
 
-      if (Array.isArray(value)) {
+      if (
+        Array.isArray(
+          value
+        )
+      ) {
 
-        for (const item of value) {
+        for (
+          const item of value
+        ) {
 
           const text =
             getTextValue(
@@ -1325,7 +1683,8 @@
 
 
       if (
-        typeof value === "object"
+        typeof value ===
+        "object"
       ) {
 
         const preferredKeys = [
@@ -1380,9 +1739,15 @@
       }
 
 
-      if (Array.isArray(object)) {
+      if (
+        Array.isArray(
+          object
+        )
+      ) {
 
-        for (const item of object) {
+        for (
+          const item of object
+        ) {
 
           const result =
             findValueByKey(
@@ -1401,7 +1766,7 @@
 
       if (
         typeof object !==
-        "object"
+          "object"
       ) {
         return "";
       }
@@ -1435,7 +1800,9 @@
 
       for (
         const key of
-          Object.keys(object)
+          Object.keys(
+            object
+          )
       ) {
 
         const result =
@@ -1520,7 +1887,9 @@
 
 
       const cleaned =
-        String(rawPrice)
+        String(
+          rawPrice
+        )
           .replace(
             /[^\d.]/g,
             ""
@@ -1528,11 +1897,15 @@
 
 
       const number =
-        Number(cleaned);
+        Number(
+          cleaned
+        );
 
 
       if (
-        !Number.isFinite(number) ||
+        !Number.isFinite(
+          number
+        ) ||
         number <= 0
       ) {
         return "";
@@ -1540,7 +1913,9 @@
 
 
       return String(
-        Math.round(number)
+        Math.round(
+          number
+        )
       );
     }
 
@@ -1561,16 +1936,14 @@
 
         title:
           String(
-            summary.title || ""
+            summary.title ||
+            ""
           ).trim(),
 
-        /*
-         * 著者名はOpenBDの値を
-         * 加工せずそのまま使用する。
-         */
         author:
           String(
-            summary.author || ""
+            summary.author ||
+            ""
           ).trim(),
 
         publisher:
@@ -1590,10 +1963,6 @@
       };
     }
 
-
-    /* =========================================
-       OpenBD検索
-    ========================================== */
 
     async function fetchOpenBd(
       isbn
@@ -1632,7 +2001,9 @@
 
 
         if (
-          !Array.isArray(data) ||
+          !Array.isArray(
+            data
+          ) ||
           data.length === 0 ||
           data[0] === null
         ) {
@@ -1673,7 +2044,7 @@
 
 
     /* =========================================
-       書誌確認画面
+       書誌確認
     ========================================== */
 
     function showConfirmScreen(
@@ -1685,18 +2056,15 @@
         book.title
       );
 
-
       setDisplayValue(
         confirmAuthor,
         book.author
       );
 
-
       setDisplayValue(
         confirmPublisher,
         book.publisher
       );
-
 
       setDisplayValue(
         confirmIsbn,
@@ -1708,7 +2076,8 @@
 
         setDisplayValue(
           confirmPrice,
-          book.price + "円"
+          book.price +
+          "円"
         );
 
       } else {
@@ -1739,7 +2108,7 @@
 
 
     /* =========================================
-       手入力画面
+       手入力
     ========================================== */
 
     function openManualScreen(
@@ -1823,9 +2192,7 @@
 
 
     /* =========================================
-       バーコード解析
-
-       No.20最終確定版と同条件
+       スキャン
     ========================================== */
 
     async function scanFrame(
@@ -1871,11 +2238,6 @@
 
       try {
 
-        /*
-         * 映像全体ではなく
-         * 中央の横長部分を解析。
-         */
-
         const sourceWidth =
           video.videoWidth;
 
@@ -1885,12 +2247,14 @@
 
         const cropWidth =
           Math.floor(
-            sourceWidth * 0.90
+            sourceWidth *
+            0.90
           );
 
         const cropHeight =
           Math.floor(
-            sourceHeight * 0.30
+            sourceHeight *
+            0.30
           );
 
 
@@ -1912,9 +2276,6 @@
           );
 
 
-        /*
-         * No.20確定値
-         */
         const targetWidth =
           1200;
 
@@ -1969,13 +2330,6 @@
           );
 
 
-        /*
-         * No.20確定値
-         *
-         * EAN13のみ
-         * tryHarder有効
-         * 1コードのみ
-         */
         const results =
           await ZXingWASM
             .readBarcodes(
@@ -2012,9 +2366,6 @@
             code;
 
 
-          /*
-           * 2段目バーコード
-           */
           if (
             isSecondBarcode(
               code
@@ -2032,9 +2383,6 @@
               "none";
 
 
-          /*
-           * ISBN
-           */
           } else if (
             isIsbn(
               code
@@ -2052,10 +2400,6 @@
             );
 
 
-            /*
-             * 1冊成功したら
-             * カメラを停止する。
-             */
             await stopCamera();
 
 
@@ -2071,9 +2415,6 @@
             return;
 
 
-          /*
-           * 雑誌JANなど
-           */
           } else {
 
             manualEntryButton
@@ -2156,10 +2497,6 @@
       );
 
 
-    /* =========================================
-       OpenBD取得本を保存
-    ========================================== */
-
     confirmRegisterButton
       .addEventListener(
         "click",
@@ -2203,10 +2540,6 @@
             );
 
 
-            /*
-             * 保存成功後だけ
-             * カメラへ戻る。
-             */
             setTimeout(
               async function() {
 
@@ -2267,10 +2600,6 @@
       );
 
 
-    /* =========================================
-       手入力本を保存
-    ========================================== */
-
     manualRegisterButton
       .addEventListener(
         "click",
@@ -2285,9 +2614,6 @@
             getManualBookData();
 
 
-          /*
-           * 書名のみ必須
-           */
           if (!book.title) {
 
             showResultBox(
@@ -2303,12 +2629,6 @@
           }
 
 
-          /*
-           * ISBNは空欄可。
-           *
-           * 入力された場合だけ
-           * ISBN形式を確認する。
-           */
           if (
             book.isbn &&
             !isIsbn(
@@ -2497,11 +2817,29 @@
             "function"
         ) {
 
-          setMessage(
-            "バーコード読み取りプログラムを読み込めませんでした。",
+          startupMessage.textContent =
+            "バーコード読み取りプログラムを読み込めませんでした。";
+
+          startupMessage.classList.add(
             "error"
           );
 
+          return;
+        }
+
+
+        /*
+         * ★No.22
+         *
+         * 先に選書会を確認する。
+         * 確認できた場合だけ
+         * カメラを起動する。
+         */
+        const eventLoaded =
+          await loadEventInfo();
+
+
+        if (!eventLoaded) {
           return;
         }
 
