@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width,
+        initial-scale=1.0">
+
+  <title>スマホde選書システム QRコードテスト</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      background: #f7f7f7;
+      color: #222;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 620px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .event-name {
+      margin-top: 8px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .qr-box {
+      margin-top: 24px;
+      padding: 24px;
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    #qrcode {
+      display: inline-block;
+      margin: 12px auto;
+    }
+
+    .url-box {
+      margin-top: 18px;
+      padding: 12px;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>スマホde選書システム</h1>
+
+    <div>
+      選書会QRコード
+    </div>
+
+    <div class="event-name">
+      テスト選書会
+    </div>
+
+
+    <div class="qr-box">
+
+      <div id="qrcode"></div>
+
+    </div>
+
+
+    <div class="url-box">
+      https://maro2888-star.github.io/book-scanner/iphone-test/?event=event_0001
+    </div>
+
+
+    <div class="note">
+      このQRコードをスマートフォンで読み取ると、
+      「テスト選書会」の登録画面が開きます。
+    </div>
+
+  </main>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">
+  </script>
+
+
+  <script>
+    "use strict";
+
+    const eventUrl =
+      "https://maro2888-star.github.io/book-scanner/iphone-test/?event=event_0001";
+
+
+    new QRCode(
+      document.getElementById("qrcode"),
+      {
+        text: eventUrl,
+        width: 260,
+        height: 260,
+        correctLevel:
+          QRCode.CorrectLevel.M
+      }
+    );
+  </script>
+
+</body>
+</html>
