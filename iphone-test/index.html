@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム No.23</title>
+  <title>スマホde選書システム No.23修正版</title>
 
   <style>
     * {
@@ -76,33 +76,23 @@
     }
 
     .user-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
       margin-bottom: 10px;
       padding: 9px 11px;
       background: #fff;
       border-radius: 8px;
+      text-align: center;
     }
 
-    .user-info {
-      min-width: 0;
-      font-size: 13px;
-      line-height: 1.4;
+    .user-label {
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 2px;
     }
 
     .user-name {
-      font-weight: bold;
       font-size: 15px;
+      font-weight: bold;
       word-break: break-word;
-    }
-
-    .small-button {
-      width: auto;
-      flex-shrink: 0;
-      padding: 8px 10px;
-      font-size: 13px;
     }
 
     .description {
@@ -146,7 +136,7 @@
       right: 0;
       bottom: 8px;
       text-align: center;
-      color: white;
+      color: #fff;
       font-size: 13px;
       text-shadow: 0 1px 3px #000;
     }
@@ -241,6 +231,12 @@
       margin-top: 12px;
     }
 
+    .end-button {
+      margin-top: 18px;
+      background: #ddd;
+      color: #222;
+    }
+
     .form-row {
       margin-top: 14px;
     }
@@ -316,7 +312,9 @@
     }
 
     .previous-users {
-      margin-top: 18px;
+      margin-top: 20px;
+      border-top: 1px solid #eee;
+      padding-top: 16px;
     }
 
     .previous-user-button {
@@ -346,8 +344,11 @@
       line-height: 1.5;
     }
 
-    .bottom-actions {
-      margin-top: 12px;
+    .hint {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #666;
     }
 
     canvas {
@@ -362,6 +363,7 @@
   </style>
 </head>
 
+
 <body>
 
   <main class="container">
@@ -369,8 +371,12 @@
     <h1>スマホde選書システム</h1>
 
 
-    <!-- 登録先確認 -->
-    <section id="startupScreen" class="screen active">
+    <!-- ======================================
+         登録先確認
+    ======================================= -->
+
+    <section id="startupScreen"
+             class="screen active">
 
       <div class="startup-box">
 
@@ -384,12 +390,18 @@
     </section>
 
 
-    <!-- 選書会エラー -->
-    <section id="eventErrorScreen" class="screen">
+    <!-- ======================================
+         選書会エラー
+    ======================================= -->
+
+    <section id="eventErrorScreen"
+             class="screen">
 
       <div class="startup-box">
 
-        <h2>登録先を確認できませんでした</h2>
+        <h2>
+          登録先を確認できませんでした
+        </h2>
 
         <div id="eventErrorMessage"
              class="startup-message error">
@@ -404,24 +416,43 @@
     </section>
 
 
-    <!-- 登録者名入力 -->
-    <section id="nameScreen" class="screen">
+    <!-- ======================================
+         登録者選択・入力
+    ======================================= -->
+
+    <section id="nameScreen"
+             class="screen">
 
       <div class="event-box">
-        <div class="event-label">登録先</div>
+
+        <div class="event-label">
+          登録先
+        </div>
+
         <div id="nameEventName"
-             class="event-name"></div>
+             class="event-name">
+        </div>
+
       </div>
+
 
       <section class="card">
 
-        <h2>お名前を入力してください</h2>
+        <h2>
+          お名前を入力してください
+        </h2>
+
 
         <div class="form-row">
 
           <label for="registrantNameInput">
+
             登録者名
-            <span class="required">必須</span>
+
+            <span class="required">
+              必須
+            </span>
+
           </label>
 
           <input
@@ -431,17 +462,22 @@
 
         </div>
 
+
         <button
           id="startRegistrationButton"
           type="button"
           class="stack-button">
+
           登録を始める
+
         </button>
+
 
         <div id="nameError"
              class="temporary-result error-result"
              style="display:none;">
         </div>
+
 
         <div id="previousUsersArea"
              class="previous-users"
@@ -451,7 +487,12 @@
             この端末で登録した人
           </div>
 
-          <div id="previousUsersButtons"></div>
+          <div class="hint">
+            名前を選ぶと、これまでの冊数・金額を引き継いで続けられます。
+          </div>
+
+          <div id="previousUsersButtons">
+          </div>
 
         </div>
 
@@ -460,35 +501,44 @@
     </section>
 
 
-    <!-- カメラ -->
-    <section id="scannerScreen" class="screen">
+    <!-- ======================================
+         カメラ
+    ======================================= -->
+
+    <section id="scannerScreen"
+             class="screen">
+
 
       <div class="event-box">
-        <div class="event-label">登録先</div>
+
+        <div class="event-label">
+          登録先
+        </div>
+
         <div id="eventName"
-             class="event-name"></div>
+             class="event-name">
+        </div>
+
       </div>
+
 
       <div class="user-bar">
 
-        <div class="user-info">
-          <div>現在の登録者</div>
-          <div id="currentRegistrantName"
-               class="user-name"></div>
+        <div class="user-label">
+          現在の登録者
         </div>
 
-        <button
-          id="changeRegistrantButton"
-          type="button"
-          class="secondary small-button">
-          登録者名を変更
-        </button>
+        <div id="currentRegistrantName"
+             class="user-name">
+        </div>
 
       </div>
+
 
       <p class="description">
         本の1段目のバーコードを、白い枠の中に入れてください。
       </p>
+
 
       <div class="camera-wrap">
 
@@ -499,13 +549,15 @@
           playsinline>
         </video>
 
-        <div class="scan-guide"></div>
+        <div class="scan-guide">
+        </div>
 
         <div class="guide-label">
           1段目のバーコードをこの枠に合わせてください
         </div>
 
       </div>
+
 
       <section class="card status">
 
@@ -523,90 +575,163 @@
 
       </section>
 
+
       <button
         id="cameraRetryButton"
         type="button"
         class="stack-button"
         style="display:none;">
+
         カメラを再起動する
+
       </button>
+
 
       <button
         id="manualEntryButton"
         type="button"
         class="secondary stack-button">
+
         手入力で登録する
+
       </button>
+
+
+      <button
+        id="changeRegistrantButton"
+        type="button"
+        class="secondary stack-button">
+
+        登録者を変更して続ける
+
+      </button>
+
 
       <button
         id="endRegistrationButton"
         type="button"
-        class="light stack-button">
-        登録を終了する
+        class="end-button">
+
+        この端末での登録を終了する
+
       </button>
 
     </section>
 
 
-    <!-- 書誌確認 -->
-    <section id="confirmScreen" class="screen">
+    <!-- ======================================
+         書誌確認
+    ======================================= -->
+
+    <section id="confirmScreen"
+             class="screen">
 
       <div class="event-box">
-        <div class="event-label">登録先</div>
+
+        <div class="event-label">
+          登録先
+        </div>
+
         <div id="confirmEventName"
-             class="event-name"></div>
+             class="event-name">
+        </div>
+
       </div>
+
 
       <section class="card">
 
-        <h2>本の情報を確認してください</h2>
+        <h2>
+          本の情報を確認してください
+        </h2>
+
 
         <div class="info-row">
-          <div class="info-label">書名</div>
+
+          <div class="info-label">
+            書名
+          </div>
+
           <div id="confirmTitle"
-               class="info-value"></div>
+               class="info-value">
+          </div>
+
         </div>
 
+
         <div class="info-row">
-          <div class="info-label">著者名</div>
+
+          <div class="info-label">
+            著者名
+          </div>
+
           <div id="confirmAuthor"
-               class="info-value"></div>
+               class="info-value">
+          </div>
+
         </div>
 
+
         <div class="info-row">
-          <div class="info-label">出版社</div>
+
+          <div class="info-label">
+            出版社
+          </div>
+
           <div id="confirmPublisher"
-               class="info-value"></div>
+               class="info-value">
+          </div>
+
         </div>
 
+
         <div class="info-row">
-          <div class="info-label">商品コード（ISBN）</div>
+
+          <div class="info-label">
+            商品コード（ISBN）
+          </div>
+
           <div id="confirmIsbn"
-               class="info-value"></div>
+               class="info-value">
+          </div>
+
         </div>
 
+
         <div class="info-row">
-          <div class="info-label">本体価格</div>
+
+          <div class="info-label">
+            本体価格
+          </div>
+
           <div id="confirmPrice"
-               class="info-value"></div>
+               class="info-value">
+          </div>
+
         </div>
+
 
         <div class="button-row">
 
           <button
             id="confirmRegisterButton"
             type="button">
+
             登録
+
           </button>
 
           <button
             id="confirmCancelButton"
             type="button"
             class="light">
+
             キャンセル
+
           </button>
 
         </div>
+
 
         <div id="confirmTemporaryResult"
              class="temporary-result"
@@ -618,18 +743,32 @@
     </section>
 
 
-    <!-- 手入力 -->
-    <section id="manualScreen" class="screen">
+    <!-- ======================================
+         手入力
+    ======================================= -->
+
+    <section id="manualScreen"
+             class="screen">
 
       <div class="event-box">
-        <div class="event-label">登録先</div>
+
+        <div class="event-label">
+          登録先
+        </div>
+
         <div id="manualEventName"
-             class="event-name"></div>
+             class="event-name">
+        </div>
+
       </div>
+
 
       <section class="card">
 
-        <h2>本の情報を入力してください</h2>
+        <h2>
+          本の情報を入力してください
+        </h2>
+
 
         <div class="form-row">
 
@@ -646,11 +785,17 @@
 
         </div>
 
+
         <div class="form-row">
 
           <label for="manualTitle">
+
             書名
-            <span class="required">必須</span>
+
+            <span class="required">
+              必須
+            </span>
+
           </label>
 
           <input
@@ -659,6 +804,7 @@
             autocomplete="off">
 
         </div>
+
 
         <div class="form-row">
 
@@ -673,6 +819,7 @@
 
         </div>
 
+
         <div class="form-row">
 
           <label for="manualPublisher">
@@ -685,6 +832,7 @@
             autocomplete="off">
 
         </div>
+
 
         <div class="form-row">
 
@@ -700,28 +848,36 @@
               inputmode="numeric"
               autocomplete="off">
 
-            <span class="yen-label">円</span>
+            <span class="yen-label">
+              円
+            </span>
 
           </div>
 
         </div>
+
 
         <div class="button-row">
 
           <button
             id="manualRegisterButton"
             type="button">
+
             登録
+
           </button>
 
           <button
             id="manualCancelButton"
             type="button"
             class="light">
+
             キャンセル
+
           </button>
 
         </div>
+
 
         <div id="manualTemporaryResult"
              class="temporary-result"
@@ -733,42 +889,63 @@
     </section>
 
 
-    <!-- OpenBD通信エラー -->
+    <!-- ======================================
+         OpenBD通信エラー
+    ======================================= -->
+
     <section id="communicationErrorScreen"
              class="screen">
 
       <div class="event-box">
-        <div class="event-label">登録先</div>
+
+        <div class="event-label">
+          登録先
+        </div>
+
         <div id="errorEventName"
-             class="event-name"></div>
+             class="event-name">
+        </div>
+
       </div>
+
 
       <section class="card">
 
-        <h2>書誌情報を取得できませんでした</h2>
+        <h2>
+          書誌情報を取得できませんでした
+        </h2>
 
         <p>
           通信状況を確認して、もう一度お試しください。
         </p>
 
+
         <button
           id="retryOpenBdButton"
           type="button">
+
           もう一度検索
+
         </button>
+
 
         <button
           id="communicationManualButton"
           type="button"
           class="secondary stack-button">
+
           手入力する
+
         </button>
+
 
         <button
           id="communicationCancelButton"
           type="button"
           class="light stack-button">
+
           キャンセル
+
         </button>
 
       </section>
@@ -776,48 +953,81 @@
     </section>
 
 
-    <!-- 終了確認 -->
+    <!-- ======================================
+         終了確認
+    ======================================= -->
+
     <section id="endConfirmScreen"
              class="screen">
 
       <div class="event-box">
-        <div class="event-label">登録先</div>
+
+        <div class="event-label">
+          登録先
+        </div>
+
         <div id="endEventName"
-             class="event-name"></div>
+             class="event-name">
+        </div>
+
       </div>
+
 
       <section class="card">
 
-        <h2>登録を終了しますか？</h2>
+        <h2>
+          この端末での登録を終了しますか？
+        </h2>
+
 
         <div class="summary-box">
 
           <div id="endRegistrantName"
-               class="user-name"></div>
+               class="user-name">
+          </div>
 
           <div id="endSummary"
-               class="summary-main"></div>
+               class="summary-main">
+          </div>
 
           <div id="endPriceNote"
                class="summary-note"
                style="display:none;">
+
             ※価格不明の本は金額に含まれていません。
+
           </div>
 
         </div>
+
 
         <button
           id="continueRegistrationButton"
           type="button"
           class="stack-button">
+
           登録を続ける
+
         </button>
+
+
+        <button
+          id="changeRegistrantFromEndButton"
+          type="button"
+          class="secondary stack-button">
+
+          登録者を変更して続ける
+
+        </button>
+
 
         <button
           id="reallyEndRegistrationButton"
           type="button"
-          class="light stack-button">
-          登録を終了する
+          class="end-button">
+
+          この端末での登録を終了する
+
         </button>
 
       </section>
@@ -825,15 +1035,25 @@
     </section>
 
 
-    <!-- 終了画面 -->
+    <!-- ======================================
+         終了画面
+    ======================================= -->
+
     <section id="finishedScreen"
              class="screen">
 
       <div class="event-box">
-        <div class="event-label">登録先</div>
+
+        <div class="event-label">
+          登録先
+        </div>
+
         <div id="finishedEventName"
-             class="event-name"></div>
+             class="event-name">
+        </div>
+
       </div>
+
 
       <section class="card">
 
@@ -841,24 +1061,35 @@
           この端末での登録を終了しました。
         </h2>
 
+
         <div class="summary-box">
 
           <div id="finishedRegistrantName"
-               class="user-name"></div>
+               class="user-name">
+          </div>
 
           <div id="finishedSummary"
-               class="summary-main"></div>
+               class="summary-main">
+          </div>
 
           <div id="finishedPriceNote"
                class="summary-note"
                style="display:none;">
+
             ※価格不明の本は金額に含まれていません。
+
           </div>
 
         </div>
 
+
         <p>
           再開する場合は、もう一度選書会のQRコードを読み取ってください。
+        </p>
+
+
+        <p class="hint">
+          同じ選書会を再開すると、この端末で以前登録した人を選んで続けられます。
         </p>
 
       </section>
@@ -866,7 +1097,8 @@
     </section>
 
 
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas">
+    </canvas>
 
   </main>
 
@@ -880,11 +1112,17 @@
     "use strict";
 
 
+    /* ======================================
+       GAS
+    ======================================= */
+
     const GAS_WEB_APP_URL =
       "https://script.google.com/macros/s/AKfycbz7PgpVIsQjR80eDHRorDqkA8FGO5SLBDiuSaCYjx-wQIlgKllduC0CU3ZD1RrbPxzT/exec";
 
 
-    /* DOM */
+    /* ======================================
+       DOM
+    ======================================= */
 
     const startupScreen =
       document.getElementById("startupScreen");
@@ -976,9 +1214,13 @@
       document.getElementById("canvas");
 
     const context =
-      canvas.getContext("2d", {
-        willReadFrequently: true
-      });
+      canvas.getContext(
+        "2d",
+        {
+          willReadFrequently: true
+        }
+      );
+
 
     const resultElement =
       document.getElementById("result");
@@ -1065,6 +1307,9 @@
     const continueRegistrationButton =
       document.getElementById("continueRegistrationButton");
 
+    const changeRegistrantFromEndButton =
+      document.getElementById("changeRegistrantFromEndButton");
+
     const reallyEndRegistrationButton =
       document.getElementById("reallyEndRegistrationButton");
 
@@ -1079,31 +1324,23 @@
       document.getElementById("finishedPriceNote");
 
 
-    /* 状態 */
+    /* ======================================
+       状態
+    ======================================= */
 
     let currentEventId = "";
     let currentEventName = "";
 
     let currentRegistrant = "";
 
-    /*
-     * 登録者ごとの端末内集計。
-     *
-     * 例：
-     * {
-     *   "山田 太郎": {
-     *      count: 8,
-     *      priceTotal: 7000,
-     *      unknownPriceCount: 1
-     *   }
-     * }
-     */
     let registrantStats = {};
 
 
     let stream = null;
+
     let scanning = false;
     let decoding = false;
+
     let animationId = null;
 
     let lastDecodeTime = 0;
@@ -1118,10 +1355,138 @@
 
 
     const DECODE_INTERVAL = 120;
-    const CAMERA_START_TIMEOUT = 10000;
+
+    const CAMERA_START_TIMEOUT =
+      10000;
 
 
-    /* 共通 */
+    /* ======================================
+       localStorage
+    ======================================= */
+
+    function getStorageKey() {
+
+      return (
+        "sumahoSelection_" +
+        currentEventId
+      );
+    }
+
+
+    function saveLocalState() {
+
+      if (!currentEventId) {
+        return;
+      }
+
+
+      const data = {
+
+        currentRegistrant:
+          currentRegistrant,
+
+        registrantStats:
+          registrantStats
+
+      };
+
+
+      try {
+
+        localStorage.setItem(
+          getStorageKey(),
+          JSON.stringify(data)
+        );
+
+      } catch (error) {
+
+        console.warn(
+          "端末内保存エラー",
+          error
+        );
+      }
+    }
+
+
+    function loadLocalState() {
+
+      if (!currentEventId) {
+        return;
+      }
+
+
+      try {
+
+        const raw =
+          localStorage.getItem(
+            getStorageKey()
+          );
+
+
+        if (!raw) {
+          return;
+        }
+
+
+        const data =
+          JSON.parse(raw);
+
+
+        if (
+          data.registrantStats &&
+          typeof data.registrantStats ===
+            "object"
+        ) {
+
+          registrantStats =
+            data.registrantStats;
+        }
+
+
+        if (
+          typeof data.currentRegistrant ===
+            "string"
+        ) {
+
+          currentRegistrant =
+            data.currentRegistrant;
+        }
+
+
+      } catch (error) {
+
+        console.warn(
+          "端末内データ読込エラー",
+          error
+        );
+      }
+    }
+
+
+    /*
+     * 将来、管理者が選書会を終了したことを
+     * GASから確認した時に使う予定。
+     */
+    function clearLocalState() {
+
+      if (!currentEventId) {
+        return;
+      }
+
+
+      localStorage.removeItem(
+        getStorageKey()
+      );
+
+
+      currentRegistrant = "";
+      registrantStats = {};
+    }
+
+
+    /* ======================================
+       画面
+    ======================================= */
 
     function showScreen(screen) {
 
@@ -1135,12 +1500,21 @@
         communicationErrorScreen,
         endConfirmScreen,
         finishedScreen
-      ].forEach(function(item) {
-        item.classList.remove("active");
-      });
+
+      ].forEach(
+        function(item) {
+
+          item.classList.remove(
+            "active"
+          );
+
+        }
+      );
 
 
-      screen.classList.add("active");
+      screen.classList.add(
+        "active"
+      );
     }
 
 
@@ -1154,12 +1528,15 @@
         errorEventName,
         endEventName,
         finishedEventName
-      ].forEach(function(element) {
 
-        element.textContent =
-          currentEventName;
+      ].forEach(
+        function(element) {
 
-      });
+          element.textContent =
+            currentEventName;
+
+        }
+      );
     }
 
 
@@ -1210,7 +1587,9 @@
     ) {
 
       element.textContent =
-        String(value || "").trim();
+        String(
+          value || ""
+        ).trim();
     }
 
 
@@ -1220,18 +1599,31 @@
       isError = false
     ) {
 
-      element.textContent = text;
-      element.style.display = "block";
+      element.textContent =
+        text;
+
+      element.style.display =
+        "block";
+
 
       if (isError) {
-        element.classList.add("error-result");
+
+        element.classList.add(
+          "error-result"
+        );
+
       } else {
-        element.classList.remove("error-result");
+
+        element.classList.remove(
+          "error-result"
+        );
       }
     }
 
 
-    function hideResultBox(element) {
+    function hideResultBox(
+      element
+    ) {
 
       element.style.display =
         "none";
@@ -1256,7 +1648,9 @@
     }
 
 
-    /* 選書会 */
+    /* ======================================
+       選書会
+    ======================================= */
 
     function getEventIdFromUrl() {
 
@@ -1264,6 +1658,7 @@
         new URLSearchParams(
           window.location.search
         );
+
 
       return String(
         params.get("event") || ""
@@ -1342,16 +1737,20 @@
         eventErrorMessage.textContent =
           error.message;
 
+
         showScreen(
           eventErrorScreen
         );
+
 
         return false;
       }
     }
 
 
-    /* 登録者 */
+    /* ======================================
+       登録者
+    ======================================= */
 
     function ensureRegistrantStats(
       name
@@ -1360,9 +1759,13 @@
       if (!registrantStats[name]) {
 
         registrantStats[name] = {
+
           count: 0,
+
           priceTotal: 0,
+
           unknownPriceCount: 0
+
         };
       }
 
@@ -1376,7 +1779,9 @@
     ) {
 
       currentRegistrant =
-        String(name || "").trim();
+        String(
+          name || ""
+        ).trim();
 
 
       ensureRegistrantStats(
@@ -1386,6 +1791,9 @@
 
       currentRegistrantName.textContent =
         currentRegistrant;
+
+
+      saveLocalState();
     }
 
 
@@ -1414,49 +1822,55 @@
         "block";
 
 
-      names.forEach(function(name) {
+      names.forEach(
+        function(name) {
 
-        const button =
-          document.createElement(
-            "button"
-          );
-
-        const stats =
-          registrantStats[name];
+          const stats =
+            registrantStats[name];
 
 
-        button.type =
-          "button";
-
-        button.className =
-          "previous-user-button";
-
-        button.textContent =
-          name +
-          "（" +
-          stats.count +
-          "冊）";
-
-
-        button.addEventListener(
-          "click",
-          async function() {
-
-            setCurrentRegistrant(
-              name
+          const button =
+            document.createElement(
+              "button"
             );
 
-            await startCamera();
 
-          }
-        );
+          button.type =
+            "button";
+
+          button.className =
+            "previous-user-button";
 
 
-        previousUsersButtons.appendChild(
-          button
-        );
+          button.textContent =
+            name +
+            "（" +
+            stats.count +
+            "冊）";
 
-      });
+
+          button.addEventListener(
+            "click",
+            async function() {
+
+              setCurrentRegistrant(
+                name
+              );
+
+
+              await startCamera();
+
+            }
+          );
+
+
+          previousUsersButtons
+            .appendChild(
+              button
+            );
+
+        }
+      );
     }
 
 
@@ -1464,14 +1878,18 @@
 
       stopCamera();
 
+
       registrantNameInput.value =
         "";
+
 
       hideResultBox(
         nameError
       );
 
+
       renderPreviousUsers();
+
 
       showScreen(
         nameScreen
@@ -1489,7 +1907,9 @@
     }
 
 
-    /* 集計 */
+    /* ======================================
+       集計
+    ======================================= */
 
     function addBookToRegistrantStats(
       book
@@ -1501,7 +1921,8 @@
         );
 
 
-      stats.count += 1;
+      stats.count +=
+        1;
 
 
       const price =
@@ -1523,6 +1944,9 @@
         stats.unknownPriceCount +=
           1;
       }
+
+
+      saveLocalState();
     }
 
 
@@ -1534,10 +1958,15 @@
     }
 
 
-    function formatNumber(value) {
+    function formatNumber(
+      value
+    ) {
 
-      return Number(value || 0)
-        .toLocaleString("ja-JP");
+      return Number(
+        value || 0
+      ).toLocaleString(
+        "ja-JP"
+      );
     }
 
 
@@ -1603,15 +2032,32 @@
           : "none";
 
 
+      /*
+       * ここではlocalStorageを削除しない。
+       *
+       * 「この端末での登録終了」は
+       * 一時的な終了。
+       *
+       * 管理者が選書会そのものを
+       * 終了した時に削除する。
+       */
+
+      saveLocalState();
+
+
       showScreen(
         finishedScreen
       );
     }
 
 
-    /* 保存 */
+    /* ======================================
+       保存
+    ======================================= */
 
-    async function saveBook(book) {
+    async function saveBook(
+      book
+    ) {
 
       const payload = {
 
@@ -1643,17 +2089,22 @@
         await fetch(
           GAS_WEB_APP_URL,
           {
-            method: "POST",
+
+            method:
+              "POST",
 
             headers: {
+
               "Content-Type":
                 "text/plain;charset=utf-8"
+
             },
 
             body:
               JSON.stringify(
                 payload
               )
+
           }
         );
 
@@ -1683,11 +2134,14 @@
     }
 
 
-    /* カメラ */
+    /* ======================================
+       カメラ
+    ======================================= */
 
     async function stopCamera() {
 
-      scanning = false;
+      scanning =
+        false;
 
 
       if (animationId) {
@@ -1696,7 +2150,8 @@
           animationId
         );
 
-        animationId = null;
+        animationId =
+          null;
       }
 
 
@@ -1704,13 +2159,16 @@
 
         stream
           .getTracks()
-          .forEach(function(track) {
+          .forEach(
+            function(track) {
 
-            track.stop();
+              track.stop();
 
-          });
+            }
+          );
 
-        stream = null;
+        stream =
+          null;
       }
 
 
@@ -1722,6 +2180,7 @@
     async function startCamera() {
 
       cameraStartGeneration++;
+
 
       const thisGeneration =
         cameraStartGeneration;
@@ -1746,6 +2205,7 @@
 
       manualEntryButton.style.display =
         "block";
+
 
       cameraRetryButton.style.display =
         "none";
@@ -1781,8 +2241,7 @@
               );
 
 
-              cameraRetryButton
-                .style.display =
+              cameraRetryButton.style.display =
                 "block";
             }
 
@@ -1794,23 +2253,28 @@
       try {
 
         const newStream =
-          await navigator.mediaDevices
+          await navigator
+            .mediaDevices
             .getUserMedia({
 
-              audio: false,
+              audio:
+                false,
 
               video: {
 
                 facingMode: {
-                  ideal: "environment"
+                  ideal:
+                    "environment"
                 },
 
                 width: {
-                  ideal: 1920
+                  ideal:
+                    1920
                 },
 
                 height: {
-                  ideal: 1080
+                  ideal:
+                    1080
                 }
 
               }
@@ -1825,11 +2289,13 @@
 
           newStream
             .getTracks()
-            .forEach(function(track) {
+            .forEach(
+              function(track) {
 
-              track.stop();
+                track.stop();
 
-            });
+              }
+            );
 
           return;
         }
@@ -1882,6 +2348,7 @@
           thisGeneration !==
           cameraStartGeneration
         ) {
+
           return;
         }
 
@@ -1890,7 +2357,7 @@
 
 
         setMessage(
-          "カメラを起動できませんでした。ブラウザのカメラ使用許可を確認するか、もう一度お試しください。",
+          "カメラを起動できませんでした。下のボタンからもう一度お試しください。",
           "error"
         );
 
@@ -1915,14 +2382,50 @@
     }
 
 
-    /* OpenBD */
+    /*
+     * カメラ再起動。
+     *
+     * 今回はgetUserMediaだけを
+     * 繰り返すのではなく、
+     * ページそのものを再読み込みする。
+     *
+     * localStorageに途中経過があるため
+     * 冊数・金額は失われない。
+     */
 
-    function getTextValue(value) {
+    function reloadForCameraRetry() {
+
+      saveLocalState();
+
+
+      /*
+       * この再読込だけは、
+       * 同じ登録者で自動復帰させる。
+       */
+      sessionStorage.setItem(
+        "sumahoCameraRetry_" +
+        currentEventId,
+        "1"
+      );
+
+
+      window.location.reload();
+    }
+
+
+    /* ======================================
+       OpenBD
+    ======================================= */
+
+    function getTextValue(
+      value
+    ) {
 
       if (
         value === null ||
         value === undefined
       ) {
+
         return "";
       }
 
@@ -1932,37 +2435,57 @@
         typeof value === "number"
       ) {
 
-        return String(value);
+        return String(
+          value
+        );
       }
 
 
-      if (Array.isArray(value)) {
+      if (
+        Array.isArray(
+          value
+        )
+      ) {
 
-        for (const item of value) {
+        for (
+          const item of value
+        ) {
 
           const text =
-            getTextValue(item);
+            getTextValue(
+              item
+            );
+
 
           if (text) {
             return text;
           }
         }
 
+
         return "";
       }
 
 
-      if (typeof value === "object") {
+      if (
+        typeof value ===
+          "object"
+      ) {
 
         const preferredKeys = [
+
           "content",
           "value",
           "#text",
           "$"
+
         ];
 
 
-        for (const key of preferredKeys) {
+        for (
+          const key of
+            preferredKeys
+        ) {
 
           if (
             Object.prototype
@@ -1977,6 +2500,7 @@
               getTextValue(
                 value[key]
               );
+
 
             if (text) {
               return text;
@@ -1999,13 +2523,20 @@
         object === null ||
         object === undefined
       ) {
+
         return "";
       }
 
 
-      if (Array.isArray(object)) {
+      if (
+        Array.isArray(
+          object
+        )
+      ) {
 
-        for (const item of object) {
+        for (
+          const item of object
+        ) {
 
           const result =
             findValueByKey(
@@ -2013,23 +2544,30 @@
               targetKeys
             );
 
+
           if (result) {
             return result;
           }
         }
+
 
         return "";
       }
 
 
       if (
-        typeof object !== "object"
+        typeof object !==
+          "object"
       ) {
+
         return "";
       }
 
 
-      for (const key of targetKeys) {
+      for (
+        const key of
+          targetKeys
+      ) {
 
         if (
           Object.prototype
@@ -2045,6 +2583,7 @@
               object[key]
             );
 
+
           if (text) {
             return text;
           }
@@ -2054,7 +2593,9 @@
 
       for (
         const key of
-          Object.keys(object)
+          Object.keys(
+            object
+          )
       ) {
 
         const result =
@@ -2062,6 +2603,7 @@
             object[key],
             targetKeys
           );
+
 
         if (result) {
           return result;
@@ -2083,6 +2625,7 @@
 
 
       if (!detail) {
+
         return "";
       }
 
@@ -2097,6 +2640,7 @@
 
 
       if (imprint) {
+
         return imprint;
       }
 
@@ -2120,6 +2664,7 @@
 
 
       if (!productSupply) {
+
         return "";
       }
 
@@ -2134,12 +2679,15 @@
 
 
       if (!rawPrice) {
+
         return "";
       }
 
 
       const cleaned =
-        String(rawPrice)
+        String(
+          rawPrice
+        )
           .replace(
             /[^\d.]/g,
             ""
@@ -2147,19 +2695,26 @@
 
 
       const number =
-        Number(cleaned);
+        Number(
+          cleaned
+        );
 
 
       if (
-        !Number.isFinite(number) ||
+        !Number.isFinite(
+          number
+        ) ||
         number <= 0
       ) {
+
         return "";
       }
 
 
       return String(
-        Math.round(number)
+        Math.round(
+          number
+        )
       );
     }
 
@@ -2180,12 +2735,14 @@
 
         title:
           String(
-            summary.title || ""
+            summary.title ||
+            ""
           ).trim(),
 
         author:
           String(
-            summary.author || ""
+            summary.author ||
+            ""
           ).trim(),
 
         publisher:
@@ -2224,10 +2781,14 @@
 
 
         const response =
-          await fetch(url);
+          await fetch(
+            url
+          );
 
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
 
           throw new Error(
             "OpenBD HTTP error"
@@ -2240,7 +2801,9 @@
 
 
         if (
-          !Array.isArray(data) ||
+          !Array.isArray(
+            data
+          ) ||
           data.length === 0 ||
           data[0] === null
         ) {
@@ -2274,7 +2837,9 @@
     }
 
 
-    /* 書誌画面 */
+    /* ======================================
+       書誌確認
+    ======================================= */
 
     function showConfirmScreen(
       book
@@ -2285,15 +2850,18 @@
         book.title
       );
 
+
       setDisplayValue(
         confirmAuthor,
         book.author
       );
 
+
       setDisplayValue(
         confirmPublisher,
         book.publisher
       );
+
 
       setDisplayValue(
         confirmIsbn,
@@ -2305,7 +2873,8 @@
 
         setDisplayValue(
           confirmPrice,
-          book.price + "円"
+          book.price +
+          "円"
         );
 
       } else {
@@ -2335,7 +2904,9 @@
     }
 
 
-    /* 手入力 */
+    /* ======================================
+       手入力
+    ======================================= */
 
     function openManualScreen(
       isbn = ""
@@ -2417,13 +2988,16 @@
     }
 
 
-    /* スキャン */
+    /* ======================================
+       スキャン
+    ======================================= */
 
     async function scanFrame(
       timestamp
     ) {
 
       if (!scanning) {
+
         return;
       }
 
@@ -2456,6 +3030,7 @@
       lastDecodeTime =
         timestamp;
 
+
       decoding =
         true;
 
@@ -2471,12 +3046,15 @@
 
         const cropWidth =
           Math.floor(
-            sourceWidth * 0.90
+            sourceWidth *
+            0.90
           );
+
 
         const cropHeight =
           Math.floor(
-            sourceHeight * 0.30
+            sourceHeight *
+            0.30
           );
 
 
@@ -2520,6 +3098,7 @@
         canvas.width =
           targetWidth;
 
+
         canvas.height =
           targetHeight;
 
@@ -2559,6 +3138,7 @@
               imageData,
 
               {
+
                 formats: [
                   "EAN13"
                 ],
@@ -2568,6 +3148,7 @@
 
                 maxNumberOfSymbols:
                   1
+
               }
 
             );
@@ -2589,7 +3170,9 @@
 
 
           if (
-            isSecondBarcode(code)
+            isSecondBarcode(
+              code
+            )
           ) {
 
             setMessage(
@@ -2604,7 +3187,9 @@
 
 
           } else if (
-            isIsbn(code)
+            isIsbn(
+              code
+            )
           ) {
 
             manualEntryButton
@@ -2666,7 +3251,9 @@
     }
 
 
-    /* ボタン */
+    /* ======================================
+       ボタン
+    ======================================= */
 
     startRegistrationButton
       .addEventListener(
@@ -2674,7 +3261,8 @@
         async function() {
 
           const name =
-            registrantNameInput.value
+            registrantNameInput
+              .value
               .trim();
 
 
@@ -2719,6 +3307,7 @@
 
           await stopCamera();
 
+
           showEndConfirmation();
 
         }
@@ -2736,6 +3325,17 @@
       );
 
 
+    changeRegistrantFromEndButton
+      .addEventListener(
+        "click",
+        function() {
+
+          openNameScreen();
+
+        }
+      );
+
+
     reallyEndRegistrationButton
       .addEventListener(
         "click",
@@ -2747,15 +3347,17 @@
       );
 
 
+    /*
+     * カメラ再起動は
+     * ページ再読込方式。
+     */
+
     cameraRetryButton
       .addEventListener(
         "click",
-        async function() {
+        function() {
 
-          cameraRetryButton.style.display =
-            "none";
-
-          await startCamera();
+          reloadForCameraRetry();
 
         }
       );
@@ -2767,6 +3369,7 @@
         async function() {
 
           await stopCamera();
+
 
           openManualScreen();
 
@@ -2780,8 +3383,10 @@
         async function() {
 
           if (saving) {
+
             return;
           }
+
 
           await startCamera();
 
@@ -2798,6 +3403,7 @@
             saving ||
             !currentBook
           ) {
+
             return;
           }
 
@@ -2808,6 +3414,7 @@
 
           confirmRegisterButton.disabled =
             true;
+
 
           confirmCancelButton.disabled =
             true;
@@ -2826,6 +3433,11 @@
             );
 
 
+            /*
+             * GAS保存成功後だけ
+             * 端末側集計へ加える。
+             */
+
             addBookToRegistrantStats(
               currentBook
             );
@@ -2843,6 +3455,7 @@
                 saving =
                   false;
 
+
                 await startCamera();
 
               },
@@ -2858,6 +3471,7 @@
 
             confirmRegisterButton.disabled =
               false;
+
 
             confirmCancelButton.disabled =
               false;
@@ -2880,8 +3494,10 @@
         async function() {
 
           if (saving) {
+
             return;
           }
+
 
           await startCamera();
 
@@ -2895,6 +3511,7 @@
         async function() {
 
           if (saving) {
+
             return;
           }
 
@@ -2911,7 +3528,9 @@
               true
             );
 
+
             manualTitle.focus();
+
 
             return;
           }
@@ -2930,7 +3549,9 @@
               true
             );
 
+
             manualIsbn.focus();
+
 
             return;
           }
@@ -2942,6 +3563,7 @@
 
           manualRegisterButton.disabled =
             true;
+
 
           manualCancelButton.disabled =
             true;
@@ -2977,6 +3599,7 @@
                 saving =
                   false;
 
+
                 await startCamera();
 
               },
@@ -2992,6 +3615,7 @@
 
             manualRegisterButton.disabled =
               false;
+
 
             manualCancelButton.disabled =
               false;
@@ -3050,6 +3674,7 @@
         async function() {
 
           if (!currentIsbn) {
+
             return;
           }
 
@@ -3086,7 +3711,9 @@
       );
 
 
-    /* 起動 */
+    /* ======================================
+       起動
+    ======================================= */
 
     window.addEventListener(
       "load",
@@ -3103,9 +3730,13 @@
           startupMessage.textContent =
             "バーコード読み取りプログラムを読み込めませんでした。";
 
-          startupMessage.classList.add(
-            "error"
-          );
+
+          startupMessage
+            .classList
+            .add(
+              "error"
+            );
+
 
           return;
         }
@@ -3116,9 +3747,64 @@
 
 
         if (!eventLoaded) {
+
           return;
         }
 
+
+        /*
+         * 同じ選書会の端末内履歴を復元。
+         */
+
+        loadLocalState();
+
+
+        /*
+         * カメラ再起動ボタンからの
+         * ページ再読み込みの場合のみ、
+         * 同じ登録者でカメラへ自動復帰する。
+         */
+
+        const retryKey =
+          "sumahoCameraRetry_" +
+          currentEventId;
+
+
+        const cameraRetry =
+          sessionStorage.getItem(
+            retryKey
+          );
+
+
+        if (
+          cameraRetry === "1" &&
+          currentRegistrant
+        ) {
+
+          sessionStorage.removeItem(
+            retryKey
+          );
+
+
+          ensureRegistrantStats(
+            currentRegistrant
+          );
+
+
+          await startCamera();
+
+
+          return;
+        }
+
+
+        /*
+         * 通常のQR読取・通常再訪問では
+         * 登録者画面を表示。
+         *
+         * 前回利用者がいれば
+         * ボタンから選択できる。
+         */
 
         openNameScreen();
 
@@ -3130,9 +3816,14 @@
       "pagehide",
       function() {
 
+        saveLocalState();
+
+
         clearCameraStartTimer();
 
+
         cameraStartGeneration++;
+
 
         stopCamera();
 
