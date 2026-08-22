@@ -95,17 +95,42 @@
       word-break: break-word;
     }
 
-    .description {
-      margin: 0 0 10px;
+    /*
+     * 読み取り画面だけ、登録先と登録者を
+     * 1つのコンパクトな欄にまとめる。
+     */
+    .scanner-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      background: #fff;
+      border-radius: 8px;
       text-align: center;
+    }
+
+    .scanner-meta-item {
+      min-width: 0;
+    }
+
+    .scanner-meta-label {
+      font-size: 11px;
+      color: #777;
+      margin-bottom: 1px;
+    }
+
+    .scanner-meta-value {
       font-size: 14px;
-      line-height: 1.5;
+      font-weight: bold;
+      line-height: 1.3;
+      word-break: break-word;
     }
 
     .camera-wrap {
       position: relative;
       width: 100%;
-      height: 270px;
+      height: 230px;
       background: #000;
       border-radius: 10px;
       overflow: hidden;
@@ -171,6 +196,44 @@
       font-size: 14px;
       line-height: 1.5;
       color: #555;
+    }
+
+    #message:empty {
+      display: none;
+    }
+
+    .scanner-status {
+      margin-top: 8px;
+      padding: 10px 14px;
+    }
+
+    .scanner-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .scanner-actions button {
+      margin-top: 0;
+      padding: 11px 8px;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .scanner-end-button {
+      margin-top: 8px;
+      padding: 11px 8px;
+      font-size: 14px;
+    }
+
+    .close-note {
+      margin-top: 18px;
+      padding: 12px;
+      background: #f3f3f3;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      line-height: 1.5;
     }
 
     .success {
@@ -357,7 +420,17 @@
 
     @media (max-height: 760px) {
       .camera-wrap {
-        height: 235px;
+        height: 210px;
+      }
+
+      .scanner-meta {
+        padding-top: 6px;
+        padding-bottom: 6px;
+      }
+
+      .scanner-status {
+        padding-top: 8px;
+        padding-bottom: 8px;
       }
     }
   </style>
@@ -509,35 +582,34 @@
              class="screen">
 
 
-      <div class="event-box">
+      <div class="scanner-meta">
 
-        <div class="event-label">
-          登録先
+        <div class="scanner-meta-item">
+
+          <div class="scanner-meta-label">
+            登録先
+          </div>
+
+          <div id="eventName"
+               class="scanner-meta-value">
+          </div>
+
         </div>
 
-        <div id="eventName"
-             class="event-name">
+
+        <div class="scanner-meta-item">
+
+          <div class="scanner-meta-label">
+            現在の登録者
+          </div>
+
+          <div id="currentRegistrantName"
+               class="scanner-meta-value">
+          </div>
+
         </div>
 
       </div>
-
-
-      <div class="user-bar">
-
-        <div class="user-label">
-          現在の登録者
-        </div>
-
-        <div id="currentRegistrantName"
-             class="user-name">
-        </div>
-
-      </div>
-
-
-      <p class="description">
-        本の1段目のバーコードを、白い枠の中に入れてください。
-      </p>
 
 
       <div class="camera-wrap">
@@ -559,7 +631,7 @@
       </div>
 
 
-      <section class="card status">
+      <section class="card status scanner-status">
 
         <div class="label">
           読み取ったコード
@@ -569,9 +641,7 @@
           まだありません
         </div>
 
-        <div id="message">
-          準備しています…
-        </div>
+        <div id="message"></div>
 
       </section>
 
@@ -587,30 +657,34 @@
       </button>
 
 
-      <button
-        id="manualEntryButton"
-        type="button"
-        class="secondary stack-button">
+      <div class="scanner-actions">
 
-        手入力で登録する
+        <button
+          id="manualEntryButton"
+          type="button"
+          class="secondary">
 
-      </button>
+          手入力で登録する
+
+        </button>
 
 
-      <button
-        id="changeRegistrantButton"
-        type="button"
-        class="secondary stack-button">
+        <button
+          id="changeRegistrantButton"
+          type="button"
+          class="secondary">
 
-        登録者を変更して続ける
+          登録者を変更して続ける
 
-      </button>
+        </button>
+
+      </div>
 
 
       <button
         id="endRegistrationButton"
         type="button"
-        class="end-button">
+        class="light scanner-end-button">
 
         この端末での登録を終了する
 
@@ -1081,6 +1155,11 @@
           </div>
 
         </div>
+
+
+        <p class="close-note">
+          この画面は閉じてかまいません。
+        </p>
 
 
         <p>
@@ -2334,8 +2413,12 @@
           "none";
 
 
+        /*
+         * 通常待機時はメッセージを表示しない。
+         * 枠内の案内だけを残す。
+         */
         setMessage(
-          "本の1段目のバーコードを白い枠に合わせてください。"
+          ""
         );
 
 
