@@ -17,7 +17,7 @@
 
     body {
       margin: 0;
-      padding: 24px 16px 40px;
+      padding: 20px 16px 36px;
       background: #f5f5f5;
       color: #222;
       font-family:
@@ -31,32 +31,44 @@
 
     .container {
       width: 100%;
-      max-width: 720px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
     h1 {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       text-align: center;
       font-size: 26px;
     }
 
     .subtitle {
-      margin-bottom: 26px;
+      margin-bottom: 18px;
       text-align: center;
       color: #666;
       font-size: 14px;
     }
 
+    /*
+     * PCでは2カラム
+     */
+    .admin-layout {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 0.9fr)
+        minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
     .card {
-      padding: 24px;
+      padding: 22px;
       background: #fff;
       border-radius: 12px;
     }
 
     h2 {
-      margin: 0 0 22px;
-      font-size: 22px;
+      margin: 0 0 18px;
+      font-size: 21px;
     }
 
     label {
@@ -88,13 +100,13 @@
 
     button {
       width: 100%;
-      margin-top: 22px;
-      padding: 14px;
+      margin-top: 18px;
+      padding: 13px;
       border: 0;
       border-radius: 8px;
       background: #333;
       color: #fff;
-      font-size: 17px;
+      font-size: 16px;
       cursor: pointer;
     }
 
@@ -114,10 +126,11 @@
 
     #message {
       display: none;
-      margin-top: 18px;
-      padding: 13px;
+      margin-top: 16px;
+      padding: 12px;
       border-radius: 8px;
       line-height: 1.6;
+      font-size: 14px;
     }
 
     #message.success {
@@ -132,65 +145,143 @@
       color: #a50018;
     }
 
-    #qrResult {
-      display: none;
-      margin-top: 22px;
-    }
-
+    /*
+     * QR表示欄
+     *
+     * 作成前でも右側の枠は出しておく。
+     * PCでレイアウトが崩れにくい。
+     */
     .qr-card {
-      padding: 24px;
+      min-height: 420px;
+      padding: 20px;
       background: #fff;
       border-radius: 12px;
       text-align: center;
     }
 
+    .qr-placeholder {
+      display: flex;
+      min-height: 360px;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    #qrResult {
+      display: none;
+    }
+
     .qr-label {
       color: #666;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     #resultEventName {
-      margin-top: 7px;
-      font-size: 23px;
+      margin-top: 5px;
+      font-size: 21px;
       font-weight: bold;
       word-break: break-word;
     }
 
     #qrcode {
       display: inline-block;
-      margin-top: 24px;
-      padding: 12px;
+      margin-top: 16px;
+      padding: 8px;
       background: #fff;
     }
 
     .qr-description {
-      margin-top: 18px;
-      font-size: 14px;
+      margin-top: 12px;
+      font-size: 13px;
       line-height: 1.6;
     }
 
     .url-box {
-      margin-top: 15px;
-      padding: 10px;
+      margin-top: 12px;
+      padding: 9px;
       background: #f5f5f5;
       border-radius: 7px;
       color: #555;
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 11px;
+      line-height: 1.45;
       word-break: break-all;
     }
 
     .button-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
       margin-top: 12px;
     }
 
+    .button-area button {
+      margin-top: 0;
+    }
+
     /*
-     * 印刷専用部分
+     * 印刷専用
      */
     #printArea {
       display: none;
     }
 
+    /*
+     * スマホ・狭い画面では縦並び
+     */
+    @media (max-width: 760px) {
+
+      body {
+        padding: 16px 14px 28px;
+      }
+
+      .container {
+        max-width: 620px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .subtitle {
+        margin-bottom: 14px;
+      }
+
+      .admin-layout {
+        display: block;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .qr-card {
+        min-height: auto;
+        margin-top: 14px;
+        padding: 20px;
+      }
+
+      .qr-placeholder {
+        min-height: 180px;
+      }
+
+      #qrcode {
+        margin-top: 18px;
+      }
+
+      .button-area {
+        display: block;
+      }
+
+      .button-area button {
+        margin-top: 10px;
+      }
+    }
+
+    /*
+     * 印刷
+     */
     @media print {
 
       body {
@@ -267,111 +358,125 @@
     </div>
 
 
-    <!-- ======================================
-         新しい選書会を作成
-    ======================================= -->
-
-    <section id="createArea"
-             class="card">
-
-      <h2>
-        新しい選書会を作成
-      </h2>
+    <div class="admin-layout">
 
 
-      <label for="eventNameInput">
-        選書会名
-      </label>
+      <!-- ======================================
+           左：新しい選書会を作成
+      ======================================= -->
+
+      <section id="createArea"
+               class="card">
+
+        <h2>
+          新しい選書会を作成
+        </h2>
 
 
-      <input
-        id="eventNameInput"
-        type="text"
-        maxlength="100"
-        autocomplete="off"
-        placeholder="例：図書委員会選書会">
+        <label for="eventNameInput">
+          選書会名
+        </label>
 
 
-      <div class="help">
-        入力した名前が管理用スプレッドシートの
-        シート名にもなります。
-      </div>
+        <input
+          id="eventNameInput"
+          type="text"
+          maxlength="100"
+          autocomplete="off"
+          placeholder="例：図書委員会選書会">
 
 
-      <button
-        id="createButton"
-        type="button">
-
-        QRコードを作成する
-
-      </button>
-
-
-      <div id="message">
-      </div>
-
-    </section>
-
-
-    <!-- ======================================
-         QRコード表示
-    ======================================= -->
-
-    <section id="qrResult">
-
-      <div class="qr-card">
-
-        <div class="qr-label">
-          選書会QRコード
+        <div class="help">
+          入力した名前が管理用スプレッドシートの
+          シート名にもなります。
         </div>
 
 
-        <div id="resultEventName">
+        <button
+          id="createButton"
+          type="button">
+
+          QRコードを作成する
+
+        </button>
+
+
+        <div id="message">
         </div>
 
-
-        <div id="qrcode">
-        </div>
+      </section>
 
 
-        <div class="qr-description">
+      <!-- ======================================
+           右：QRコード表示
+      ======================================= -->
 
-          このQRコードを登録者のスマートフォンで
-          読み取ってください。
+      <section class="qr-card">
+
+        <div id="qrPlaceholder"
+             class="qr-placeholder">
+
+          選書会を作成すると、<br>
+          ここにQRコードが表示されます。
 
         </div>
 
 
-        <div id="registrationUrl"
-             class="url-box">
+        <div id="qrResult">
+
+          <div class="qr-label">
+            選書会QRコード
+          </div>
+
+
+          <div id="resultEventName">
+          </div>
+
+
+          <div id="qrcode">
+          </div>
+
+
+          <div class="qr-description">
+
+            このQRコードを登録者のスマートフォンで
+            読み取ってください。
+
+          </div>
+
+
+          <div id="registrationUrl"
+               class="url-box">
+          </div>
+
+
+          <div class="button-area">
+
+            <button
+              id="printButton"
+              type="button">
+
+              印刷する
+
+            </button>
+
+
+            <button
+              id="createAnotherButton"
+              type="button"
+              class="light">
+
+              別の選書会を作成する
+
+            </button>
+
+          </div>
+
         </div>
 
+      </section>
 
-        <div class="button-area">
-
-          <button
-            id="printButton"
-            type="button">
-
-            印刷する
-
-          </button>
-
-
-          <button
-            id="createAnotherButton"
-            type="button"
-            class="light">
-
-            別の選書会を作成する
-
-          </button>
-
-        </div>
-
-      </div>
-
-    </section>
+    </div>
 
   </main>
 
@@ -465,8 +570,6 @@
   </section>
 
 
-  <!-- QRコード生成ライブラリ -->
-
   <script
     src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">
   </script>
@@ -507,6 +610,12 @@
     const message =
       document.getElementById(
         "message"
+      );
+
+
+    const qrPlaceholder =
+      document.getElementById(
+        "qrPlaceholder"
       );
 
 
@@ -552,8 +661,11 @@
      * ======================================
      */
 
-    let currentEventName = "";
-    let currentRegistrationUrl = "";
+    let currentEventName =
+      "";
+
+    let currentRegistrationUrl =
+      "";
 
 
     /*
@@ -623,6 +735,30 @@
 
         }
       );
+    }
+
+
+    /*
+     * ======================================
+     * 画面用QRコードのサイズ
+     *
+     * PC：230px
+     * スマホ：260px
+     * ======================================
+     */
+
+    function getScreenQrSize() {
+
+      if (
+        window.innerWidth <=
+        760
+      ) {
+
+        return 260;
+      }
+
+
+      return 230;
     }
 
 
@@ -700,7 +836,7 @@
       createQrCode(
         qrcode,
         url,
-        260
+        getScreenQrSize()
       );
 
 
@@ -764,13 +900,14 @@
       );
 
 
+      qrPlaceholder.style.display =
+        "none";
+
+
       qrResult.style.display =
         "block";
 
 
-      /*
-       * 作成後は入力欄側を少し薄くする
-       */
       eventNameInput.disabled =
         true;
 
@@ -804,7 +941,9 @@
           "error"
         );
 
+
         eventNameInput.focus();
+
 
         return;
       }
@@ -934,6 +1073,7 @@
 
             event.preventDefault();
 
+
             createEvent();
           }
 
@@ -972,6 +1112,10 @@
             "none";
 
 
+          qrPlaceholder.style.display =
+            "flex";
+
+
           eventNameInput.disabled =
             false;
 
@@ -991,6 +1135,34 @@
 
         }
       );
+
+
+    /*
+     * ======================================
+     * PC⇔スマホの画面幅変更時
+     * QRコードを描き直す
+     * ======================================
+     */
+
+    window.addEventListener(
+      "resize",
+      function() {
+
+        if (
+          currentRegistrationUrl &&
+          qrResult.style.display ===
+            "block"
+        ) {
+
+          createQrCode(
+            qrcode,
+            currentRegistrationUrl,
+            getScreenQrSize()
+          );
+        }
+
+      }
+    );
 
 
     /*
