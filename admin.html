@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width,
+        initial-scale=1.0">
+
+  <title>スマホde選書システム 管理画面</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px 16px 40px;
+      background: #f5f5f5;
+      color: #222;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: 26px;
+    }
+
+    .subtitle {
+      margin-bottom: 26px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .card {
+      padding: 24px;
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    h2 {
+      margin: 0 0 22px;
+      font-size: 22px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #bbb;
+      border-radius: 8px;
+      font-size: 17px;
+    }
+
+    input:focus {
+      outline: 2px solid #777;
+      border-color: #777;
+    }
+
+    .help {
+      margin-top: 8px;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      border: 0;
+      border-radius: 8px;
+      background: #333;
+      color: #fff;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #666;
+    }
+
+    button.light {
+      background: #ddd;
+      color: #222;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    #message {
+      display: none;
+      margin-top: 18px;
+      padding: 13px;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+
+    #message.success {
+      display: block;
+      background: #edf7ef;
+      color: #246132;
+    }
+
+    #message.error {
+      display: block;
+      background: #fff0f0;
+      color: #a50018;
+    }
+
+    #qrResult {
+      display: none;
+      margin-top: 22px;
+    }
+
+    .qr-card {
+      padding: 24px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .qr-label {
+      color: #666;
+      font-size: 14px;
+    }
+
+    #resultEventName {
+      margin-top: 7px;
+      font-size: 23px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    #qrcode {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .qr-description {
+      margin-top: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .url-box {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 7px;
+      color: #555;
+      font-size: 12px;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    .button-area {
+      margin-top: 12px;
+    }
+
+    /*
+     * 印刷専用部分
+     */
+    #printArea {
+      display: none;
+    }
+
+    @media print {
+
+      body {
+        padding: 0;
+        background: #fff;
+      }
+
+      .container {
+        display: none !important;
+      }
+
+      #printArea {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        width: 210mm;
+        height: 297mm;
+        padding: 10mm;
+        gap: 8mm;
+      }
+
+      .print-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 1px dashed #aaa;
+        text-align: center;
+        overflow: hidden;
+      }
+
+      .print-title {
+        margin-bottom: 6px;
+        font-size: 14pt;
+        font-weight: bold;
+      }
+
+      .print-event-name {
+        margin-bottom: 8px;
+        font-size: 16pt;
+        font-weight: bold;
+        word-break: break-word;
+      }
+
+      .print-date {
+        margin-bottom: 8px;
+        font-size: 10pt;
+      }
+
+      .print-qr {
+        margin: 5px;
+      }
+
+      .print-note {
+        margin-top: 8px;
+        font-size: 10pt;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <main class="container">
+
+    <h1>
+      スマホde選書システム
+    </h1>
+
+    <div class="subtitle">
+      管理者画面
+    </div>
+
+
+    <!-- ======================================
+         新しい選書会を作成
+    ======================================= -->
+
+    <section id="createArea"
+             class="card">
+
+      <h2>
+        新しい選書会を作成
+      </h2>
+
+
+      <label for="eventNameInput">
+        選書会名
+      </label>
+
+
+      <input
+        id="eventNameInput"
+        type="text"
+        maxlength="100"
+        autocomplete="off"
+        placeholder="例：図書委員会選書会">
+
+
+      <div class="help">
+        入力した名前が管理用スプレッドシートの
+        シート名にもなります。
+      </div>
+
+
+      <button
+        id="createButton"
+        type="button">
+
+        QRコードを作成する
+
+      </button>
+
+
+      <div id="message">
+      </div>
+
+    </section>
+
+
+    <!-- ======================================
+         QRコード表示
+    ======================================= -->
+
+    <section id="qrResult">
+
+      <div class="qr-card">
+
+        <div class="qr-label">
+          選書会QRコード
+        </div>
+
+
+        <div id="resultEventName">
+        </div>
+
+
+        <div id="qrcode">
+        </div>
+
+
+        <div class="qr-description">
+
+          このQRコードを登録者のスマートフォンで
+          読み取ってください。
+
+        </div>
+
+
+        <div id="registrationUrl"
+             class="url-box">
+        </div>
+
+
+        <div class="button-area">
+
+          <button
+            id="printButton"
+            type="button">
+
+            印刷する
+
+          </button>
+
+
+          <button
+            id="createAnotherButton"
+            type="button"
+            class="light">
+
+            別の選書会を作成する
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ======================================
+       A4印刷用
+       2列×2段＝4枚
+  ======================================= -->
+
+  <section id="printArea">
+
+    <div class="print-card">
+      <div class="print-title">
+        スマホde選書システム
+      </div>
+
+      <div class="print-event-name">
+      </div>
+
+      <div class="print-date">
+      </div>
+
+      <div class="print-qr">
+      </div>
+
+      <div class="print-note">
+        このQRコードを読み取ってください
+      </div>
+    </div>
+
+
+    <div class="print-card">
+      <div class="print-title">
+        スマホde選書システム
+      </div>
+
+      <div class="print-event-name">
+      </div>
+
+      <div class="print-date">
+      </div>
+
+      <div class="print-qr">
+      </div>
+
+      <div class="print-note">
+        このQRコードを読み取ってください
+      </div>
+    </div>
+
+
+    <div class="print-card">
+      <div class="print-title">
+        スマホde選書システム
+      </div>
+
+      <div class="print-event-name">
+      </div>
+
+      <div class="print-date">
+      </div>
+
+      <div class="print-qr">
+      </div>
+
+      <div class="print-note">
+        このQRコードを読み取ってください
+      </div>
+    </div>
+
+
+    <div class="print-card">
+      <div class="print-title">
+        スマホde選書システム
+      </div>
+
+      <div class="print-event-name">
+      </div>
+
+      <div class="print-date">
+      </div>
+
+      <div class="print-qr">
+      </div>
+
+      <div class="print-note">
+        このQRコードを読み取ってください
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- QRコード生成ライブラリ -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">
+  </script>
+
+
+  <script>
+    "use strict";
+
+
+    /*
+     * ======================================
+     * GAS WebアプリURL
+     * ======================================
+     */
+
+    const GAS_WEB_APP_URL =
+      "https://script.google.com/macros/s/AKfycbz7PgpVIsQjR80eDHRorDqkA8FGO5SLBDiuSaCYjx-wQIlgKllduC0CU3ZD1RrbPxzT/exec";
+
+
+    /*
+     * ======================================
+     * DOM
+     * ======================================
+     */
+
+    const eventNameInput =
+      document.getElementById(
+        "eventNameInput"
+      );
+
+
+    const createButton =
+      document.getElementById(
+        "createButton"
+      );
+
+
+    const message =
+      document.getElementById(
+        "message"
+      );
+
+
+    const qrResult =
+      document.getElementById(
+        "qrResult"
+      );
+
+
+    const resultEventName =
+      document.getElementById(
+        "resultEventName"
+      );
+
+
+    const qrcode =
+      document.getElementById(
+        "qrcode"
+      );
+
+
+    const registrationUrl =
+      document.getElementById(
+        "registrationUrl"
+      );
+
+
+    const printButton =
+      document.getElementById(
+        "printButton"
+      );
+
+
+    const createAnotherButton =
+      document.getElementById(
+        "createAnotherButton"
+      );
+
+
+    /*
+     * ======================================
+     * 状態
+     * ======================================
+     */
+
+    let currentEventName = "";
+    let currentRegistrationUrl = "";
+
+
+    /*
+     * ======================================
+     * メッセージ
+     * ======================================
+     */
+
+    function showMessage(
+      text,
+      type
+    ) {
+
+      message.textContent =
+        text;
+
+
+      message.className =
+        type;
+    }
+
+
+    function clearMessage() {
+
+      message.textContent =
+        "";
+
+      message.className =
+        "";
+
+      message.style.display =
+        "none";
+    }
+
+
+    /*
+     * ======================================
+     * QRコード生成
+     * ======================================
+     */
+
+    function createQrCode(
+      target,
+      url,
+      size
+    ) {
+
+      target.innerHTML =
+        "";
+
+
+      new QRCode(
+        target,
+        {
+
+          text:
+            url,
+
+          width:
+            size,
+
+          height:
+            size,
+
+          correctLevel:
+            QRCode.CorrectLevel.M
+
+        }
+      );
+    }
+
+
+    /*
+     * ======================================
+     * 印刷日
+     * ======================================
+     */
+
+    function getPrintDate() {
+
+      const now =
+        new Date();
+
+
+      const year =
+        now.getFullYear();
+
+
+      const month =
+        String(
+          now.getMonth() + 1
+        ).padStart(
+          2,
+          "0"
+        );
+
+
+      const day =
+        String(
+          now.getDate()
+        ).padStart(
+          2,
+          "0"
+        );
+
+
+      return (
+        year +
+        "/" +
+        month +
+        "/" +
+        day
+      );
+    }
+
+
+    /*
+     * ======================================
+     * QRコード表示
+     * ======================================
+     */
+
+    function showQrResult(
+      eventName,
+      url
+    ) {
+
+      currentEventName =
+        eventName;
+
+
+      currentRegistrationUrl =
+        url;
+
+
+      resultEventName.textContent =
+        eventName;
+
+
+      registrationUrl.textContent =
+        url;
+
+
+      createQrCode(
+        qrcode,
+        url,
+        260
+      );
+
+
+      /*
+       * 印刷用4枚
+       */
+
+      const printNames =
+        document.querySelectorAll(
+          ".print-event-name"
+        );
+
+
+      const printDates =
+        document.querySelectorAll(
+          ".print-date"
+        );
+
+
+      const printQrs =
+        document.querySelectorAll(
+          ".print-qr"
+        );
+
+
+      const date =
+        getPrintDate();
+
+
+      printNames.forEach(
+        function(element) {
+
+          element.textContent =
+            eventName;
+
+        }
+      );
+
+
+      printDates.forEach(
+        function(element) {
+
+          element.textContent =
+            "印刷日：" +
+            date;
+
+        }
+      );
+
+
+      printQrs.forEach(
+        function(element) {
+
+          createQrCode(
+            element,
+            url,
+            180
+          );
+
+        }
+      );
+
+
+      qrResult.style.display =
+        "block";
+
+
+      /*
+       * 作成後は入力欄側を少し薄くする
+       */
+      eventNameInput.disabled =
+        true;
+
+
+      createButton.disabled =
+        true;
+    }
+
+
+    /*
+     * ======================================
+     * 選書会作成
+     * ======================================
+     */
+
+    async function createEvent() {
+
+      clearMessage();
+
+
+      const eventName =
+        eventNameInput
+          .value
+          .trim();
+
+
+      if (!eventName) {
+
+        showMessage(
+          "選書会名を入力してください。",
+          "error"
+        );
+
+        eventNameInput.focus();
+
+        return;
+      }
+
+
+      createButton.disabled =
+        true;
+
+
+      createButton.textContent =
+        "作成しています…";
+
+
+      try {
+
+        const payload = {
+
+          action:
+            "createEvent",
+
+          eventName:
+            eventName
+
+        };
+
+
+        const response =
+          await fetch(
+            GAS_WEB_APP_URL,
+            {
+
+              method:
+                "POST",
+
+              headers: {
+
+                "Content-Type":
+                  "text/plain;charset=utf-8"
+
+              },
+
+              body:
+                JSON.stringify(
+                  payload
+                )
+
+            }
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "通信エラーが発生しました。"
+          );
+        }
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "選書会を作成できませんでした。"
+          );
+        }
+
+
+        showMessage(
+          "選書会を作成しました。",
+          "success"
+        );
+
+
+        showQrResult(
+          result.eventName,
+          result.registrationUrl
+        );
+
+
+      } catch (error) {
+
+        showMessage(
+          error.message ||
+          "選書会を作成できませんでした。",
+          "error"
+        );
+
+
+        createButton.disabled =
+          false;
+
+
+      } finally {
+
+        createButton.textContent =
+          "QRコードを作成する";
+      }
+    }
+
+
+    /*
+     * ======================================
+     * ボタン
+     * ======================================
+     */
+
+    createButton
+      .addEventListener(
+        "click",
+        createEvent
+      );
+
+
+    eventNameInput
+      .addEventListener(
+        "keydown",
+        function(event) {
+
+          if (
+            event.key ===
+            "Enter"
+          ) {
+
+            event.preventDefault();
+
+            createEvent();
+          }
+
+        }
+      );
+
+
+    printButton
+      .addEventListener(
+        "click",
+        function() {
+
+          window.print();
+
+        }
+      );
+
+
+    createAnotherButton
+      .addEventListener(
+        "click",
+        function() {
+
+          currentEventName =
+            "";
+
+          currentRegistrationUrl =
+            "";
+
+
+          qrcode.innerHTML =
+            "";
+
+
+          qrResult.style.display =
+            "none";
+
+
+          eventNameInput.disabled =
+            false;
+
+
+          eventNameInput.value =
+            "";
+
+
+          createButton.disabled =
+            false;
+
+
+          clearMessage();
+
+
+          eventNameInput.focus();
+
+        }
+      );
+
+
+    /*
+     * ======================================
+     * 初期表示
+     * ======================================
+     */
+
+    window.addEventListener(
+      "load",
+      function() {
+
+        eventNameInput.focus();
+
+      }
+    );
+
+  </script>
+
+</body>
+
+</html>
