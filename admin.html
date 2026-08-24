@@ -47,11 +47,6 @@
       font-size: 22px;
     }
 
-    h3 {
-      margin: 0;
-      font-size: 18px;
-    }
-
     .subtitle {
       margin-bottom: 18px;
       text-align: center;
@@ -91,6 +86,11 @@
     button.light {
       background: #ddd;
       color: #222;
+    }
+
+    button.danger {
+      background: #9b1c1c;
+      color: #fff;
     }
 
     button:disabled {
@@ -261,6 +261,10 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-top: 12px;
+    }
+
+    .full-button {
+      grid-column: 1 / -1;
     }
 
     .back-area {
@@ -461,6 +465,121 @@
       text-align: center;
     }
 
+    .end-action-area {
+      max-width: 420px;
+      margin: 20px auto 0;
+    }
+
+
+    /* ======================================
+       終了確認・終了完了
+    ======================================= */
+
+    .confirm-card {
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 26px;
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    .confirm-card h2 {
+      text-align: center;
+    }
+
+    .confirm-event-name {
+      margin: 14px 0 20px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    .confirm-summary {
+      display: grid;
+      grid-template-columns:
+        repeat(3, 1fr);
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .confirm-summary-item {
+      padding: 14px 8px;
+      background: #f6f6f6;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .confirm-summary-label {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .confirm-summary-value {
+      margin-top: 5px;
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    .warning-box {
+      margin-top: 18px;
+      padding: 14px;
+      background: #fff7e5;
+      border-radius: 8px;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .confirm-buttons {
+      display: grid;
+      grid-template-columns:
+        1fr 1fr;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    #endMessage {
+      display: none;
+      margin-top: 14px;
+      padding: 12px;
+      background: #fff0f0;
+      border-radius: 8px;
+      color: #a50018;
+      font-size: 14px;
+    }
+
+    .finished-card {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .finished-title {
+      font-size: 23px;
+      font-weight: bold;
+    }
+
+    .finished-event-name {
+      margin-top: 18px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .finished-count {
+      margin-top: 12px;
+      font-size: 18px;
+    }
+
+    .finished-note {
+      margin-top: 22px;
+      color: #555;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
 
     /* ======================================
        印刷
@@ -553,11 +672,23 @@
       .status-value {
         font-size: 23px;
       }
+
+      .confirm-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .confirm-buttons {
+        display: block;
+      }
+
+      .confirm-buttons button + button {
+        margin-top: 10px;
+      }
     }
 
 
     /* ======================================
-       印刷時
+       印刷
     ======================================= */
 
     @media print {
@@ -636,9 +767,7 @@
     </div>
 
 
-    <!-- ======================================
-         1. 管理画面トップ
-    ======================================= -->
+    <!-- 管理画面トップ -->
 
     <section id="topScreen"
              class="screen active">
@@ -693,15 +822,12 @@
     </section>
 
 
-    <!-- ======================================
-         2. 新しい選書会
-    ======================================= -->
+    <!-- 新しい選書会 -->
 
     <section id="createScreen"
              class="screen">
 
       <div class="admin-layout">
-
 
         <section class="card">
 
@@ -709,11 +835,9 @@
             新しい選書会を作成
           </h2>
 
-
           <label for="eventNameInput">
             選書会名
           </label>
-
 
           <input
             id="eventNameInput"
@@ -722,12 +846,10 @@
             autocomplete="off"
             placeholder="例：図書委員会選書会">
 
-
           <div class="help">
             入力した名前が管理用スプレッドシートの
             シート名にもなります。
           </div>
-
 
           <button
             id="createButton"
@@ -738,10 +860,8 @@
 
           </button>
 
-
           <div id="createMessage">
           </div>
-
 
           <div class="back-area">
 
@@ -776,27 +896,20 @@
               選書会QRコード
             </div>
 
-
             <div id="resultEventName">
             </div>
-
 
             <div id="qrcode">
             </div>
 
-
             <div class="qr-description">
-
               このQRコードを登録者の
               スマートフォンで読み取ってください。
-
             </div>
-
 
             <div id="registrationUrl"
                  class="url-box">
             </div>
-
 
             <div class="button-area">
 
@@ -808,13 +921,21 @@
 
               </button>
 
-
               <button
                 id="createAnotherButton"
                 type="button"
                 class="light">
 
                 別の選書会を作成する
+
+              </button>
+
+              <button
+                id="qrBackButton"
+                type="button"
+                class="light full-button">
+
+                管理画面に戻る
 
               </button>
 
@@ -829,9 +950,7 @@
     </section>
 
 
-    <!-- ======================================
-         3. 開催中一覧
-    ======================================= -->
+    <!-- 開催中一覧 -->
 
     <section id="activeScreen"
              class="screen">
@@ -841,7 +960,6 @@
         <h2>
           開催中の選書会
         </h2>
-
 
         <button
           id="activeBackButton"
@@ -854,23 +972,17 @@
 
       </div>
 
-
       <div id="activeLoading">
         読み込んでいます…
       </div>
 
-
       <div id="activeEmpty">
-
         現在、開催中の選書会はありません。
-
       </div>
-
 
       <div id="activeEventList"
            class="event-list">
       </div>
-
 
       <button
         id="moreButton"
@@ -884,20 +996,16 @@
     </section>
 
 
-    <!-- ======================================
-         4. 選書会詳細
-    ======================================= -->
+    <!-- 詳細 -->
 
     <section id="detailScreen"
              class="screen">
-
 
       <div class="active-header">
 
         <h2>
           開催中の選書会
         </h2>
-
 
         <button
           id="detailBackButton"
@@ -910,15 +1018,12 @@
 
       </div>
 
-
       <div id="detailLoading">
         読み込んでいます…
       </div>
 
-
       <div id="detailContent"
            style="display:none;">
-
 
         <div class="detail-title">
 
@@ -929,7 +1034,6 @@
 
 
         <div class="status-grid">
-
 
           <div class="status-card">
 
@@ -1004,7 +1108,6 @@
 
           <div class="latest-grid">
 
-
             <div class="latest-item">
 
               <div class="latest-label">
@@ -1013,9 +1116,7 @@
 
               <div id="detailLastRegistrant"
                    class="latest-value">
-
                 －
-
               </div>
 
             </div>
@@ -1029,13 +1130,10 @@
 
               <div id="detailLastTime"
                    class="latest-value">
-
                 －
-
               </div>
 
             </div>
-
 
           </div>
 
@@ -1043,15 +1141,175 @@
 
 
         <div class="auto-update">
-
           登録状況は10秒ごとに自動更新されます。
-
         </div>
 
 
         <div id="detailError">
         </div>
 
+
+        <div class="end-action-area">
+
+          <button
+            id="goEndConfirmButton"
+            type="button"
+            class="danger">
+
+            この選書会の登録を終了する
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- 終了確認 -->
+
+    <section id="endConfirmScreen"
+             class="screen">
+
+      <div class="confirm-card">
+
+        <h2>
+          この選書会の登録を終了しますか？
+        </h2>
+
+        <div id="endConfirmEventName"
+             class="confirm-event-name">
+        </div>
+
+
+        <div class="confirm-summary">
+
+          <div class="confirm-summary-item">
+
+            <div class="confirm-summary-label">
+              登録者数
+            </div>
+
+            <div id="endConfirmRegistrantCount"
+                 class="confirm-summary-value">
+              0人
+            </div>
+
+          </div>
+
+
+          <div class="confirm-summary-item">
+
+            <div class="confirm-summary-label">
+              登録冊数
+            </div>
+
+            <div id="endConfirmBookCount"
+                 class="confirm-summary-value">
+              0冊
+            </div>
+
+          </div>
+
+
+          <div class="confirm-summary-item">
+
+            <div class="confirm-summary-label">
+              登録金額
+            </div>
+
+            <div id="endConfirmPriceTotal"
+                 class="confirm-summary-value">
+              0円
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div id="endConfirmPriceNote"
+             class="help"
+             style="display:none; text-align:center;">
+        </div>
+
+
+        <div class="warning-box">
+
+          登録したデータはGoogleスプレッドシートに保存されています。<br><br>
+
+          登録を終了すると、この選書会のQRコードからは
+          新しい本を登録できなくなります。
+
+        </div>
+
+
+        <div class="confirm-buttons">
+
+          <button
+            id="cancelEndButton"
+            type="button"
+            class="light">
+
+            戻る
+
+          </button>
+
+          <button
+            id="confirmEndButton"
+            type="button"
+            class="danger">
+
+            登録を終了する
+
+          </button>
+
+        </div>
+
+
+        <div id="endMessage">
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- 終了完了 -->
+
+    <section id="endFinishedScreen"
+             class="screen">
+
+      <div class="finished-card">
+
+        <div class="finished-title">
+          選書会の登録を終了しました
+        </div>
+
+        <div id="finishedEventName"
+             class="finished-event-name">
+        </div>
+
+        <div id="finishedBookCount"
+             class="finished-count">
+        </div>
+
+        <div class="finished-note">
+
+          登録データはGoogleスプレッドシートに
+          保存されています。
+
+        </div>
+
+        <button
+          id="finishedBackButton"
+          type="button"
+          class="stack-button">
+
+          管理画面に戻る
+
+        </button>
 
       </div>
 
@@ -1060,61 +1318,40 @@
   </main>
 
 
-  <!-- ======================================
-       QRコード印刷用
-  ======================================= -->
+  <!-- 印刷 -->
 
   <section id="printArea">
 
     <div class="print-card">
-      <div class="print-title">
-        スマホde選書システム
-      </div>
+      <div class="print-title">スマホde選書システム</div>
       <div class="print-event-name"></div>
       <div class="print-date"></div>
       <div class="print-qr"></div>
-      <div class="print-note">
-        このQRコードを読み取ってください
-      </div>
+      <div class="print-note">このQRコードを読み取ってください</div>
     </div>
 
-
     <div class="print-card">
-      <div class="print-title">
-        スマホde選書システム
-      </div>
+      <div class="print-title">スマホde選書システム</div>
       <div class="print-event-name"></div>
       <div class="print-date"></div>
       <div class="print-qr"></div>
-      <div class="print-note">
-        このQRコードを読み取ってください
-      </div>
+      <div class="print-note">このQRコードを読み取ってください</div>
     </div>
 
-
     <div class="print-card">
-      <div class="print-title">
-        スマホde選書システム
-      </div>
+      <div class="print-title">スマホde選書システム</div>
       <div class="print-event-name"></div>
       <div class="print-date"></div>
       <div class="print-qr"></div>
-      <div class="print-note">
-        このQRコードを読み取ってください
-      </div>
+      <div class="print-note">このQRコードを読み取ってください</div>
     </div>
 
-
     <div class="print-card">
-      <div class="print-title">
-        スマホde選書システム
-      </div>
+      <div class="print-title">スマホde選書システム</div>
       <div class="print-event-name"></div>
       <div class="print-date"></div>
       <div class="print-qr"></div>
-      <div class="print-note">
-        このQRコードを読み取ってください
-      </div>
+      <div class="print-note">このQRコードを読み取ってください</div>
     </div>
 
   </section>
@@ -1129,194 +1366,97 @@
     "use strict";
 
 
-    /* ======================================
-       GAS
-    ======================================= */
-
     const GAS_WEB_APP_URL =
       "https://script.google.com/macros/s/AKfycbz7PgpVIsQjR80eDHRorDqkA8FGO5SLBDiuSaCYjx-wQIlgKllduC0CU3ZD1RrbPxzT/exec";
 
 
-    /* ======================================
-       DOM
-    ======================================= */
+    const screens = {
+      top:
+        document.getElementById("topScreen"),
 
-    const topScreen =
-      document.getElementById(
-        "topScreen"
-      );
+      create:
+        document.getElementById("createScreen"),
 
-    const createScreen =
-      document.getElementById(
-        "createScreen"
-      );
+      active:
+        document.getElementById("activeScreen"),
 
-    const activeScreen =
-      document.getElementById(
-        "activeScreen"
-      );
+      detail:
+        document.getElementById("detailScreen"),
 
-    const detailScreen =
-      document.getElementById(
-        "detailScreen"
-      );
+      endConfirm:
+        document.getElementById("endConfirmScreen"),
 
-
-    const goCreateButton =
-      document.getElementById(
-        "goCreateButton"
-      );
-
-    const goActiveButton =
-      document.getElementById(
-        "goActiveButton"
-      );
+      endFinished:
+        document.getElementById("endFinishedScreen")
+    };
 
 
     const eventNameInput =
-      document.getElementById(
-        "eventNameInput"
-      );
+      document.getElementById("eventNameInput");
 
     const createButton =
-      document.getElementById(
-        "createButton"
-      );
+      document.getElementById("createButton");
 
     const createMessage =
-      document.getElementById(
-        "createMessage"
-      );
+      document.getElementById("createMessage");
 
     const qrPlaceholder =
-      document.getElementById(
-        "qrPlaceholder"
-      );
+      document.getElementById("qrPlaceholder");
 
     const qrResult =
-      document.getElementById(
-        "qrResult"
-      );
+      document.getElementById("qrResult");
 
     const resultEventName =
-      document.getElementById(
-        "resultEventName"
-      );
+      document.getElementById("resultEventName");
 
     const qrcode =
-      document.getElementById(
-        "qrcode"
-      );
+      document.getElementById("qrcode");
 
     const registrationUrl =
-      document.getElementById(
-        "registrationUrl"
-      );
-
-    const printButton =
-      document.getElementById(
-        "printButton"
-      );
-
-    const createAnotherButton =
-      document.getElementById(
-        "createAnotherButton"
-      );
-
-    const createBackButton =
-      document.getElementById(
-        "createBackButton"
-      );
-
-
-    const activeBackButton =
-      document.getElementById(
-        "activeBackButton"
-      );
+      document.getElementById("registrationUrl");
 
     const activeLoading =
-      document.getElementById(
-        "activeLoading"
-      );
+      document.getElementById("activeLoading");
 
     const activeEmpty =
-      document.getElementById(
-        "activeEmpty"
-      );
+      document.getElementById("activeEmpty");
 
     const activeEventList =
-      document.getElementById(
-        "activeEventList"
-      );
+      document.getElementById("activeEventList");
 
     const moreButton =
-      document.getElementById(
-        "moreButton"
-      );
-
-
-    const detailBackButton =
-      document.getElementById(
-        "detailBackButton"
-      );
+      document.getElementById("moreButton");
 
     const detailLoading =
-      document.getElementById(
-        "detailLoading"
-      );
+      document.getElementById("detailLoading");
 
     const detailContent =
-      document.getElementById(
-        "detailContent"
-      );
+      document.getElementById("detailContent");
 
     const detailEventName =
-      document.getElementById(
-        "detailEventName"
-      );
+      document.getElementById("detailEventName");
 
     const detailRegistrantCount =
-      document.getElementById(
-        "detailRegistrantCount"
-      );
+      document.getElementById("detailRegistrantCount");
 
     const detailBookCount =
-      document.getElementById(
-        "detailBookCount"
-      );
+      document.getElementById("detailBookCount");
 
     const detailPriceTotal =
-      document.getElementById(
-        "detailPriceTotal"
-      );
+      document.getElementById("detailPriceTotal");
 
     const detailLastRegistrant =
-      document.getElementById(
-        "detailLastRegistrant"
-      );
+      document.getElementById("detailLastRegistrant");
 
     const detailLastTime =
-      document.getElementById(
-        "detailLastTime"
-      );
+      document.getElementById("detailLastTime");
 
     const unknownPriceNote =
-      document.getElementById(
-        "unknownPriceNote"
-      );
+      document.getElementById("unknownPriceNote");
 
     const detailError =
-      document.getElementById(
-        "detailError"
-      );
+      document.getElementById("detailError");
 
-
-    /* ======================================
-       状態
-    ======================================= */
-
-    let currentEventName =
-      "";
 
     let currentRegistrationUrl =
       "";
@@ -1330,13 +1470,12 @@
     let currentDetailEventId =
       "";
 
+    let currentDetailData =
+      null;
+
     let detailTimer =
       null;
 
-
-    /* ======================================
-       画面切替
-    ======================================= */
 
     function showScreen(
       screen
@@ -1345,122 +1484,21 @@
       stopDetailAutoUpdate();
 
 
-      [
-        topScreen,
-        createScreen,
-        activeScreen,
-        detailScreen
+      Object
+        .values(screens)
+        .forEach(
+          function(item) {
 
-      ].forEach(
-        function(item) {
+            item.classList.remove(
+              "active"
+            );
 
-          item.classList.remove(
-            "active"
-          );
-
-        }
-      );
+          }
+        );
 
 
       screen.classList.add(
         "active"
-      );
-    }
-
-
-    /* ======================================
-       共通日時
-    ======================================= */
-
-    function formatDateTime(
-      iso
-    ) {
-
-      if (!iso) {
-        return "－";
-      }
-
-
-      const date =
-        new Date(
-          iso
-        );
-
-
-      if (
-        isNaN(
-          date.getTime()
-        )
-      ) {
-        return "－";
-      }
-
-
-      return new Intl.DateTimeFormat(
-        "ja-JP",
-        {
-          year:
-            "numeric",
-
-          month:
-            "2-digit",
-
-          day:
-            "2-digit",
-
-          hour:
-            "2-digit",
-
-          minute:
-            "2-digit",
-
-          hour12:
-            false
-        }
-      ).format(
-        date
-      );
-    }
-
-
-    function formatTime(
-      iso
-    ) {
-
-      if (!iso) {
-        return "－";
-      }
-
-
-      const date =
-        new Date(
-          iso
-        );
-
-
-      if (
-        isNaN(
-          date.getTime()
-        )
-      ) {
-        return "－";
-      }
-
-
-      return new Intl.DateTimeFormat(
-        "ja-JP",
-        {
-          hour:
-            "2-digit",
-
-          minute:
-            "2-digit",
-
-          hour12:
-            false
-        }
-      ).format(
-        date
       );
     }
 
@@ -1477,34 +1515,76 @@
     }
 
 
-    /* ======================================
-       新しい選書会
-    ======================================= */
-
-    function showCreateMessage(
-      text,
-      type
+    function formatDateTime(
+      iso
     ) {
 
-      createMessage.textContent =
-        text;
+      if (!iso) {
+        return "－";
+      }
 
-      createMessage.className =
-        type;
+
+      const date =
+        new Date(iso);
+
+
+      if (
+        isNaN(
+          date.getTime()
+        )
+      ) {
+        return "－";
+      }
+
+
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        }
+      ).format(date);
     }
 
 
-    function clearCreateMessage() {
+    function formatTime(
+      iso
+    ) {
 
-      createMessage.textContent =
-        "";
+      if (!iso) {
+        return "－";
+      }
 
-      createMessage.className =
-        "";
 
-      createMessage.style.display =
-        "none";
+      const date =
+        new Date(iso);
+
+
+      if (
+        isNaN(
+          date.getTime()
+        )
+      ) {
+        return "－";
+      }
+
+
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        }
+      ).format(date);
     }
+
+
+    /* QR */
 
 
     function createQrCode(
@@ -1520,15 +1600,9 @@
       new QRCode(
         target,
         {
-          text:
-            url,
-
-          width:
-            size,
-
-          height:
-            size,
-
+          text: url,
+          width: size,
+          height: size,
           correctLevel:
             QRCode.CorrectLevel.M
         }
@@ -1548,25 +1622,69 @@
 
     function getPrintDate() {
 
-      const now =
-        new Date();
-
-
       return new Intl.DateTimeFormat(
         "ja-JP",
         {
-          year:
-            "numeric",
-
-          month:
-            "2-digit",
-
-          day:
-            "2-digit"
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
         }
       ).format(
-        now
+        new Date()
       );
+    }
+
+
+    function clearCreateMessage() {
+
+      createMessage.textContent =
+        "";
+
+      createMessage.className =
+        "";
+
+      createMessage.style.display =
+        "none";
+    }
+
+
+    function showCreateMessage(
+      text,
+      type
+    ) {
+
+      createMessage.textContent =
+        text;
+
+      createMessage.className =
+        type;
+    }
+
+
+    function resetCreateScreen() {
+
+      currentRegistrationUrl =
+        "";
+
+      qrcode.innerHTML =
+        "";
+
+      qrResult.style.display =
+        "none";
+
+      qrPlaceholder.style.display =
+        "flex";
+
+      eventNameInput.disabled =
+        false;
+
+      eventNameInput.value =
+        "";
+
+      createButton.disabled =
+        false;
+
+      clearCreateMessage();
     }
 
 
@@ -1575,12 +1693,8 @@
       url
     ) {
 
-      currentEventName =
-        eventName;
-
       currentRegistrationUrl =
         url;
-
 
       resultEventName.textContent =
         eventName;
@@ -1596,17 +1710,17 @@
       );
 
 
-      const printNames =
+      const names =
         document.querySelectorAll(
           ".print-event-name"
         );
 
-      const printDates =
+      const dates =
         document.querySelectorAll(
           ".print-date"
         );
 
-      const printQrs =
+      const qrs =
         document.querySelectorAll(
           ".print-qr"
         );
@@ -1616,7 +1730,7 @@
         getPrintDate();
 
 
-      printNames.forEach(
+      names.forEach(
         function(element) {
 
           element.textContent =
@@ -1626,7 +1740,7 @@
       );
 
 
-      printDates.forEach(
+      dates.forEach(
         function(element) {
 
           element.textContent =
@@ -1637,7 +1751,7 @@
       );
 
 
-      printQrs.forEach(
+      qrs.forEach(
         function(element) {
 
           createQrCode(
@@ -1655,7 +1769,6 @@
 
       qrResult.style.display =
         "block";
-
 
       eventNameInput.disabled =
         true;
@@ -1683,8 +1796,6 @@
           "error"
         );
 
-        eventNameInput.focus();
-
         return;
       }
 
@@ -1702,8 +1813,7 @@
           await fetch(
             GAS_WEB_APP_URL,
             {
-              method:
-                "POST",
+              method: "POST",
 
               headers: {
                 "Content-Type":
@@ -1729,8 +1839,7 @@
         if (!result.success) {
 
           throw new Error(
-            result.message ||
-            "選書会を作成できませんでした。"
+            result.message
           );
         }
 
@@ -1768,44 +1877,8 @@
     }
 
 
-    function resetCreateScreen() {
+    /* 開催中一覧 */
 
-      currentEventName =
-        "";
-
-      currentRegistrationUrl =
-        "";
-
-
-      qrcode.innerHTML =
-        "";
-
-
-      qrResult.style.display =
-        "none";
-
-      qrPlaceholder.style.display =
-        "flex";
-
-
-      eventNameInput.disabled =
-        false;
-
-      eventNameInput.value =
-        "";
-
-
-      createButton.disabled =
-        false;
-
-
-      clearCreateMessage();
-    }
-
-
-    /* ======================================
-       開催中一覧
-    ======================================= */
 
     async function loadActiveEvents() {
 
@@ -1824,14 +1897,10 @@
 
       try {
 
-        const url =
-          GAS_WEB_APP_URL +
-          "?action=listActiveEvents";
-
-
         const response =
           await fetch(
-            url
+            GAS_WEB_APP_URL +
+            "?action=listActiveEvents"
           );
 
 
@@ -1842,18 +1911,13 @@
         if (!result.success) {
 
           throw new Error(
-            result.message ||
-            "開催中の選書会を取得できませんでした。"
+            result.message
           );
         }
 
 
         activeEvents =
-          Array.isArray(
-            result.events
-          )
-            ? result.events
-            : [];
+          result.events || [];
 
 
         visibleEventCount =
@@ -1866,10 +1930,7 @@
       } catch (error) {
 
         activeEventList.innerHTML =
-          '<div class="card">' +
-          '開催中の選書会を取得できませんでした。' +
-          '</div>';
-
+          '<div class="card">開催中の選書会を取得できませんでした。</div>';
 
       } finally {
 
@@ -1903,159 +1964,145 @@
         "none";
 
 
-      const eventsToShow =
-        activeEvents.slice(
+      activeEvents
+        .slice(
           0,
           visibleEventCount
+        )
+        .forEach(
+          function(event) {
+
+            const card =
+              document.createElement(
+                "div"
+              );
+
+            card.className =
+              "event-card";
+
+
+            const info =
+              document.createElement(
+                "div"
+              );
+
+
+            const name =
+              document.createElement(
+                "div"
+              );
+
+            name.className =
+              "event-card-name";
+
+            name.textContent =
+              event.eventName;
+
+
+            const meta =
+              document.createElement(
+                "div"
+              );
+
+            meta.className =
+              "event-meta";
+
+
+            const count =
+              document.createElement(
+                "div"
+              );
+
+            count.textContent =
+              "登録冊数　" +
+              formatNumber(
+                event.bookCount
+              ) +
+              "冊";
+
+
+            const start =
+              document.createElement(
+                "div"
+              );
+
+            start.textContent =
+              "開始日時　" +
+              formatDateTime(
+                event.startDate
+              );
+
+
+            meta.appendChild(
+              count
+            );
+
+            meta.appendChild(
+              start
+            );
+
+
+            info.appendChild(
+              name
+            );
+
+            info.appendChild(
+              meta
+            );
+
+
+            const button =
+              document.createElement(
+                "button"
+              );
+
+            button.className =
+              "open-button";
+
+            button.textContent =
+              "開く";
+
+
+            button.addEventListener(
+              "click",
+              function() {
+
+                openEventDetail(
+                  event.eventId
+                );
+
+              }
+            );
+
+
+            card.appendChild(
+              info
+            );
+
+            card.appendChild(
+              button
+            );
+
+
+            activeEventList
+              .appendChild(
+                card
+              );
+
+          }
         );
 
 
-      eventsToShow.forEach(
-        function(event) {
-
-          const card =
-            document.createElement(
-              "div"
-            );
-
-
-          card.className =
-            "event-card";
-
-
-          const info =
-            document.createElement(
-              "div"
-            );
-
-
-          const name =
-            document.createElement(
-              "div"
-            );
-
-          name.className =
-            "event-card-name";
-
-          name.textContent =
-            event.eventName;
-
-
-          const meta =
-            document.createElement(
-              "div"
-            );
-
-          meta.className =
-            "event-meta";
-
-
-          const count =
-            document.createElement(
-              "div"
-            );
-
-          count.textContent =
-            "登録冊数　" +
-            formatNumber(
-              event.bookCount
-            ) +
-            "冊";
-
-
-          const start =
-            document.createElement(
-              "div"
-            );
-
-          start.textContent =
-            "開始日時　" +
-            formatDateTime(
-              event.startDate
-            );
-
-
-          meta.appendChild(
-            count
-          );
-
-          meta.appendChild(
-            start
-          );
-
-
-          info.appendChild(
-            name
-          );
-
-          info.appendChild(
-            meta
-          );
-
-
-          const openButton =
-            document.createElement(
-              "button"
-            );
-
-          openButton.type =
-            "button";
-
-          openButton.className =
-            "open-button";
-
-          openButton.textContent =
-            "開く";
-
-
-          openButton.addEventListener(
-            "click",
-            function() {
-
-              openEventDetail(
-                event.eventId
-              );
-
-            }
-          );
-
-
-          card.appendChild(
-            info
-          );
-
-          card.appendChild(
-            openButton
-          );
-
-
-          activeEventList.appendChild(
-            card
-          );
-
-        }
-      );
-
-
-      if (
+      moreButton.style.display =
         visibleEventCount <
         activeEvents.length
-      ) {
-
-        moreButton.style.display =
-          "block";
-
-      } else {
-
-        moreButton.style.display =
-          "none";
-      }
+          ? "block"
+          : "none";
     }
 
 
-    /* ======================================
-       詳細
-    ======================================= */
+    /* 詳細 */
+
 
     async function openEventDetail(
       eventId
@@ -2066,7 +2113,7 @@
 
 
       showScreen(
-        detailScreen
+        screens.detail
       );
 
 
@@ -2093,17 +2140,13 @@
 
       try {
 
-        const url =
-          GAS_WEB_APP_URL +
-          "?action=getEventStatus&event=" +
-          encodeURIComponent(
-            currentDetailEventId
-          );
-
-
         const response =
           await fetch(
-            url
+            GAS_WEB_APP_URL +
+            "?action=getEventStatus&event=" +
+            encodeURIComponent(
+              currentDetailEventId
+            )
           );
 
 
@@ -2114,14 +2157,17 @@
         if (!result.success) {
 
           throw new Error(
-            result.message ||
-            "登録状況を取得できませんでした。"
+            result.message
           );
         }
 
 
         const event =
           result.event;
+
+
+        currentDetailData =
+          event;
 
 
         detailEventName.textContent =
@@ -2157,19 +2203,19 @@
           );
 
 
-        const unknownCount =
+        const unknown =
           Number(
             event.unknownPriceCount || 0
           );
 
 
         if (
-          unknownCount > 0
+          unknown > 0
         ) {
 
           unknownPriceNote.textContent =
             "※価格不明の本が" +
-            unknownCount +
+            unknown +
             "冊あります。金額には含まれていません。";
 
           unknownPriceNote.style.display =
@@ -2184,7 +2230,6 @@
 
         detailError.style.display =
           "none";
-
 
         detailLoading.style.display =
           "none";
@@ -2201,9 +2246,8 @@
         detailContent.style.display =
           "block";
 
-
         detailError.textContent =
-          "登録状況を更新できませんでした。通信状況を確認してください。";
+          "登録状況を更新できませんでした。";
 
         detailError.style.display =
           "block";
@@ -2218,11 +2262,7 @@
 
       detailTimer =
         setInterval(
-          function() {
-
-            loadEventDetail();
-
-          },
+          loadEventDetail,
           10000
         );
     }
@@ -2244,175 +2284,476 @@
     }
 
 
-    /* ======================================
-       ボタン
-    ======================================= */
+    /* 終了確認 */
 
-    goCreateButton.addEventListener(
-      "click",
-      function() {
 
-        resetCreateScreen();
+    function openEndConfirm() {
 
-        showScreen(
-          createScreen
+      if (!currentDetailData) {
+        return;
+      }
+
+
+      stopDetailAutoUpdate();
+
+
+      document
+        .getElementById(
+          "endConfirmEventName"
+        )
+        .textContent =
+        currentDetailData.eventName;
+
+
+      document
+        .getElementById(
+          "endConfirmRegistrantCount"
+        )
+        .textContent =
+        formatNumber(
+          currentDetailData
+            .registrantCount
+        ) +
+        "人";
+
+
+      document
+        .getElementById(
+          "endConfirmBookCount"
+        )
+        .textContent =
+        formatNumber(
+          currentDetailData
+            .bookCount
+        ) +
+        "冊";
+
+
+      document
+        .getElementById(
+          "endConfirmPriceTotal"
+        )
+        .textContent =
+        formatNumber(
+          currentDetailData
+            .priceTotal
+        ) +
+        "円";
+
+
+      const unknown =
+        Number(
+          currentDetailData
+            .unknownPriceCount || 0
         );
 
 
-        setTimeout(
-          function() {
-
-            eventNameInput.focus();
-
-          },
-          100
-        );
-      }
-    );
-
-
-    goActiveButton.addEventListener(
-      "click",
-      async function() {
-
-        showScreen(
-          activeScreen
-        );
-
-        await loadActiveEvents();
-      }
-    );
-
-
-    createBackButton.addEventListener(
-      "click",
-      function() {
-
-        showScreen(
-          topScreen
-        );
-      }
-    );
-
-
-    activeBackButton.addEventListener(
-      "click",
-      function() {
-
-        showScreen(
-          topScreen
-        );
-      }
-    );
-
-
-    detailBackButton.addEventListener(
-      "click",
-      async function() {
-
-        currentDetailEventId =
-          "";
-
-        showScreen(
-          activeScreen
+      const note =
+        document.getElementById(
+          "endConfirmPriceNote"
         );
 
 
-        await loadActiveEvents();
+      if (
+        unknown > 0
+      ) {
+
+        note.textContent =
+          "※価格不明の本が" +
+          unknown +
+          "冊あります。金額には含まれていません。";
+
+        note.style.display =
+          "block";
+
+      } else {
+
+        note.style.display =
+          "none";
       }
-    );
 
 
-    createButton.addEventListener(
-      "click",
-      createEvent
-    );
+      document
+        .getElementById(
+          "endMessage"
+        )
+        .style.display =
+        "none";
 
 
-    eventNameInput.addEventListener(
-      "keydown",
-      function(event) {
-
-        if (
-          event.key ===
-          "Enter"
-        ) {
-
-          event.preventDefault();
-
-          createEvent();
-        }
-      }
-    );
+      showScreen(
+        screens.endConfirm
+      );
+    }
 
 
-    printButton.addEventListener(
-      "click",
-      function() {
+    async function endCurrentEvent() {
 
-        window.print();
-      }
-    );
-
-
-    createAnotherButton.addEventListener(
-      "click",
-      function() {
-
-        resetCreateScreen();
-
-        eventNameInput.focus();
-      }
-    );
+      const button =
+        document.getElementById(
+          "confirmEndButton"
+        );
 
 
-    moreButton.addEventListener(
-      "click",
-      function() {
-
-        visibleEventCount +=
-          3;
-
-        renderActiveEvents();
-      }
-    );
+      const message =
+        document.getElementById(
+          "endMessage"
+        );
 
 
-    /* ======================================
-       QRリサイズ
-    ======================================= */
+      button.disabled =
+        true;
 
-    window.addEventListener(
-      "resize",
-      function() {
+      button.textContent =
+        "終了しています…";
 
-        if (
-          currentRegistrationUrl &&
-          qrResult.style.display ===
-            "block"
-        ) {
 
-          createQrCode(
-            qrcode,
-            currentRegistrationUrl,
-            getScreenQrSize()
+      try {
+
+        const response =
+          await fetch(
+            GAS_WEB_APP_URL,
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "text/plain;charset=utf-8"
+              },
+
+              body:
+                JSON.stringify({
+                  action:
+                    "endEvent",
+
+                  eventId:
+                    currentDetailEventId
+                })
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message
           );
         }
+
+
+        document
+          .getElementById(
+            "finishedEventName"
+          )
+          .textContent =
+          currentDetailData
+            .eventName;
+
+
+        document
+          .getElementById(
+            "finishedBookCount"
+          )
+          .textContent =
+          "登録冊数　" +
+          formatNumber(
+            currentDetailData
+              .bookCount
+          ) +
+          "冊";
+
+
+        showScreen(
+          screens.endFinished
+        );
+
+
+      } catch (error) {
+
+        message.textContent =
+          error.message ||
+          "登録を終了できませんでした。";
+
+        message.style.display =
+          "block";
+
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "登録を終了する";
       }
-    );
+    }
 
 
-    /* ======================================
-       ページ離脱
-    ======================================= */
+    /* ボタン */
 
-    window.addEventListener(
-      "pagehide",
-      function() {
 
-        stopDetailAutoUpdate();
-      }
-    );
+    document
+      .getElementById(
+        "goCreateButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          resetCreateScreen();
+
+          showScreen(
+            screens.create
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "goActiveButton"
+      )
+      .addEventListener(
+        "click",
+        async function() {
+
+          showScreen(
+            screens.active
+          );
+
+          await loadActiveEvents();
+
+        }
+      );
+
+
+    createButton
+      .addEventListener(
+        "click",
+        createEvent
+      );
+
+
+    document
+      .getElementById(
+        "printButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          window.print();
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "createAnotherButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          resetCreateScreen();
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "createBackButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          showScreen(
+            screens.top
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "qrBackButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          showScreen(
+            screens.top
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "activeBackButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          showScreen(
+            screens.top
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "detailBackButton"
+      )
+      .addEventListener(
+        "click",
+        async function() {
+
+          currentDetailEventId =
+            "";
+
+          showScreen(
+            screens.active
+          );
+
+          await loadActiveEvents();
+
+        }
+      );
+
+
+    moreButton
+      .addEventListener(
+        "click",
+        function() {
+
+          visibleEventCount +=
+            3;
+
+          renderActiveEvents();
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "goEndConfirmButton"
+      )
+      .addEventListener(
+        "click",
+        openEndConfirm
+      );
+
+
+    document
+      .getElementById(
+        "cancelEndButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          showScreen(
+            screens.detail
+          );
+
+          startDetailAutoUpdate();
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "confirmEndButton"
+      )
+      .addEventListener(
+        "click",
+        endCurrentEvent
+      );
+
+
+    document
+      .getElementById(
+        "finishedBackButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          currentDetailEventId =
+            "";
+
+          currentDetailData =
+            null;
+
+          showScreen(
+            screens.top
+          );
+
+        }
+      );
+
+
+    eventNameInput
+      .addEventListener(
+        "keydown",
+        function(event) {
+
+          if (
+            event.key ===
+            "Enter"
+          ) {
+
+            event.preventDefault();
+
+            createEvent();
+          }
+        }
+      );
+
+
+    window
+      .addEventListener(
+        "resize",
+        function() {
+
+          if (
+            currentRegistrationUrl &&
+            qrResult.style.display ===
+              "block"
+          ) {
+
+            createQrCode(
+              qrcode,
+              currentRegistrationUrl,
+              getScreenQrSize()
+            );
+          }
+
+        }
+      );
+
+
+    window
+      .addEventListener(
+        "pagehide",
+        stopDetailAutoUpdate
+      );
 
   </script>
 
