@@ -9,7 +9,7 @@
         maximum-scale=1.0,
         user-scalable=no">
 
-  <title>スマホde選書システム No.23修正版</title>
+  <title>スマホde選書システム 登録終了対応版</title>
 
   <style>
     * {
@@ -482,6 +482,38 @@
 
         <p>
           選書会のQRコードをもう一度読み取ってください。
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================
+         選書会終了済み
+    ======================================= -->
+
+    <section id="eventEndedScreen"
+             class="screen">
+
+      <div class="startup-box">
+
+        <h2>
+          この選書会の登録は終了しています。
+        </h2>
+
+        <div id="endedEventName"
+             class="event-name"
+             style="margin-top:12px;">
+        </div>
+
+        <p style="margin-top:18px; line-height:1.7;">
+          このQRコードから新しい本を登録することはできません。<br>
+          登録を続ける場合は、管理者に確認してください。
+        </p>
+
+        <p class="hint">
+          この画面は閉じてかまいません。
         </p>
 
       </div>
@@ -1209,6 +1241,12 @@
     const eventErrorScreen =
       document.getElementById("eventErrorScreen");
 
+    const eventEndedScreen =
+      document.getElementById("eventEndedScreen");
+
+    const endedEventName =
+      document.getElementById("endedEventName");
+
     const nameScreen =
       document.getElementById("nameScreen");
 
@@ -1572,6 +1610,7 @@
       [
         startupScreen,
         eventErrorScreen,
+        eventEndedScreen,
         nameScreen,
         scannerScreen,
         confirmScreen,
@@ -1803,6 +1842,32 @@
           String(
             result.eventName || ""
           ).trim();
+
+
+        /*
+         * 管理者側で終了済みになった選書会は
+         * 登録者画面へ進ませない。
+         *
+         * 選書会終了時を端末内履歴の
+         * リセット地点とする。
+         */
+        if (
+          String(
+            result.status || ""
+          ).trim() === "終了"
+        ) {
+
+          clearLocalState();
+
+          endedEventName.textContent =
+            currentEventName;
+
+          showScreen(
+            eventEndedScreen
+          );
+
+          return false;
+        }
 
 
         updateEventNameDisplays();
@@ -3560,9 +3625,19 @@
               false;
 
 
+            const saveErrorMessage =
+              String(
+                error.message || ""
+              ).includes(
+                "登録は終了しています"
+              )
+                ? "この選書会の登録は終了しています。管理者に確認してください。"
+                : "登録できませんでした。通信状況を確認して、もう一度お試しください。";
+
+
             showResultBox(
               confirmTemporaryResult,
-              "登録できませんでした。通信状況を確認して、もう一度お試しください。",
+              saveErrorMessage,
               true
             );
           }
@@ -3704,9 +3779,19 @@
               false;
 
 
+            const saveErrorMessage =
+              String(
+                error.message || ""
+              ).includes(
+                "登録は終了しています"
+              )
+                ? "この選書会の登録は終了しています。管理者に確認してください。"
+                : "登録できませんでした。通信状況を確認して、もう一度お試しください。";
+
+
             showResultBox(
               manualTemporaryResult,
-              "登録できませんでした。通信状況を確認して、もう一度お試しください。",
+              saveErrorMessage,
               true
             );
           }
