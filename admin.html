@@ -11,6 +11,7 @@
   <title>スマホde選書システム 管理画面</title>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -41,6 +42,16 @@
       font-size: 26px;
     }
 
+    h2 {
+      margin: 0 0 18px;
+      font-size: 22px;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
     .subtitle {
       margin-bottom: 18px;
       text-align: center;
@@ -48,16 +59,12 @@
       font-size: 14px;
     }
 
-    /*
-     * PCでは2カラム
-     */
-    .admin-layout {
-      display: grid;
-      grid-template-columns:
-        minmax(0, 0.9fr)
-        minmax(0, 1.1fr);
-      gap: 18px;
-      align-items: start;
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
     }
 
     .card {
@@ -66,9 +73,81 @@
       border-radius: 12px;
     }
 
-    h2 {
-      margin: 0 0 18px;
-      font-size: 21px;
+    button {
+      width: 100%;
+      padding: 13px;
+      border: 0;
+      border-radius: 8px;
+      background: #333;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #666;
+    }
+
+    button.light {
+      background: #ddd;
+      color: #222;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .stack-button {
+      margin-top: 12px;
+    }
+
+
+    /* ======================================
+       管理画面トップ
+    ======================================= */
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .menu-card {
+      padding: 28px 24px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .menu-title {
+      margin-bottom: 10px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .menu-description {
+      min-height: 44px;
+      margin-bottom: 18px;
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+
+    /* ======================================
+       新しい選書会
+    ======================================= */
+
+    .admin-layout {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 0.9fr)
+        minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: start;
     }
 
     label {
@@ -98,33 +177,7 @@
       line-height: 1.6;
     }
 
-    button {
-      width: 100%;
-      margin-top: 18px;
-      padding: 13px;
-      border: 0;
-      border-radius: 8px;
-      background: #333;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button.secondary {
-      background: #666;
-    }
-
-    button.light {
-      background: #ddd;
-      color: #222;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
-    #message {
+    #createMessage {
       display: none;
       margin-top: 16px;
       padding: 12px;
@@ -133,24 +186,18 @@
       font-size: 14px;
     }
 
-    #message.success {
+    #createMessage.success {
       display: block;
       background: #edf7ef;
       color: #246132;
     }
 
-    #message.error {
+    #createMessage.error {
       display: block;
       background: #fff0f0;
       color: #a50018;
     }
 
-    /*
-     * QR表示欄
-     *
-     * 作成前でも右側の枠は出しておく。
-     * PCでレイアウトが崩れにくい。
-     */
     .qr-card {
       min-height: 420px;
       padding: 20px;
@@ -216,28 +263,222 @@
       margin-top: 12px;
     }
 
-    .button-area button {
-      margin-top: 0;
+    .back-area {
+      margin-top: 16px;
     }
 
-    /*
-     * 印刷専用
-     */
+
+    /* ======================================
+       開催中一覧
+    ======================================= */
+
+    .active-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .active-header h2 {
+      margin: 0;
+    }
+
+    .small-button {
+      width: auto;
+      padding: 9px 14px;
+      font-size: 14px;
+    }
+
+    #activeLoading,
+    #detailLoading {
+      padding: 24px;
+      text-align: center;
+      color: #666;
+    }
+
+    #activeEmpty {
+      display: none;
+      padding: 30px 20px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+      color: #666;
+      line-height: 1.7;
+    }
+
+    .event-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .event-card {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+      gap: 16px;
+      align-items: center;
+      padding: 18px 20px;
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    .event-card-name {
+      margin-bottom: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    .event-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .open-button {
+      width: auto;
+      min-width: 90px;
+      margin: 0;
+      padding: 10px 18px;
+    }
+
+    #moreButton {
+      display: none;
+      max-width: 300px;
+      margin: 16px auto 0;
+    }
+
+
+    /* ======================================
+       開催中詳細
+    ======================================= */
+
+    .detail-title {
+      margin-bottom: 18px;
+      padding: 18px 20px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    #detailEventName {
+      font-size: 23px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .status-card {
+      padding: 20px 12px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .status-label {
+      margin-bottom: 8px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .status-value {
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1.2;
+    }
+
+    .status-unit {
+      margin-left: 3px;
+      font-size: 15px;
+      font-weight: normal;
+    }
+
+    .latest-card {
+      margin-top: 12px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    .latest-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .latest-item {
+      text-align: center;
+    }
+
+    .latest-label {
+      margin-bottom: 6px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .latest-value {
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+    #unknownPriceNote {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #fff8e7;
+      border-radius: 8px;
+      color: #66521b;
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .auto-update {
+      margin-top: 12px;
+      color: #777;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    #detailError {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: #fff0f0;
+      border-radius: 8px;
+      color: #a50018;
+      font-size: 14px;
+      text-align: center;
+    }
+
+
+    /* ======================================
+       印刷
+    ======================================= */
+
     #printArea {
       display: none;
     }
 
-    /*
-     * スマホ・狭い画面では縦並び
-     */
+
+    /* ======================================
+       スマホ
+    ======================================= */
+
     @media (max-width: 760px) {
 
       body {
         padding: 16px 14px 28px;
-      }
-
-      .container {
-        max-width: 620px;
       }
 
       h1 {
@@ -245,6 +486,14 @@
       }
 
       .subtitle {
+        margin-bottom: 14px;
+      }
+
+      .menu-grid {
+        display: block;
+      }
+
+      .menu-card {
         margin-bottom: 14px;
       }
 
@@ -266,10 +515,6 @@
         min-height: 180px;
       }
 
-      #qrcode {
-        margin-top: 18px;
-      }
-
       .button-area {
         display: block;
       }
@@ -277,11 +522,44 @@
       .button-area button {
         margin-top: 10px;
       }
+
+      .event-card {
+        display: block;
+      }
+
+      .open-button {
+        width: 100%;
+        margin-top: 14px;
+      }
+
+      .status-grid {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+      .status-grid
+      .status-card:nth-child(3) {
+        grid-column: 1 / -1;
+      }
+
+      .latest-grid {
+        display: block;
+      }
+
+      .latest-item + .latest-item {
+        margin-top: 16px;
+      }
+
+      .status-value {
+        font-size: 23px;
+      }
     }
 
-    /*
-     * 印刷
-     */
+
+    /* ======================================
+       印刷時
+    ======================================= */
+
     @media print {
 
       body {
@@ -323,7 +601,6 @@
         margin-bottom: 8px;
         font-size: 16pt;
         font-weight: bold;
-        word-break: break-word;
       }
 
       .print-date {
@@ -340,6 +617,7 @@
         font-size: 10pt;
       }
     }
+
   </style>
 
 </head>
@@ -358,132 +636,432 @@
     </div>
 
 
-    <div class="admin-layout">
+    <!-- ======================================
+         1. 管理画面トップ
+    ======================================= -->
 
+    <section id="topScreen"
+             class="screen active">
 
-      <!-- ======================================
-           左：新しい選書会を作成
-      ======================================= -->
+      <div class="menu-grid">
 
-      <section id="createArea"
-               class="card">
+        <div class="menu-card">
 
-        <h2>
-          新しい選書会を作成
-        </h2>
+          <div class="menu-title">
+            新しい選書会を作成
+          </div>
 
+          <div class="menu-description">
+            新しい選書会を作り、
+            登録者用QRコードを発行します。
+          </div>
 
-        <label for="eventNameInput">
-          選書会名
-        </label>
+          <button
+            id="goCreateButton"
+            type="button">
 
+            新しい選書会を作成
 
-        <input
-          id="eventNameInput"
-          type="text"
-          maxlength="100"
-          autocomplete="off"
-          placeholder="例：図書委員会選書会">
-
-
-        <div class="help">
-          入力した名前が管理用スプレッドシートの
-          シート名にもなります。
-        </div>
-
-
-        <button
-          id="createButton"
-          type="button">
-
-          QRコードを作成する
-
-        </button>
-
-
-        <div id="message">
-        </div>
-
-      </section>
-
-
-      <!-- ======================================
-           右：QRコード表示
-      ======================================= -->
-
-      <section class="qr-card">
-
-        <div id="qrPlaceholder"
-             class="qr-placeholder">
-
-          選書会を作成すると、<br>
-          ここにQRコードが表示されます。
+          </button>
 
         </div>
 
 
-        <div id="qrResult">
+        <div class="menu-card">
 
-          <div class="qr-label">
-            選書会QRコード
+          <div class="menu-title">
+            開催中の選書会
+          </div>
+
+          <div class="menu-description">
+            現在の登録冊数や登録状況を
+            確認します。
+          </div>
+
+          <button
+            id="goActiveButton"
+            type="button">
+
+            開催中の選書会
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================
+         2. 新しい選書会
+    ======================================= -->
+
+    <section id="createScreen"
+             class="screen">
+
+      <div class="admin-layout">
+
+
+        <section class="card">
+
+          <h2>
+            新しい選書会を作成
+          </h2>
+
+
+          <label for="eventNameInput">
+            選書会名
+          </label>
+
+
+          <input
+            id="eventNameInput"
+            type="text"
+            maxlength="100"
+            autocomplete="off"
+            placeholder="例：図書委員会選書会">
+
+
+          <div class="help">
+            入力した名前が管理用スプレッドシートの
+            シート名にもなります。
           </div>
 
 
-          <div id="resultEventName">
+          <button
+            id="createButton"
+            type="button"
+            class="stack-button">
+
+            QRコードを作成する
+
+          </button>
+
+
+          <div id="createMessage">
           </div>
 
 
-          <div id="qrcode">
-          </div>
-
-
-          <div class="qr-description">
-
-            このQRコードを登録者のスマートフォンで
-            読み取ってください。
-
-          </div>
-
-
-          <div id="registrationUrl"
-               class="url-box">
-          </div>
-
-
-          <div class="button-area">
+          <div class="back-area">
 
             <button
-              id="printButton"
-              type="button">
-
-              印刷する
-
-            </button>
-
-
-            <button
-              id="createAnotherButton"
+              id="createBackButton"
               type="button"
               class="light">
 
-              別の選書会を作成する
+              管理画面に戻る
 
             </button>
 
           </div>
 
+        </section>
+
+
+        <section class="qr-card">
+
+          <div id="qrPlaceholder"
+               class="qr-placeholder">
+
+            選書会を作成すると、<br>
+            ここにQRコードが表示されます。
+
+          </div>
+
+
+          <div id="qrResult">
+
+            <div class="qr-label">
+              選書会QRコード
+            </div>
+
+
+            <div id="resultEventName">
+            </div>
+
+
+            <div id="qrcode">
+            </div>
+
+
+            <div class="qr-description">
+
+              このQRコードを登録者の
+              スマートフォンで読み取ってください。
+
+            </div>
+
+
+            <div id="registrationUrl"
+                 class="url-box">
+            </div>
+
+
+            <div class="button-area">
+
+              <button
+                id="printButton"
+                type="button">
+
+                印刷する
+
+              </button>
+
+
+              <button
+                id="createAnotherButton"
+                type="button"
+                class="light">
+
+                別の選書会を作成する
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================
+         3. 開催中一覧
+    ======================================= -->
+
+    <section id="activeScreen"
+             class="screen">
+
+      <div class="active-header">
+
+        <h2>
+          開催中の選書会
+        </h2>
+
+
+        <button
+          id="activeBackButton"
+          type="button"
+          class="light small-button">
+
+          管理画面に戻る
+
+        </button>
+
+      </div>
+
+
+      <div id="activeLoading">
+        読み込んでいます…
+      </div>
+
+
+      <div id="activeEmpty">
+
+        現在、開催中の選書会はありません。
+
+      </div>
+
+
+      <div id="activeEventList"
+           class="event-list">
+      </div>
+
+
+      <button
+        id="moreButton"
+        type="button"
+        class="light">
+
+        もっと見る
+
+      </button>
+
+    </section>
+
+
+    <!-- ======================================
+         4. 選書会詳細
+    ======================================= -->
+
+    <section id="detailScreen"
+             class="screen">
+
+
+      <div class="active-header">
+
+        <h2>
+          開催中の選書会
+        </h2>
+
+
+        <button
+          id="detailBackButton"
+          type="button"
+          class="light small-button">
+
+          一覧に戻る
+
+        </button>
+
+      </div>
+
+
+      <div id="detailLoading">
+        読み込んでいます…
+      </div>
+
+
+      <div id="detailContent"
+           style="display:none;">
+
+
+        <div class="detail-title">
+
+          <div id="detailEventName">
+          </div>
+
         </div>
 
-      </section>
 
-    </div>
+        <div class="status-grid">
+
+
+          <div class="status-card">
+
+            <div class="status-label">
+              現在の登録者数
+            </div>
+
+            <div class="status-value">
+
+              <span id="detailRegistrantCount">
+                0
+              </span>
+
+              <span class="status-unit">
+                人
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="status-card">
+
+            <div class="status-label">
+              現在の登録冊数
+            </div>
+
+            <div class="status-value">
+
+              <span id="detailBookCount">
+                0
+              </span>
+
+              <span class="status-unit">
+                冊
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="status-card">
+
+            <div class="status-label">
+              現在の登録金額
+            </div>
+
+            <div class="status-value">
+
+              <span id="detailPriceTotal">
+                0
+              </span>
+
+              <span class="status-unit">
+                円
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div id="unknownPriceNote">
+        </div>
+
+
+        <div class="latest-card">
+
+          <div class="latest-grid">
+
+
+            <div class="latest-item">
+
+              <div class="latest-label">
+                最終登録者
+              </div>
+
+              <div id="detailLastRegistrant"
+                   class="latest-value">
+
+                －
+
+              </div>
+
+            </div>
+
+
+            <div class="latest-item">
+
+              <div class="latest-label">
+                最終登録時刻
+              </div>
+
+              <div id="detailLastTime"
+                   class="latest-value">
+
+                －
+
+              </div>
+
+            </div>
+
+
+          </div>
+
+        </div>
+
+
+        <div class="auto-update">
+
+          登録状況は10秒ごとに自動更新されます。
+
+        </div>
+
+
+        <div id="detailError">
+        </div>
+
+
+      </div>
+
+    </section>
 
   </main>
 
 
   <!-- ======================================
-       A4印刷用
-       2列×2段＝4枚
+       QRコード印刷用
   ======================================= -->
 
   <section id="printArea">
@@ -492,16 +1070,9 @@
       <div class="print-title">
         スマホde選書システム
       </div>
-
-      <div class="print-event-name">
-      </div>
-
-      <div class="print-date">
-      </div>
-
-      <div class="print-qr">
-      </div>
-
+      <div class="print-event-name"></div>
+      <div class="print-date"></div>
+      <div class="print-qr"></div>
       <div class="print-note">
         このQRコードを読み取ってください
       </div>
@@ -512,16 +1083,9 @@
       <div class="print-title">
         スマホde選書システム
       </div>
-
-      <div class="print-event-name">
-      </div>
-
-      <div class="print-date">
-      </div>
-
-      <div class="print-qr">
-      </div>
-
+      <div class="print-event-name"></div>
+      <div class="print-date"></div>
+      <div class="print-qr"></div>
       <div class="print-note">
         このQRコードを読み取ってください
       </div>
@@ -532,16 +1096,9 @@
       <div class="print-title">
         スマホde選書システム
       </div>
-
-      <div class="print-event-name">
-      </div>
-
-      <div class="print-date">
-      </div>
-
-      <div class="print-qr">
-      </div>
-
+      <div class="print-event-name"></div>
+      <div class="print-date"></div>
+      <div class="print-qr"></div>
       <div class="print-note">
         このQRコードを読み取ってください
       </div>
@@ -552,16 +1109,9 @@
       <div class="print-title">
         スマホde選書システム
       </div>
-
-      <div class="print-event-name">
-      </div>
-
-      <div class="print-date">
-      </div>
-
-      <div class="print-qr">
-      </div>
-
+      <div class="print-event-name"></div>
+      <div class="print-date"></div>
+      <div class="print-qr"></div>
       <div class="print-note">
         このQRコードを読み取ってください
       </div>
@@ -579,87 +1129,191 @@
     "use strict";
 
 
-    /*
-     * ======================================
-     * GAS WebアプリURL
-     * ======================================
-     */
+    /* ======================================
+       GAS
+    ======================================= */
 
     const GAS_WEB_APP_URL =
       "https://script.google.com/macros/s/AKfycbz7PgpVIsQjR80eDHRorDqkA8FGO5SLBDiuSaCYjx-wQIlgKllduC0CU3ZD1RrbPxzT/exec";
 
 
-    /*
-     * ======================================
-     * DOM
-     * ======================================
-     */
+    /* ======================================
+       DOM
+    ======================================= */
+
+    const topScreen =
+      document.getElementById(
+        "topScreen"
+      );
+
+    const createScreen =
+      document.getElementById(
+        "createScreen"
+      );
+
+    const activeScreen =
+      document.getElementById(
+        "activeScreen"
+      );
+
+    const detailScreen =
+      document.getElementById(
+        "detailScreen"
+      );
+
+
+    const goCreateButton =
+      document.getElementById(
+        "goCreateButton"
+      );
+
+    const goActiveButton =
+      document.getElementById(
+        "goActiveButton"
+      );
+
 
     const eventNameInput =
       document.getElementById(
         "eventNameInput"
       );
 
-
     const createButton =
       document.getElementById(
         "createButton"
       );
 
-
-    const message =
+    const createMessage =
       document.getElementById(
-        "message"
+        "createMessage"
       );
-
 
     const qrPlaceholder =
       document.getElementById(
         "qrPlaceholder"
       );
 
-
     const qrResult =
       document.getElementById(
         "qrResult"
       );
-
 
     const resultEventName =
       document.getElementById(
         "resultEventName"
       );
 
-
     const qrcode =
       document.getElementById(
         "qrcode"
       );
-
 
     const registrationUrl =
       document.getElementById(
         "registrationUrl"
       );
 
-
     const printButton =
       document.getElementById(
         "printButton"
       );
-
 
     const createAnotherButton =
       document.getElementById(
         "createAnotherButton"
       );
 
+    const createBackButton =
+      document.getElementById(
+        "createBackButton"
+      );
 
-    /*
-     * ======================================
-     * 状態
-     * ======================================
-     */
+
+    const activeBackButton =
+      document.getElementById(
+        "activeBackButton"
+      );
+
+    const activeLoading =
+      document.getElementById(
+        "activeLoading"
+      );
+
+    const activeEmpty =
+      document.getElementById(
+        "activeEmpty"
+      );
+
+    const activeEventList =
+      document.getElementById(
+        "activeEventList"
+      );
+
+    const moreButton =
+      document.getElementById(
+        "moreButton"
+      );
+
+
+    const detailBackButton =
+      document.getElementById(
+        "detailBackButton"
+      );
+
+    const detailLoading =
+      document.getElementById(
+        "detailLoading"
+      );
+
+    const detailContent =
+      document.getElementById(
+        "detailContent"
+      );
+
+    const detailEventName =
+      document.getElementById(
+        "detailEventName"
+      );
+
+    const detailRegistrantCount =
+      document.getElementById(
+        "detailRegistrantCount"
+      );
+
+    const detailBookCount =
+      document.getElementById(
+        "detailBookCount"
+      );
+
+    const detailPriceTotal =
+      document.getElementById(
+        "detailPriceTotal"
+      );
+
+    const detailLastRegistrant =
+      document.getElementById(
+        "detailLastRegistrant"
+      );
+
+    const detailLastTime =
+      document.getElementById(
+        "detailLastTime"
+      );
+
+    const unknownPriceNote =
+      document.getElementById(
+        "unknownPriceNote"
+      );
+
+    const detailError =
+      document.getElementById(
+        "detailError"
+      );
+
+
+    /* ======================================
+       状態
+    ======================================= */
 
     let currentEventName =
       "";
@@ -667,45 +1321,191 @@
     let currentRegistrationUrl =
       "";
 
+    let activeEvents =
+      [];
 
-    /*
-     * ======================================
-     * メッセージ
-     * ======================================
-     */
+    let visibleEventCount =
+      3;
 
-    function showMessage(
+    let currentDetailEventId =
+      "";
+
+    let detailTimer =
+      null;
+
+
+    /* ======================================
+       画面切替
+    ======================================= */
+
+    function showScreen(
+      screen
+    ) {
+
+      stopDetailAutoUpdate();
+
+
+      [
+        topScreen,
+        createScreen,
+        activeScreen,
+        detailScreen
+
+      ].forEach(
+        function(item) {
+
+          item.classList.remove(
+            "active"
+          );
+
+        }
+      );
+
+
+      screen.classList.add(
+        "active"
+      );
+    }
+
+
+    /* ======================================
+       共通日時
+    ======================================= */
+
+    function formatDateTime(
+      iso
+    ) {
+
+      if (!iso) {
+        return "－";
+      }
+
+
+      const date =
+        new Date(
+          iso
+        );
+
+
+      if (
+        isNaN(
+          date.getTime()
+        )
+      ) {
+        return "－";
+      }
+
+
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          year:
+            "numeric",
+
+          month:
+            "2-digit",
+
+          day:
+            "2-digit",
+
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit",
+
+          hour12:
+            false
+        }
+      ).format(
+        date
+      );
+    }
+
+
+    function formatTime(
+      iso
+    ) {
+
+      if (!iso) {
+        return "－";
+      }
+
+
+      const date =
+        new Date(
+          iso
+        );
+
+
+      if (
+        isNaN(
+          date.getTime()
+        )
+      ) {
+        return "－";
+      }
+
+
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit",
+
+          hour12:
+            false
+        }
+      ).format(
+        date
+      );
+    }
+
+
+    function formatNumber(
+      value
+    ) {
+
+      return Number(
+        value || 0
+      ).toLocaleString(
+        "ja-JP"
+      );
+    }
+
+
+    /* ======================================
+       新しい選書会
+    ======================================= */
+
+    function showCreateMessage(
       text,
       type
     ) {
 
-      message.textContent =
+      createMessage.textContent =
         text;
 
-
-      message.className =
+      createMessage.className =
         type;
     }
 
 
-    function clearMessage() {
+    function clearCreateMessage() {
 
-      message.textContent =
+      createMessage.textContent =
         "";
 
-      message.className =
+      createMessage.className =
         "";
 
-      message.style.display =
+      createMessage.style.display =
         "none";
     }
 
-
-    /*
-     * ======================================
-     * QRコード生成
-     * ======================================
-     */
 
     function createQrCode(
       target,
@@ -720,7 +1520,6 @@
       new QRCode(
         target,
         {
-
           text:
             url,
 
@@ -732,41 +1531,20 @@
 
           correctLevel:
             QRCode.CorrectLevel.M
-
         }
       );
     }
 
 
-    /*
-     * ======================================
-     * 画面用QRコードのサイズ
-     *
-     * PC：230px
-     * スマホ：260px
-     * ======================================
-     */
-
     function getScreenQrSize() {
 
-      if (
-        window.innerWidth <=
-        760
-      ) {
-
-        return 260;
-      }
-
-
-      return 230;
+      return (
+        window.innerWidth <= 760
+          ? 260
+          : 230
+      );
     }
 
-
-    /*
-     * ======================================
-     * 印刷日
-     * ======================================
-     */
 
     function getPrintDate() {
 
@@ -774,43 +1552,23 @@
         new Date();
 
 
-      const year =
-        now.getFullYear();
+      return new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+          year:
+            "numeric",
 
+          month:
+            "2-digit",
 
-      const month =
-        String(
-          now.getMonth() + 1
-        ).padStart(
-          2,
-          "0"
-        );
-
-
-      const day =
-        String(
-          now.getDate()
-        ).padStart(
-          2,
-          "0"
-        );
-
-
-      return (
-        year +
-        "/" +
-        month +
-        "/" +
-        day
+          day:
+            "2-digit"
+        }
+      ).format(
+        now
       );
     }
 
-
-    /*
-     * ======================================
-     * QRコード表示
-     * ======================================
-     */
 
     function showQrResult(
       eventName,
@@ -820,14 +1578,12 @@
       currentEventName =
         eventName;
 
-
       currentRegistrationUrl =
         url;
 
 
       resultEventName.textContent =
         eventName;
-
 
       registrationUrl.textContent =
         url;
@@ -840,21 +1596,15 @@
       );
 
 
-      /*
-       * 印刷用4枚
-       */
-
       const printNames =
         document.querySelectorAll(
           ".print-event-name"
         );
 
-
       const printDates =
         document.querySelectorAll(
           ".print-date"
         );
-
 
       const printQrs =
         document.querySelectorAll(
@@ -903,7 +1653,6 @@
       qrPlaceholder.style.display =
         "none";
 
-
       qrResult.style.display =
         "block";
 
@@ -911,21 +1660,14 @@
       eventNameInput.disabled =
         true;
 
-
       createButton.disabled =
         true;
     }
 
 
-    /*
-     * ======================================
-     * 選書会作成
-     * ======================================
-     */
-
     async function createEvent() {
 
-      clearMessage();
+      clearCreateMessage();
 
 
       const eventName =
@@ -936,14 +1678,12 @@
 
       if (!eventName) {
 
-        showMessage(
+        showCreateMessage(
           "選書会名を入力してください。",
           "error"
         );
 
-
         eventNameInput.focus();
-
 
         return;
       }
@@ -952,54 +1692,34 @@
       createButton.disabled =
         true;
 
-
       createButton.textContent =
         "作成しています…";
 
 
       try {
 
-        const payload = {
-
-          action:
-            "createEvent",
-
-          eventName:
-            eventName
-
-        };
-
-
         const response =
           await fetch(
             GAS_WEB_APP_URL,
             {
-
               method:
                 "POST",
 
               headers: {
-
                 "Content-Type":
                   "text/plain;charset=utf-8"
-
               },
 
               body:
-                JSON.stringify(
-                  payload
-                )
+                JSON.stringify({
+                  action:
+                    "createEvent",
 
+                  eventName:
+                    eventName
+                })
             }
           );
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            "通信エラーが発生しました。"
-          );
-        }
 
 
         const result =
@@ -1015,7 +1735,7 @@
         }
 
 
-        showMessage(
+        showCreateMessage(
           "選書会を作成しました。",
           "success"
         );
@@ -1029,7 +1749,7 @@
 
       } catch (error) {
 
-        showMessage(
+        showCreateMessage(
           error.message ||
           "選書会を作成できませんでした。",
           "error"
@@ -1048,101 +1768,619 @@
     }
 
 
-    /*
-     * ======================================
-     * ボタン
-     * ======================================
-     */
+    function resetCreateScreen() {
 
-    createButton
-      .addEventListener(
-        "click",
-        createEvent
-      );
+      currentEventName =
+        "";
+
+      currentRegistrationUrl =
+        "";
 
 
-    eventNameInput
-      .addEventListener(
-        "keydown",
+      qrcode.innerHTML =
+        "";
+
+
+      qrResult.style.display =
+        "none";
+
+      qrPlaceholder.style.display =
+        "flex";
+
+
+      eventNameInput.disabled =
+        false;
+
+      eventNameInput.value =
+        "";
+
+
+      createButton.disabled =
+        false;
+
+
+      clearCreateMessage();
+    }
+
+
+    /* ======================================
+       開催中一覧
+    ======================================= */
+
+    async function loadActiveEvents() {
+
+      activeLoading.style.display =
+        "block";
+
+      activeEmpty.style.display =
+        "none";
+
+      activeEventList.innerHTML =
+        "";
+
+      moreButton.style.display =
+        "none";
+
+
+      try {
+
+        const url =
+          GAS_WEB_APP_URL +
+          "?action=listActiveEvents";
+
+
+        const response =
+          await fetch(
+            url
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "開催中の選書会を取得できませんでした。"
+          );
+        }
+
+
+        activeEvents =
+          Array.isArray(
+            result.events
+          )
+            ? result.events
+            : [];
+
+
+        visibleEventCount =
+          3;
+
+
+        renderActiveEvents();
+
+
+      } catch (error) {
+
+        activeEventList.innerHTML =
+          '<div class="card">' +
+          '開催中の選書会を取得できませんでした。' +
+          '</div>';
+
+
+      } finally {
+
+        activeLoading.style.display =
+          "none";
+      }
+    }
+
+
+    function renderActiveEvents() {
+
+      activeEventList.innerHTML =
+        "";
+
+
+      if (
+        activeEvents.length === 0
+      ) {
+
+        activeEmpty.style.display =
+          "block";
+
+        moreButton.style.display =
+          "none";
+
+        return;
+      }
+
+
+      activeEmpty.style.display =
+        "none";
+
+
+      const eventsToShow =
+        activeEvents.slice(
+          0,
+          visibleEventCount
+        );
+
+
+      eventsToShow.forEach(
         function(event) {
 
-          if (
-            event.key ===
-            "Enter"
-          ) {
-
-            event.preventDefault();
+          const card =
+            document.createElement(
+              "div"
+            );
 
 
-            createEvent();
-          }
+          card.className =
+            "event-card";
+
+
+          const info =
+            document.createElement(
+              "div"
+            );
+
+
+          const name =
+            document.createElement(
+              "div"
+            );
+
+          name.className =
+            "event-card-name";
+
+          name.textContent =
+            event.eventName;
+
+
+          const meta =
+            document.createElement(
+              "div"
+            );
+
+          meta.className =
+            "event-meta";
+
+
+          const count =
+            document.createElement(
+              "div"
+            );
+
+          count.textContent =
+            "登録冊数　" +
+            formatNumber(
+              event.bookCount
+            ) +
+            "冊";
+
+
+          const start =
+            document.createElement(
+              "div"
+            );
+
+          start.textContent =
+            "開始日時　" +
+            formatDateTime(
+              event.startDate
+            );
+
+
+          meta.appendChild(
+            count
+          );
+
+          meta.appendChild(
+            start
+          );
+
+
+          info.appendChild(
+            name
+          );
+
+          info.appendChild(
+            meta
+          );
+
+
+          const openButton =
+            document.createElement(
+              "button"
+            );
+
+          openButton.type =
+            "button";
+
+          openButton.className =
+            "open-button";
+
+          openButton.textContent =
+            "開く";
+
+
+          openButton.addEventListener(
+            "click",
+            function() {
+
+              openEventDetail(
+                event.eventId
+              );
+
+            }
+          );
+
+
+          card.appendChild(
+            info
+          );
+
+          card.appendChild(
+            openButton
+          );
+
+
+          activeEventList.appendChild(
+            card
+          );
 
         }
       );
 
 
-    printButton
-      .addEventListener(
-        "click",
-        function() {
+      if (
+        visibleEventCount <
+        activeEvents.length
+      ) {
 
-          window.print();
+        moreButton.style.display =
+          "block";
 
-        }
+      } else {
+
+        moreButton.style.display =
+          "none";
+      }
+    }
+
+
+    /* ======================================
+       詳細
+    ======================================= */
+
+    async function openEventDetail(
+      eventId
+    ) {
+
+      currentDetailEventId =
+        eventId;
+
+
+      showScreen(
+        detailScreen
       );
 
 
-    createAnotherButton
-      .addEventListener(
-        "click",
-        function() {
+      detailLoading.style.display =
+        "block";
 
-          currentEventName =
-            "";
-
-          currentRegistrationUrl =
-            "";
+      detailContent.style.display =
+        "none";
 
 
-          qrcode.innerHTML =
-            "";
+      await loadEventDetail();
 
 
-          qrResult.style.display =
+      startDetailAutoUpdate();
+    }
+
+
+    async function loadEventDetail() {
+
+      if (!currentDetailEventId) {
+        return;
+      }
+
+
+      try {
+
+        const url =
+          GAS_WEB_APP_URL +
+          "?action=getEventStatus&event=" +
+          encodeURIComponent(
+            currentDetailEventId
+          );
+
+
+        const response =
+          await fetch(
+            url
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "登録状況を取得できませんでした。"
+          );
+        }
+
+
+        const event =
+          result.event;
+
+
+        detailEventName.textContent =
+          event.eventName;
+
+
+        detailRegistrantCount.textContent =
+          formatNumber(
+            event.registrantCount
+          );
+
+
+        detailBookCount.textContent =
+          formatNumber(
+            event.bookCount
+          );
+
+
+        detailPriceTotal.textContent =
+          formatNumber(
+            event.priceTotal
+          );
+
+
+        detailLastRegistrant.textContent =
+          event.lastRegistrant ||
+          "－";
+
+
+        detailLastTime.textContent =
+          formatTime(
+            event.lastRegisteredAt
+          );
+
+
+        const unknownCount =
+          Number(
+            event.unknownPriceCount || 0
+          );
+
+
+        if (
+          unknownCount > 0
+        ) {
+
+          unknownPriceNote.textContent =
+            "※価格不明の本が" +
+            unknownCount +
+            "冊あります。金額には含まれていません。";
+
+          unknownPriceNote.style.display =
+            "block";
+
+        } else {
+
+          unknownPriceNote.style.display =
             "none";
-
-
-          qrPlaceholder.style.display =
-            "flex";
-
-
-          eventNameInput.disabled =
-            false;
-
-
-          eventNameInput.value =
-            "";
-
-
-          createButton.disabled =
-            false;
-
-
-          clearMessage();
-
-
-          eventNameInput.focus();
-
         }
-      );
 
 
-    /*
-     * ======================================
-     * PC⇔スマホの画面幅変更時
-     * QRコードを描き直す
-     * ======================================
-     */
+        detailError.style.display =
+          "none";
+
+
+        detailLoading.style.display =
+          "none";
+
+        detailContent.style.display =
+          "block";
+
+
+      } catch (error) {
+
+        detailLoading.style.display =
+          "none";
+
+        detailContent.style.display =
+          "block";
+
+
+        detailError.textContent =
+          "登録状況を更新できませんでした。通信状況を確認してください。";
+
+        detailError.style.display =
+          "block";
+      }
+    }
+
+
+    function startDetailAutoUpdate() {
+
+      stopDetailAutoUpdate();
+
+
+      detailTimer =
+        setInterval(
+          function() {
+
+            loadEventDetail();
+
+          },
+          10000
+        );
+    }
+
+
+    function stopDetailAutoUpdate() {
+
+      if (
+        detailTimer
+      ) {
+
+        clearInterval(
+          detailTimer
+        );
+
+        detailTimer =
+          null;
+      }
+    }
+
+
+    /* ======================================
+       ボタン
+    ======================================= */
+
+    goCreateButton.addEventListener(
+      "click",
+      function() {
+
+        resetCreateScreen();
+
+        showScreen(
+          createScreen
+        );
+
+
+        setTimeout(
+          function() {
+
+            eventNameInput.focus();
+
+          },
+          100
+        );
+      }
+    );
+
+
+    goActiveButton.addEventListener(
+      "click",
+      async function() {
+
+        showScreen(
+          activeScreen
+        );
+
+        await loadActiveEvents();
+      }
+    );
+
+
+    createBackButton.addEventListener(
+      "click",
+      function() {
+
+        showScreen(
+          topScreen
+        );
+      }
+    );
+
+
+    activeBackButton.addEventListener(
+      "click",
+      function() {
+
+        showScreen(
+          topScreen
+        );
+      }
+    );
+
+
+    detailBackButton.addEventListener(
+      "click",
+      async function() {
+
+        currentDetailEventId =
+          "";
+
+        showScreen(
+          activeScreen
+        );
+
+
+        await loadActiveEvents();
+      }
+    );
+
+
+    createButton.addEventListener(
+      "click",
+      createEvent
+    );
+
+
+    eventNameInput.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key ===
+          "Enter"
+        ) {
+
+          event.preventDefault();
+
+          createEvent();
+        }
+      }
+    );
+
+
+    printButton.addEventListener(
+      "click",
+      function() {
+
+        window.print();
+      }
+    );
+
+
+    createAnotherButton.addEventListener(
+      "click",
+      function() {
+
+        resetCreateScreen();
+
+        eventNameInput.focus();
+      }
+    );
+
+
+    moreButton.addEventListener(
+      "click",
+      function() {
+
+        visibleEventCount +=
+          3;
+
+        renderActiveEvents();
+      }
+    );
+
+
+    /* ======================================
+       QRリサイズ
+    ======================================= */
 
     window.addEventListener(
       "resize",
@@ -1160,23 +2398,19 @@
             getScreenQrSize()
           );
         }
-
       }
     );
 
 
-    /*
-     * ======================================
-     * 初期表示
-     * ======================================
-     */
+    /* ======================================
+       ページ離脱
+    ======================================= */
 
     window.addEventListener(
-      "load",
+      "pagehide",
       function() {
 
-        eventNameInput.focus();
-
+        stopDetailAutoUpdate();
       }
     );
 
