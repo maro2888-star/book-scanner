@@ -1727,6 +1727,13 @@
       createButton.disabled =
         false;
 
+      document
+        .getElementById(
+          "createBackButton"
+        )
+        .style.display =
+        "block";
+
       clearCreateMessage();
     }
 
@@ -1811,6 +1818,18 @@
 
       qrResult.style.display =
         "block";
+
+      /*
+       * QRコード作成後は右側に
+       * 「管理画面に戻る」があるため、
+       * 左側の重複ボタンを隠す。
+       */
+      document
+        .getElementById(
+          "createBackButton"
+        )
+        .style.display =
+        "none";
 
       eventNameInput.disabled =
         true;
@@ -1927,6 +1946,17 @@
 
         createButton.disabled =
           false;
+
+        eventNameInput.disabled =
+          false;
+
+        /*
+         * 同名エラーなどの場合は、
+         * その場で選書会名を修正できる状態に戻す。
+         */
+        eventNameInput.focus();
+
+        eventNameInput.select();
 
 
       } finally {
