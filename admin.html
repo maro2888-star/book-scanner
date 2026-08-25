@@ -1701,6 +1701,14 @@
 
       createMessage.className =
         type;
+
+      /*
+       * clearCreateMessage() で設定した
+       * display:none のインライン指定が残るため、
+       * メッセージ表示時は明示的に block に戻す。
+       */
+      createMessage.style.display =
+        "block";
     }
 
 
