@@ -6,7 +6,7 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0">
 
-  <title>スマホde選書システム 管理画面</title>
+  <title>スマホde選書システム 管理画面 No.26</title>
 
   <style>
     * {
@@ -105,9 +105,9 @@
 
     .menu-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 18px;
-      max-width: 800px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
@@ -348,10 +348,47 @@
       padding: 10px 18px;
     }
 
-    #moreButton {
+    #moreButton,
+    #pastMoreButton {
       display: none;
       max-width: 300px;
       margin: 16px auto 0;
+    }
+
+    .past-status {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: #f1f1f1;
+      border-radius: 8px;
+      color: #555;
+      font-size: 14px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .date-info-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .date-info-item {
+      padding: 14px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .date-info-label {
+      margin-bottom: 6px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .date-info-value {
+      font-size: 16px;
+      font-weight: bold;
     }
 
     /* ======================================
@@ -664,6 +701,10 @@
         font-size: 23px;
       }
 
+      .date-info-card {
+        grid-template-columns: 1fr;
+      }
+
       .confirm-summary {
         grid-template-columns: 1fr;
       }
@@ -798,6 +839,26 @@
             id="goActiveButton"
             type="button">
             開催中の選書会
+          </button>
+
+        </div>
+
+
+        <div class="menu-card">
+
+          <div class="menu-title">
+            これまでの選書会
+          </div>
+
+          <div class="menu-description">
+            登録を終了した選書会の
+            結果を確認します。
+          </div>
+
+          <button
+            id="goPastButton"
+            type="button">
+            これまでの選書会
           </button>
 
         </div>
@@ -1088,6 +1149,192 @@
     </section>
 
 
+
+    <!-- ======================================
+         これまでの選書会一覧
+    ======================================= -->
+
+    <section id="pastScreen"
+             class="screen">
+
+      <div class="active-header">
+
+        <h2>
+          これまでの選書会
+        </h2>
+
+        <button
+          id="pastBackButton"
+          type="button"
+          class="light small-button">
+          管理画面に戻る
+        </button>
+
+      </div>
+
+      <div id="pastLoading">
+        読み込んでいます…
+      </div>
+
+      <div id="pastEmpty"
+           style="display:none;"
+           class="card">
+        これまでの選書会はありません。
+      </div>
+
+      <div id="pastEventList"
+           class="event-list">
+      </div>
+
+      <button
+        id="pastMoreButton"
+        type="button"
+        class="light">
+        もっと見る
+      </button>
+
+    </section>
+
+
+    <!-- ======================================
+         これまでの選書会 詳細
+    ======================================= -->
+
+    <section id="pastDetailScreen"
+             class="screen">
+
+      <div class="active-header">
+
+        <h2>
+          これまでの選書会
+        </h2>
+
+        <button
+          id="pastDetailBackButton"
+          type="button"
+          class="light small-button">
+          一覧に戻る
+        </button>
+
+      </div>
+
+      <div id="pastDetailLoading">
+        読み込んでいます…
+      </div>
+
+      <div id="pastDetailContent"
+           style="display:none;">
+
+        <div class="past-status">
+          この選書会の登録は終了しています。
+        </div>
+
+        <div class="detail-title">
+          <div id="pastDetailEventName">
+          </div>
+        </div>
+
+        <div class="date-info-card">
+
+          <div class="date-info-item">
+            <div class="date-info-label">
+              開始日時
+            </div>
+            <div id="pastDetailStartDate"
+                 class="date-info-value">
+              －
+            </div>
+          </div>
+
+          <div class="date-info-item">
+            <div class="date-info-label">
+              終了日時
+            </div>
+            <div id="pastDetailEndDate"
+                 class="date-info-value">
+              －
+            </div>
+          </div>
+
+        </div>
+
+        <div class="status-grid">
+
+          <div class="status-card">
+            <div class="status-label">
+              登録者数
+            </div>
+            <div class="status-value">
+              <span id="pastDetailRegistrantCount">0</span>
+              <span class="status-unit">人</span>
+            </div>
+          </div>
+
+          <div class="status-card">
+            <div class="status-label">
+              登録冊数
+            </div>
+            <div class="status-value">
+              <span id="pastDetailBookCount">0</span>
+              <span class="status-unit">冊</span>
+            </div>
+          </div>
+
+          <div class="status-card">
+            <div class="status-label">
+              登録金額
+            </div>
+            <div class="status-value">
+              <span id="pastDetailPriceTotal">0</span>
+              <span class="status-unit">円</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="pastUnknownPriceNote"
+             style="display:none;"
+             class="help">
+        </div>
+
+        <div class="latest-card">
+
+          <div class="latest-grid">
+
+            <div class="latest-item">
+              <div class="latest-label">
+                最終登録者
+              </div>
+              <div id="pastDetailLastRegistrant"
+                   class="latest-value">
+                －
+              </div>
+            </div>
+
+            <div class="latest-item">
+              <div class="latest-label">
+                最終登録時刻
+              </div>
+              <div id="pastDetailLastTime"
+                   class="latest-value">
+                －
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div id="pastDetailError"
+             style="display:none;"
+             class="card">
+        </div>
+
+      </div>
+
+    </section>
+
+
     <!-- ======================================
          終了確認
     ======================================= -->
@@ -1303,6 +1550,16 @@
           "detailScreen"
         ),
 
+      past:
+        document.getElementById(
+          "pastScreen"
+        ),
+
+      pastDetail:
+        document.getElementById(
+          "pastDetailScreen"
+        ),
+
       endConfirm:
         document.getElementById(
           "endConfirmScreen"
@@ -1426,6 +1683,87 @@
       );
 
 
+    const pastLoading =
+      document.getElementById(
+        "pastLoading"
+      );
+
+    const pastEmpty =
+      document.getElementById(
+        "pastEmpty"
+      );
+
+    const pastEventList =
+      document.getElementById(
+        "pastEventList"
+      );
+
+    const pastMoreButton =
+      document.getElementById(
+        "pastMoreButton"
+      );
+
+    const pastDetailLoading =
+      document.getElementById(
+        "pastDetailLoading"
+      );
+
+    const pastDetailContent =
+      document.getElementById(
+        "pastDetailContent"
+      );
+
+    const pastDetailEventName =
+      document.getElementById(
+        "pastDetailEventName"
+      );
+
+    const pastDetailStartDate =
+      document.getElementById(
+        "pastDetailStartDate"
+      );
+
+    const pastDetailEndDate =
+      document.getElementById(
+        "pastDetailEndDate"
+      );
+
+    const pastDetailRegistrantCount =
+      document.getElementById(
+        "pastDetailRegistrantCount"
+      );
+
+    const pastDetailBookCount =
+      document.getElementById(
+        "pastDetailBookCount"
+      );
+
+    const pastDetailPriceTotal =
+      document.getElementById(
+        "pastDetailPriceTotal"
+      );
+
+    const pastUnknownPriceNote =
+      document.getElementById(
+        "pastUnknownPriceNote"
+      );
+
+    const pastDetailLastRegistrant =
+      document.getElementById(
+        "pastDetailLastRegistrant"
+      );
+
+    const pastDetailLastTime =
+      document.getElementById(
+        "pastDetailLastTime"
+      );
+
+    const pastDetailError =
+      document.getElementById(
+        "pastDetailError"
+      );
+
+
     /*
      * ======================================
      * 状態
@@ -1449,6 +1787,15 @@
 
     let detailTimer =
       null;
+
+    let pastEvents =
+      [];
+
+    let visiblePastEventCount =
+      3;
+
+    let currentPastEventId =
+      "";
 
 
     /*
@@ -2216,6 +2563,388 @@
     }
 
 
+
+    /*
+     * ======================================
+     * これまでの選書会一覧
+     * ======================================
+     */
+
+    async function loadPastEvents() {
+
+      pastLoading.style.display =
+        "block";
+
+      pastEmpty.style.display =
+        "none";
+
+      pastEventList.innerHTML =
+        "";
+
+      pastMoreButton.style.display =
+        "none";
+
+
+      try {
+
+        const response =
+          await fetch(
+            GAS_WEB_APP_URL +
+            "?action=listPastEvents&_=" +
+            Date.now(),
+            {
+              cache:
+                "no-store"
+            }
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "通信エラー"
+          );
+        }
+
+
+        const result =
+          await response.json();
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "これまでの選書会を取得できませんでした。"
+          );
+        }
+
+
+        pastEvents =
+          Array.isArray(
+            result.events
+          )
+            ? result.events
+            : [];
+
+
+        visiblePastEventCount =
+          3;
+
+
+        renderPastEvents();
+
+
+      } catch (error) {
+
+        pastEventList.innerHTML =
+          '<div class="card">これまでの選書会を取得できませんでした。</div>';
+
+
+      } finally {
+
+        pastLoading.style.display =
+          "none";
+      }
+    }
+
+
+    function renderPastEvents() {
+
+      pastEventList.innerHTML =
+        "";
+
+
+      if (
+        pastEvents.length === 0
+      ) {
+
+        pastEmpty.style.display =
+          "block";
+
+        pastMoreButton.style.display =
+          "none";
+
+        return;
+      }
+
+
+      pastEmpty.style.display =
+        "none";
+
+
+      pastEvents
+        .slice(
+          0,
+          visiblePastEventCount
+        )
+        .forEach(
+          function(event) {
+
+            const card =
+              document.createElement(
+                "div"
+              );
+
+            card.className =
+              "event-card";
+
+
+            const info =
+              document.createElement(
+                "div"
+              );
+
+
+            const name =
+              document.createElement(
+                "div"
+              );
+
+            name.className =
+              "event-card-name";
+
+            name.textContent =
+              event.eventName;
+
+
+            const meta =
+              document.createElement(
+                "div"
+              );
+
+            meta.className =
+              "event-meta";
+
+
+            const count =
+              document.createElement(
+                "div"
+              );
+
+            count.textContent =
+              "登録冊数　" +
+              formatNumber(
+                event.bookCount
+              ) +
+              "冊";
+
+
+            const end =
+              document.createElement(
+                "div"
+              );
+
+            end.textContent =
+              "終了日時　" +
+              formatDateTime(
+                event.endDate
+              );
+
+
+            meta.appendChild(
+              count
+            );
+
+            meta.appendChild(
+              end
+            );
+
+
+            info.appendChild(
+              name
+            );
+
+            info.appendChild(
+              meta
+            );
+
+
+            const button =
+              document.createElement(
+                "button"
+              );
+
+            button.type =
+              "button";
+
+            button.className =
+              "open-button";
+
+            button.textContent =
+              "開く";
+
+
+            button.addEventListener(
+              "click",
+              function() {
+
+                openPastEventDetail(
+                  event.eventId
+                );
+
+              }
+            );
+
+
+            card.appendChild(
+              info
+            );
+
+            card.appendChild(
+              button
+            );
+
+
+            pastEventList
+              .appendChild(
+                card
+              );
+
+          }
+        );
+
+
+      pastMoreButton.style.display =
+        visiblePastEventCount <
+        pastEvents.length
+          ? "block"
+          : "none";
+    }
+
+
+    async function openPastEventDetail(
+      eventId
+    ) {
+
+      currentPastEventId =
+        eventId;
+
+
+      showScreen(
+        screens.pastDetail
+      );
+
+
+      pastDetailLoading.style.display =
+        "block";
+
+      pastDetailContent.style.display =
+        "none";
+
+      pastDetailError.style.display =
+        "none";
+
+
+      try {
+
+        const event =
+          await getEventStatusFromServer(
+            eventId
+          );
+
+
+        if (
+          String(
+            event.status || ""
+          ).trim() !==
+          "終了"
+        ) {
+
+          throw new Error(
+            "この選書会は終了済みではありません。"
+          );
+        }
+
+
+        pastDetailEventName.textContent =
+          event.eventName;
+
+        pastDetailStartDate.textContent =
+          formatDateTime(
+            event.startDate
+          );
+
+        pastDetailEndDate.textContent =
+          formatDateTime(
+            event.endDate
+          );
+
+        pastDetailRegistrantCount.textContent =
+          formatNumber(
+            event.registrantCount
+          );
+
+        pastDetailBookCount.textContent =
+          formatNumber(
+            event.bookCount
+          );
+
+        pastDetailPriceTotal.textContent =
+          formatNumber(
+            event.priceTotal
+          );
+
+        pastDetailLastRegistrant.textContent =
+          event.lastRegistrant ||
+          "－";
+
+        pastDetailLastTime.textContent =
+          formatTime(
+            event.lastRegisteredAt
+          );
+
+
+        const unknown =
+          Number(
+            event.unknownPriceCount || 0
+          );
+
+
+        if (
+          unknown > 0
+        ) {
+
+          pastUnknownPriceNote.textContent =
+            "※価格不明の本が" +
+            unknown +
+            "冊あります。金額には含まれていません。";
+
+          pastUnknownPriceNote.style.display =
+            "block";
+
+        } else {
+
+          pastUnknownPriceNote.style.display =
+            "none";
+        }
+
+
+        pastDetailLoading.style.display =
+          "none";
+
+        pastDetailContent.style.display =
+          "block";
+
+
+      } catch (error) {
+
+        pastDetailLoading.style.display =
+          "none";
+
+        pastDetailContent.style.display =
+          "block";
+
+        pastDetailError.textContent =
+          error.message ||
+          "選書会の情報を取得できませんでした。";
+
+        pastDetailError.style.display =
+          "block";
+      }
+    }
+
+
     /*
      * ======================================
      * 詳細
@@ -2928,6 +3657,24 @@
       );
 
 
+    document
+      .getElementById(
+        "goPastButton"
+      )
+      .addEventListener(
+        "click",
+        async function() {
+
+          showScreen(
+            screens.past
+          );
+
+          await loadPastEvents();
+
+        }
+      );
+
+
     createButton
       .addEventListener(
         "click",
@@ -3067,6 +3814,57 @@
             3;
 
           renderActiveEvents();
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "pastBackButton"
+      )
+      .addEventListener(
+        "click",
+        function() {
+
+          showScreen(
+            screens.top
+          );
+
+        }
+      );
+
+
+    pastMoreButton
+      .addEventListener(
+        "click",
+        function() {
+
+          visiblePastEventCount +=
+            3;
+
+          renderPastEvents();
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "pastDetailBackButton"
+      )
+      .addEventListener(
+        "click",
+        async function() {
+
+          currentPastEventId =
+            "";
+
+          showScreen(
+            screens.past
+          );
+
+          await loadPastEvents();
 
         }
       );
