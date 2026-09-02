@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>実証テスト7-B</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .box {
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 14px 24px;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>スマホde選書システム</h2>
+
+  <p>
+    実証テスト7-B：
+    Google未ログインの生徒役からの通信テスト
+  </p>
+
+  <div class="box">
+
+    <p>
+      GitHub Pagesから受付GASへ、
+      テストデータを送信します。
+    </p>
+
+    <button id="sendButton">
+      テストデータを送信
+    </button>
+
+    <p id="message">
+      まだ送信していません。
+    </p>
+
+  </div>
+
+
+  <script>
+
+    const RECEIVER_URL =
+      "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
+
+
+    document
+      .getElementById("sendButton")
+      .addEventListener(
+        "click",
+        async function() {
+
+          const message =
+            document.getElementById(
+              "message"
+            );
+
+          message.textContent =
+            "送信しています…";
+
+
+          const testData = {
+
+            test:
+              "実証テスト7-B",
+
+            userName:
+              "未ログイン生徒",
+
+            isbn:
+              "9784000000000",
+
+            title:
+              "GitHub Pagesテスト書籍"
+          };
+
+
+          try {
+
+            const response =
+              await fetch(
+                RECEIVER_URL,
+                {
+                  method:
+                    "POST",
+
+                  headers: {
+                    "Content-Type":
+                      "text/plain;charset=utf-8"
+                  },
+
+                  body:
+                    JSON.stringify(
+                      testData
+                    )
+                }
+              );
+
+
+            const result =
+              await response.json();
+
+
+            if (
+              result.success
+            ) {
+
+              message.textContent =
+                "送信成功\n\n" +
+                result.message +
+                "\n\n" +
+                JSON.stringify(
+                  result.receivedData,
+                  null,
+                  2
+                );
+
+            } else {
+
+              message.textContent =
+                "受付側でエラーが発生しました。\n\n" +
+                JSON.stringify(
+                  result,
+                  null,
+                  2
+                );
+            }
+
+
+          } catch (error) {
+
+            message.textContent =
+              "通信エラー\n\n" +
+              String(error);
+          }
+        }
+      );
+
+  </script>
+
+</body>
+</html>
