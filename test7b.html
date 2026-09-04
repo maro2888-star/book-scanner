@@ -4,67 +4,90 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>実証テスト7-B</title>
+  <title>実証テスト8-A</title>
 
   <style>
     body {
       font-family: sans-serif;
       max-width: 600px;
-      margin: 40px auto;
+      margin: 0 auto;
       padding: 20px;
-      line-height: 1.7;
+      line-height: 1.6;
     }
 
-    h2 {
-      margin-bottom: 10px;
+    h1 {
+      font-size: 24px;
     }
 
-    .box {
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      margin-top: 20px;
+    .description {
+      margin-bottom: 24px;
     }
 
     button {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      margin: 14px 0;
       font-size: 18px;
-      padding: 14px 24px;
-      margin-top: 15px;
       cursor: pointer;
     }
 
-    #message {
-      margin-top: 20px;
-      font-weight: bold;
+    #result {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f5f5f5;
       white-space: pre-wrap;
+      word-break: break-word;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>スマホde選書システム</h2>
+  <h1>実証テスト8-A</h1>
 
-  <p>
-    実証テスト7-B：
-    Google未ログインの生徒役からの通信テスト
-  </p>
-
-  <div class="box">
+  <div class="description">
+    <p>
+      司書PCを閉じた状態で、
+      複数の登録データを送信するテストです。
+    </p>
 
     <p>
-      GitHub Pagesから受付GASへ、
-      テストデータを送信します。
+      下の3つのボタンを、
+      それぞれ1回ずつ押してください。
     </p>
+  </div>
 
-    <button id="sendButton">
-      テストデータを送信
-    </button>
 
-    <p id="message">
-      まだ送信していません。
-    </p>
+  <button onclick="sendTestData(
+    '生徒A',
+    '9784000000001',
+    'テスト書籍1'
+  )">
+    生徒A・テスト書籍1を送信
+  </button>
 
+
+  <button onclick="sendTestData(
+    '生徒B',
+    '9784000000002',
+    'テスト書籍2'
+  )">
+    生徒B・テスト書籍2を送信
+  </button>
+
+
+  <button onclick="sendTestData(
+    '生徒C',
+    '9784000000003',
+    'テスト書籍3'
+  )">
+    生徒C・テスト書籍3を送信
+  </button>
+
+
+  <div id="result">
+    まだ送信していません。
   </div>
 
 
@@ -73,98 +96,93 @@
     const RECEIVER_URL =
       "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
 
-
-    document
-      .getElementById("sendButton")
-      .addEventListener(
-        "click",
-        async function() {
-
-          const message =
-            document.getElementById(
-              "message"
-            );
-
-          message.textContent =
-            "送信しています…";
+    const SELECTION_KEY =
+      "TEST8A-001";
 
 
-          const testData = {
+    async function sendTestData(
+      userName,
+      isbn,
+      title
+    ) {
 
-            test:
-              "実証テスト7-B",
-
-            userName:
-              "未ログイン生徒",
-
-            isbn:
-              "9784000000000",
-
-            title:
-              "GitHub Pagesテスト書籍"
-          };
+      const result =
+        document.getElementById("result");
 
 
-          try {
-
-            const response =
-              await fetch(
-                RECEIVER_URL,
-                {
-                  method:
-                    "POST",
-
-                  headers: {
-                    "Content-Type":
-                      "text/plain;charset=utf-8"
-                  },
-
-                  body:
-                    JSON.stringify(
-                      testData
-                    )
-                }
-              );
+      result.textContent =
+        userName + " のデータを送信しています…";
 
 
-            const result =
-              await response.json();
+      const data = {
+
+        test:
+          "実証テスト8-A",
+
+        selectionKey:
+          SELECTION_KEY,
+
+        userName:
+          userName,
+
+        isbn:
+          isbn,
+
+        title:
+          title
+      };
 
 
-            if (
-              result.success
-            ) {
+      try {
 
-              message.textContent =
-                "送信成功\n\n" +
-                result.message +
-                "\n\n" +
-                JSON.stringify(
-                  result.receivedData,
-                  null,
-                  2
-                );
+        const response =
+          await fetch(
+            RECEIVER_URL,
+            {
+              method: "POST",
 
-            } else {
+              headers: {
+                "Content-Type":
+                  "text/plain;charset=utf-8"
+              },
 
-              message.textContent =
-                "受付側でエラーが発生しました。\n\n" +
-                JSON.stringify(
-                  result,
-                  null,
-                  2
-                );
+              body:
+                JSON.stringify(data)
             }
+          );
 
 
-          } catch (error) {
+        const responseData =
+          await response.json();
 
-            message.textContent =
-              "通信エラー\n\n" +
-              String(error);
-          }
+
+        if (responseData.success) {
+
+          result.textContent =
+            "送信成功\n\n" +
+            "登録者：" + userName + "\n" +
+            "ISBN：" + isbn + "\n" +
+            "書名：" + title + "\n\n" +
+            "受付の現在件数：" +
+            responseData.count + "件\n\n" +
+            "registrationId：\n" +
+            responseData.registrationId;
+
+        } else {
+
+          result.textContent =
+            "送信できませんでした。\n\n" +
+            responseData.message;
         }
-      );
+
+
+      } catch (error) {
+
+        result.textContent =
+          "通信エラーが発生しました。\n\n" +
+          String(error);
+      }
+    }
 
   </script>
 
