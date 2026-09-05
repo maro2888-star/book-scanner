@@ -1,93 +1,167 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>実証テスト8-A</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>実証テスト8-E-1</title>
 
   <style>
+
     body {
       font-family: sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
+      max-width: 700px;
+      margin: 30px auto;
       padding: 20px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
     h1 {
       font-size: 24px;
     }
 
-    .description {
-      margin-bottom: 24px;
+    h2 {
+      font-size: 20px;
+      margin-top: 0;
+    }
+
+    .box {
+      margin-top: 25px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .info {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
     }
 
     button {
       display: block;
       width: 100%;
-      padding: 18px;
-      margin: 14px 0;
+      box-sizing: border-box;
+      margin-top: 15px;
+      padding: 16px;
       font-size: 18px;
       cursor: pointer;
     }
 
-    #result {
-      margin-top: 24px;
-      padding: 16px;
-      background: #f5f5f5;
-      white-space: pre-wrap;
-      word-break: break-word;
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
     }
+
+    .message {
+      margin-top: 18px;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+
+    .dataBox {
+      display: none;
+      margin-top: 18px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+
   </style>
 </head>
 
+
 <body>
 
-  <h1>実証テスト8-A</h1>
+  <h1>スマホde選書システム</h1>
 
-  <div class="description">
+  <p>
+    実証テスト8-E-1：
+    複数の登録がほぼ同時に届いた場合でも、
+    受付データが失われないか確認します。
+  </p>
+
+
+  <!--
+    STEP 1
+    現在残っている準備テスト3件だけを削除
+  -->
+
+  <div class="box">
+
+    <h2>① テスト開始前の受付を0件にする</h2>
+
     <p>
-      司書PCを閉じた状態で、
-      複数の登録データを送信するテストです。
+      直前の準備テストで登録した3件だけを、
+      registrationIdを指定して受付から削除します。
     </p>
 
-    <p>
-      下の3つのボタンを、
-      それぞれ1回ずつ押してください。
-    </p>
+    <div class="info">
+      「全データ削除」ではありません。
+      今回確認済みの3件だけを削除します。
+    </div>
+
+    <button id="clearButton">
+      準備テスト3件を削除して0件を確認する
+    </button>
+
+    <div
+      id="clearMessage"
+      class="message"
+    >
+      まだ実行していません。
+    </div>
+
   </div>
 
 
-  <button onclick="sendTestData(
-    '生徒A',
-    '9784000000001',
-    'テスト書籍1'
-  )">
-    生徒A・テスト書籍1を送信
-  </button>
+  <!--
+    STEP 2
+    10件を並列送信
+  -->
 
+  <div class="box">
 
-  <button onclick="sendTestData(
-    '生徒B',
-    '9784000000002',
-    'テスト書籍2'
-  )">
-    生徒B・テスト書籍2を送信
-  </button>
+    <h2>② 10件を並列送信する</h2>
 
+    <p>
+      JavaScriptから10件の登録リクエストを、
+      待ち合わせずにまとめて送信します。
+    </p>
 
-  <button onclick="sendTestData(
-    '生徒C',
-    '9784000000003',
-    'テスト書籍3'
-  )">
-    生徒C・テスト書籍3を送信
-  </button>
+    <div class="info">
+      ①で受付が0件になったことを確認すると、
+      このボタンを押せるようになります。
+    </div>
 
+    <button
+      id="sendButton"
+      disabled
+    >
+      10件をほぼ同時に送信する
+    </button>
 
-  <div id="result">
-    まだ送信していません。
+    <div
+      id="sendMessage"
+      class="message"
+    >
+      まだ実行していません。
+    </div>
+
+    <div
+      id="resultBox"
+      class="dataBox"
+    ></div>
+
   </div>
 
 
@@ -96,95 +170,620 @@
     const RECEIVER_URL =
       "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
 
+
     const SELECTION_KEY =
       "TEST8A-001";
 
 
-    async function sendTestData(
-      userName,
-      isbn,
-      title
-    ) {
-
-      const result =
-        document.getElementById("result");
-
-
-      result.textContent =
-        userName + " のデータを送信しています…";
+    /*
+     * 直前の8-E基本確認で作成した3件。
+     *
+     * この3件だけを削除する。
+     */
+    const PREPARATION_REGISTRATION_IDS = [
+      "71fc4ba2-9b9c-4792-ad61-110fa319ad8a",
+      "43536b81-1ce2-4e46-9df6-1ad89c4f11bc",
+      "3ec4511e-7766-42e9-9dd6-7fc94833b84a"
+    ];
 
 
-      const data = {
+    const clearButton =
+      document.getElementById(
+        "clearButton"
+      );
 
+    const sendButton =
+      document.getElementById(
+        "sendButton"
+      );
+
+    const clearMessage =
+      document.getElementById(
+        "clearMessage"
+      );
+
+    const sendMessage =
+      document.getElementById(
+        "sendMessage"
+      );
+
+    const resultBox =
+      document.getElementById(
+        "resultBox"
+      );
+
+
+    /*
+     * 受付の現在データを取得する共通関数。
+     */
+    async function pullPendingData() {
+
+      const url =
+        RECEIVER_URL +
+        "?action=pull" +
+        "&selectionKey=" +
+        encodeURIComponent(
+          SELECTION_KEY
+        ) +
+        "&_=" +
+        Date.now();
+
+
+      const response =
+        await fetch(
+          url,
+          {
+            method: "GET",
+            cache: "no-store"
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "受付から正常な応答がありませんでした。"
+        );
+      }
+
+
+      return await response.json();
+    }
+
+
+    /*
+     * --------------------------------
+     * STEP 1
+     * 準備テスト3件だけをackして削除
+     * --------------------------------
+     */
+    clearButton.addEventListener(
+      "click",
+      async function() {
+
+        clearButton.disabled =
+          true;
+
+        sendButton.disabled =
+          true;
+
+        clearMessage.textContent =
+          "準備テスト3件を受付から削除しています…";
+
+
+        try {
+
+          const ackResponse =
+            await fetch(
+              RECEIVER_URL,
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "text/plain;charset=utf-8"
+                },
+
+                body:
+                  JSON.stringify(
+                    {
+                      action:
+                        "ack",
+
+                      selectionKey:
+                        SELECTION_KEY,
+
+                      registrationIds:
+                        PREPARATION_REGISTRATION_IDS
+                    }
+                  )
+              }
+            );
+
+
+          if (!ackResponse.ok) {
+
+            throw new Error(
+              "削除要求で正常な応答がありませんでした。"
+            );
+          }
+
+
+          const ackResult =
+            await ackResponse.json();
+
+
+          if (!ackResult.success) {
+
+            clearMessage.textContent =
+              "削除処理に失敗しました。\n\n" +
+              (
+                ackResult.message ||
+                "詳細不明"
+              );
+
+            clearButton.disabled =
+              false;
+
+            return;
+          }
+
+
+          /*
+           * 削除後、受付をもう一度確認する。
+           */
+          const verifyResult =
+            await pullPendingData();
+
+
+          const remainingCount =
+            typeof verifyResult.count === "number"
+              ? verifyResult.count
+              : (
+                  Array.isArray(
+                    verifyResult.data
+                  )
+                    ? verifyResult.data.length
+                    : 0
+                );
+
+
+          if (remainingCount !== 0) {
+
+            clearMessage.textContent =
+              "準備テスト3件の削除処理を行いましたが、\n" +
+              "受付にはまだ " +
+              remainingCount +
+              "件残っています。\n\n" +
+              "安全のため並列送信テストは開始しません。";
+
+            clearButton.disabled =
+              false;
+
+            sendButton.disabled =
+              true;
+
+            return;
+          }
+
+
+          clearMessage.textContent =
+            "テスト開始準備完了\n\n" +
+            "受付から削除：" +
+            ackResult.removedCount +
+            "件\n" +
+            "受付の現在件数：0件\n\n" +
+            "8-E-1の並列送信テストを開始できます。";
+
+
+          /*
+           * 0件を確認できた場合だけ
+           * 10件送信ボタンを有効化する。
+           */
+          sendButton.disabled =
+            false;
+
+
+        } catch (error) {
+
+          clearMessage.textContent =
+            "通信エラーが発生しました。\n\n" +
+            String(error);
+
+          clearButton.disabled =
+            false;
+
+          sendButton.disabled =
+            true;
+        }
+
+      }
+    );
+
+
+    /*
+     * 1件分の登録データを作る。
+     */
+    function createTestPayload(index) {
+
+      const number =
+        String(index).padStart(
+          2,
+          "0"
+        );
+
+
+      return {
         test:
-          "実証テスト8-A",
+          "実証テスト8-E-1",
 
         selectionKey:
           SELECTION_KEY,
 
         userName:
-          userName,
+          "並列テスト生徒" +
+          number,
 
         isbn:
-          isbn,
+          "9784000000" +
+          String(index).padStart(
+            3,
+            "0"
+          ),
 
         title:
-          title
+          "8-E-1並列テスト書籍" +
+          number
       };
+    }
 
 
-      try {
+    /*
+     * 1件を受付へPOSTする。
+     */
+    async function sendOneRegistration(
+      index
+    ) {
 
-        const response =
-          await fetch(
-            RECEIVER_URL,
-            {
-              method: "POST",
+      const payload =
+        createTestPayload(
+          index
+        );
 
-              headers: {
-                "Content-Type":
-                  "text/plain;charset=utf-8"
-              },
 
-              body:
-                JSON.stringify(data)
+      const response =
+        await fetch(
+          RECEIVER_URL,
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
+            },
+
+            body:
+              JSON.stringify(
+                payload
+              )
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "HTTPエラー：" +
+          response.status
+        );
+      }
+
+
+      const result =
+        await response.json();
+
+
+      return {
+        index:
+          index,
+
+        payload:
+          payload,
+
+        result:
+          result
+      };
+    }
+
+
+    /*
+     * --------------------------------
+     * STEP 2
+     * 10件を並列送信
+     * --------------------------------
+     */
+    sendButton.addEventListener(
+      "click",
+      async function() {
+
+        sendButton.disabled =
+          true;
+
+        clearButton.disabled =
+          true;
+
+        resultBox.style.display =
+          "none";
+
+        resultBox.textContent =
+          "";
+
+        sendMessage.textContent =
+          "10件を並列送信しています…";
+
+
+        try {
+
+          /*
+           * 重要：
+           *
+           * 1件ずつawaitしない。
+           *
+           * 10個のPromiseを先に作り、
+           * Promise.allSettled()でまとめて待つ。
+           *
+           * これによって複数POSTが
+           * 並行して受付へ送られる。
+           */
+          const requests = [];
+
+
+          for (
+            let i = 1;
+            i <= 10;
+            i++
+          ) {
+
+            requests.push(
+              sendOneRegistration(
+                i
+              )
+            );
+          }
+
+
+          const settledResults =
+            await Promise.allSettled(
+              requests
+            );
+
+
+          /*
+           * 通信成功・失敗を集計。
+           */
+          let fulfilledCount = 0;
+          let rejectedCount = 0;
+          let successTrueCount = 0;
+          let successFalseCount = 0;
+
+          const responseDetails = [];
+
+
+          settledResults.forEach(
+            function(item, arrayIndex) {
+
+              if (
+                item.status ===
+                "fulfilled"
+              ) {
+
+                fulfilledCount++;
+
+                const value =
+                  item.value;
+
+
+                if (
+                  value.result &&
+                  value.result.success === true
+                ) {
+
+                  successTrueCount++;
+
+                } else {
+
+                  successFalseCount++;
+                }
+
+
+                responseDetails.push({
+                  request:
+                    arrayIndex + 1,
+
+                  status:
+                    "fulfilled",
+
+                  response:
+                    value.result
+                });
+
+
+              } else {
+
+                rejectedCount++;
+
+
+                responseDetails.push({
+                  request:
+                    arrayIndex + 1,
+
+                  status:
+                    "rejected",
+
+                  error:
+                    String(
+                      item.reason
+                    )
+                });
+              }
+
             }
           );
 
 
-        const responseData =
-          await response.json();
+          sendMessage.textContent =
+            "10件の送信処理が完了しました。\n" +
+            "受付の最終状態を確認しています…";
 
 
-        if (responseData.success) {
+          /*
+           * 全POST終了後、
+           * 受付をpullして最終状態を確認。
+           */
+          const finalPull =
+            await pullPendingData();
 
-          result.textContent =
-            "送信成功\n\n" +
-            "登録者：" + userName + "\n" +
-            "ISBN：" + isbn + "\n" +
-            "書名：" + title + "\n\n" +
-            "受付の現在件数：" +
-            responseData.count + "件\n\n" +
-            "registrationId：\n" +
-            responseData.registrationId;
 
-        } else {
+          const finalData =
+            Array.isArray(
+              finalPull.data
+            )
+              ? finalPull.data
+              : [];
 
-          result.textContent =
-            "送信できませんでした。\n\n" +
-            responseData.message;
+
+          const finalCount =
+            typeof finalPull.count === "number"
+              ? finalPull.count
+              : finalData.length;
+
+
+          /*
+           * registrationIdを確認。
+           */
+          const registrationIds =
+            finalData
+              .map(
+                function(item) {
+                  return item.registrationId;
+                }
+              )
+              .filter(
+                function(id) {
+                  return !!id;
+                }
+              );
+
+
+          const uniqueRegistrationIds =
+            new Set(
+              registrationIds
+            );
+
+
+          const uniqueIdCount =
+            uniqueRegistrationIds.size;
+
+
+          /*
+           * 8-E-1成功条件
+           */
+          const testSuccess =
+            fulfilledCount === 10 &&
+            rejectedCount === 0 &&
+            successTrueCount === 10 &&
+            successFalseCount === 0 &&
+            finalCount === 10 &&
+            registrationIds.length === 10 &&
+            uniqueIdCount === 10;
+
+
+          if (testSuccess) {
+
+            sendMessage.textContent =
+              "テスト8-E-1：成功\n\n" +
+              "並列送信：10件\n" +
+              "通信完了：10件\n" +
+              "success:true：10件\n" +
+              "通信失敗：0件\n" +
+              "受付の最終件数：10件\n" +
+              "registrationId：10個\n" +
+              "異なるregistrationId：10個\n\n" +
+              "10件を並列送信しても、受付データの欠落は確認されませんでした。";
+
+          } else {
+
+            sendMessage.textContent =
+              "テスト8-E-1：要確認\n\n" +
+              "並列送信：10件\n" +
+              "通信完了：" +
+              fulfilledCount +
+              "件\n" +
+              "success:true：" +
+              successTrueCount +
+              "件\n" +
+              "success:false：" +
+              successFalseCount +
+              "件\n" +
+              "通信失敗：" +
+              rejectedCount +
+              "件\n" +
+              "受付の最終件数：" +
+              finalCount +
+              "件\n" +
+              "registrationId：" +
+              registrationIds.length +
+              "個\n" +
+              "異なるregistrationId：" +
+              uniqueIdCount +
+              "個\n\n" +
+              "想定と異なる結果です。\n" +
+              "追加操作をせず、この結果を確認してください。";
+          }
+
+
+          /*
+           * 詳細も画面に残す。
+           */
+          resultBox.style.display =
+            "block";
+
+
+          resultBox.textContent =
+            "【各POSTの応答】\n\n" +
+            JSON.stringify(
+              responseDetails,
+              null,
+              2
+            ) +
+            "\n\n" +
+            "【受付の最終データ】\n\n" +
+            JSON.stringify(
+              finalPull,
+              null,
+              2
+            );
+
+
+        } catch (error) {
+
+          sendMessage.textContent =
+            "テスト中にエラーが発生しました。\n\n" +
+            String(error);
+
+          resultBox.style.display =
+            "block";
+
+          resultBox.textContent =
+            "この状態では追加送信しないでください。";
         }
 
-
-      } catch (error) {
-
-        result.textContent =
-          "通信エラーが発生しました。\n\n" +
-          String(error);
       }
-    }
+    );
 
   </script>
 
 </body>
+
 </html>
