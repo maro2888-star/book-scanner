@@ -9,13 +9,13 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>実証テスト8-E-1</title>
+  <title>実証テスト8-E-2</title>
 
   <style>
 
     body {
       font-family: sans-serif;
-      max-width: 700px;
+      max-width: 750px;
       margin: 30px auto;
       padding: 20px;
       line-height: 1.7;
@@ -73,7 +73,7 @@
       border-radius: 8px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      font-size: 14px;
+      font-size: 13px;
     }
 
   </style>
@@ -85,73 +85,55 @@
   <h1>スマホde選書システム</h1>
 
   <p>
-    実証テスト8-E-1：
-    複数の登録がほぼ同時に届いた場合でも、
-    受付データが失われないか確認します。
+    実証テスト8-E-2：
+    司書側のackと、生徒側の新規登録が
+    ほぼ同時に発生した場合の競合を確認します。
   </p>
 
 
-  <!--
-    STEP 1
-    現在残っている準備テスト3件だけを削除
-  -->
-
   <div class="box">
 
-    <h2>① テスト開始前の受付を0件にする</h2>
+    <h2>① 現在の10件を確認する</h2>
 
     <p>
-      直前の準備テストで登録した3件だけを、
-      registrationIdを指定して受付から削除します。
+      8-E-1で受付に残った10件を取得します。
+      この10件だけを、次のack対象として記録します。
     </p>
 
-    <div class="info">
-      「全データ削除」ではありません。
-      今回確認済みの3件だけを削除します。
-    </div>
-
-    <button id="clearButton">
-      準備テスト3件を削除して0件を確認する
+    <button id="checkButton">
+      現在の10件を確認する
     </button>
 
     <div
-      id="clearMessage"
+      id="checkMessage"
       class="message"
     >
-      まだ実行していません。
+      まだ確認していません。
     </div>
 
   </div>
 
 
-  <!--
-    STEP 2
-    10件を並列送信
-  -->
-
   <div class="box">
 
-    <h2>② 10件を並列送信する</h2>
-
-    <p>
-      JavaScriptから10件の登録リクエストを、
-      待ち合わせずにまとめて送信します。
-    </p>
+    <h2>② ackと新規10件を同時に送る</h2>
 
     <div class="info">
-      ①で受付が0件になったことを確認すると、
-      このボタンを押せるようになります。
+      ①で確認した古い10件をackすると同時に、
+      新しい10件の登録を並列送信します。
+      <br><br>
+      新しい10件はack対象には含めません。
     </div>
 
     <button
-      id="sendButton"
+      id="runButton"
       disabled
     >
-      10件をほぼ同時に送信する
+      ackと新規10件をほぼ同時に実行する
     </button>
 
     <div
-      id="sendMessage"
+      id="runMessage"
       class="message"
     >
       まだ実行していません。
@@ -175,36 +157,24 @@
       "TEST8A-001";
 
 
-    /*
-     * 直前の8-E基本確認で作成した3件。
-     *
-     * この3件だけを削除する。
-     */
-    const PREPARATION_REGISTRATION_IDS = [
-      "71fc4ba2-9b9c-4792-ad61-110fa319ad8a",
-      "43536b81-1ce2-4e46-9df6-1ad89c4f11bc",
-      "3ec4511e-7766-42e9-9dd6-7fc94833b84a"
-    ];
-
-
-    const clearButton =
+    const checkButton =
       document.getElementById(
-        "clearButton"
+        "checkButton"
       );
 
-    const sendButton =
+    const runButton =
       document.getElementById(
-        "sendButton"
+        "runButton"
       );
 
-    const clearMessage =
+    const checkMessage =
       document.getElementById(
-        "clearMessage"
+        "checkMessage"
       );
 
-    const sendMessage =
+    const runMessage =
       document.getElementById(
-        "sendMessage"
+        "runMessage"
       );
 
     const resultBox =
@@ -214,7 +184,14 @@
 
 
     /*
-     * 受付の現在データを取得する共通関数。
+     * STEP 1で取得した
+     * 「古い10件」のregistrationIdを保持する。
+     */
+    let oldRegistrationIds = [];
+
+
+    /*
+     * 受付の現在状態を取得する。
      */
     async function pullPendingData() {
 
@@ -233,8 +210,11 @@
         await fetch(
           url,
           {
-            method: "GET",
-            cache: "no-store"
+            method:
+              "GET",
+
+            cache:
+              "no-store"
           }
         );
 
@@ -252,149 +232,135 @@
 
 
     /*
-     * --------------------------------
+     * -------------------------------
      * STEP 1
-     * 準備テスト3件だけをackして削除
-     * --------------------------------
+     * 現在の10件を確認する。
+     * -------------------------------
      */
-    clearButton.addEventListener(
+    checkButton.addEventListener(
       "click",
       async function() {
 
-        clearButton.disabled =
+        checkButton.disabled =
           true;
 
-        sendButton.disabled =
+        runButton.disabled =
           true;
 
-        clearMessage.textContent =
-          "準備テスト3件を受付から削除しています…";
+        checkMessage.textContent =
+          "現在の受付データを確認しています…";
 
 
         try {
 
-          const ackResponse =
-            await fetch(
-              RECEIVER_URL,
-              {
-                method: "POST",
+          const pullResult =
+            await pullPendingData();
 
-                headers: {
-                  "Content-Type":
-                    "text/plain;charset=utf-8"
-                },
 
-                body:
-                  JSON.stringify(
-                    {
-                      action:
-                        "ack",
+          const data =
+            Array.isArray(
+              pullResult.data
+            )
+              ? pullResult.data
+              : [];
 
-                      selectionKey:
-                        SELECTION_KEY,
 
-                      registrationIds:
-                        PREPARATION_REGISTRATION_IDS
-                    }
-                  )
+          if (
+            !pullResult.success ||
+            data.length !== 10
+          ) {
+
+            checkMessage.textContent =
+              "テスト開始条件が一致しません。\n\n" +
+              "現在の受付件数：" +
+              data.length +
+              "件\n" +
+              "必要な件数：10件\n\n" +
+              "ここでは追加操作をしないでください。";
+
+            checkButton.disabled =
+              false;
+
+            return;
+          }
+
+
+          /*
+           * registrationIdを取得。
+           */
+          const ids =
+            data.map(
+              function(item) {
+                return item.registrationId;
               }
             );
 
 
-          if (!ackResponse.ok) {
-
-            throw new Error(
-              "削除要求で正常な応答がありませんでした。"
-            );
-          }
-
-
-          const ackResult =
-            await ackResponse.json();
-
-
-          if (!ackResult.success) {
-
-            clearMessage.textContent =
-              "削除処理に失敗しました。\n\n" +
-              (
-                ackResult.message ||
-                "詳細不明"
-              );
-
-            clearButton.disabled =
-              false;
-
-            return;
-          }
-
-
-          /*
-           * 削除後、受付をもう一度確認する。
-           */
-          const verifyResult =
-            await pullPendingData();
-
-
-          const remainingCount =
-            typeof verifyResult.count === "number"
-              ? verifyResult.count
-              : (
-                  Array.isArray(
-                    verifyResult.data
-                  )
-                    ? verifyResult.data.length
-                    : 0
+          const validIds =
+            ids.filter(
+              function(id) {
+                return (
+                  typeof id === "string" &&
+                  id.length > 0
                 );
+              }
+            );
 
 
-          if (remainingCount !== 0) {
+          const uniqueIds =
+            new Set(
+              validIds
+            );
 
-            clearMessage.textContent =
-              "準備テスト3件の削除処理を行いましたが、\n" +
-              "受付にはまだ " +
-              remainingCount +
-              "件残っています。\n\n" +
-              "安全のため並列送信テストは開始しません。";
 
-            clearButton.disabled =
+          /*
+           * 10件すべてに異なるregistrationIdが
+           * あることを確認する。
+           */
+          if (
+            validIds.length !== 10 ||
+            uniqueIds.size !== 10
+          ) {
+
+            checkMessage.textContent =
+              "registrationIdの状態が想定と異なります。\n\n" +
+              "安全のためテストを開始しません。";
+
+            checkButton.disabled =
               false;
-
-            sendButton.disabled =
-              true;
 
             return;
           }
 
 
-          clearMessage.textContent =
-            "テスト開始準備完了\n\n" +
-            "受付から削除：" +
-            ackResult.removedCount +
-            "件\n" +
-            "受付の現在件数：0件\n\n" +
-            "8-E-1の並列送信テストを開始できます。";
+          oldRegistrationIds =
+            validIds;
+
+
+          checkMessage.textContent =
+            "開始条件OK\n\n" +
+            "受付の現在件数：10件\n" +
+            "ack対象：10件\n" +
+            "異なるregistrationId：10個\n\n" +
+            "この10件だけをack対象として記録しました。";
 
 
           /*
-           * 0件を確認できた場合だけ
-           * 10件送信ボタンを有効化する。
+           * 条件が揃った場合だけ
+           * STEP 2を有効にする。
            */
-          sendButton.disabled =
+          runButton.disabled =
             false;
 
 
         } catch (error) {
 
-          clearMessage.textContent =
-            "通信エラーが発生しました。\n\n" +
+          checkMessage.textContent =
+            "確認中にエラーが発生しました。\n\n" +
             String(error);
 
-          clearButton.disabled =
+          checkButton.disabled =
             false;
-
-          sendButton.disabled =
-            true;
         }
 
       }
@@ -402,9 +368,9 @@
 
 
     /*
-     * 1件分の登録データを作る。
+     * 新しい1件のテストデータを作る。
      */
-    function createTestPayload(index) {
+    function createNewPayload(index) {
 
       const number =
         String(index).padStart(
@@ -415,38 +381,38 @@
 
       return {
         test:
-          "実証テスト8-E-1",
+          "実証テスト8-E-2",
 
         selectionKey:
           SELECTION_KEY,
 
         userName:
-          "並列テスト生徒" +
+          "競合テスト生徒" +
           number,
 
         isbn:
-          "9784000000" +
+          "9785000000" +
           String(index).padStart(
             3,
             "0"
           ),
 
         title:
-          "8-E-1並列テスト書籍" +
+          "8-E-2競合テスト書籍" +
           number
       };
     }
 
 
     /*
-     * 1件を受付へPOSTする。
+     * 新しい登録を1件POSTする。
      */
     async function sendOneRegistration(
       index
     ) {
 
       const payload =
-        createTestPayload(
+        createNewPayload(
           index
         );
 
@@ -474,7 +440,7 @@
       if (!response.ok) {
 
         throw new Error(
-          "HTTPエラー：" +
+          "登録POST HTTPエラー：" +
           response.status
         );
       }
@@ -498,19 +464,66 @@
 
 
     /*
-     * --------------------------------
-     * STEP 2
-     * 10件を並列送信
-     * --------------------------------
+     * 古い10件をackする。
      */
-    sendButton.addEventListener(
+    async function sendAck() {
+
+      const response =
+        await fetch(
+          RECEIVER_URL,
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
+            },
+
+            body:
+              JSON.stringify(
+                {
+                  action:
+                    "ack",
+
+                  selectionKey:
+                    SELECTION_KEY,
+
+                  registrationIds:
+                    oldRegistrationIds
+                }
+              )
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "ack HTTPエラー：" +
+          response.status
+        );
+      }
+
+
+      return await response.json();
+    }
+
+
+    /*
+     * -------------------------------
+     * STEP 2
+     * ack + 新規10件を並行実行。
+     * -------------------------------
+     */
+    runButton.addEventListener(
       "click",
       async function() {
 
-        sendButton.disabled =
+        runButton.disabled =
           true;
 
-        clearButton.disabled =
+        checkButton.disabled =
           true;
 
         resultBox.style.display =
@@ -519,24 +532,26 @@
         resultBox.textContent =
           "";
 
-        sendMessage.textContent =
-          "10件を並列送信しています…";
+        runMessage.textContent =
+          "ackと新規10件を並行して実行しています…";
 
 
         try {
 
           /*
-           * 重要：
+           * ack 1本
+           * ＋
+           * 新規登録POST 10本
            *
-           * 1件ずつawaitしない。
-           *
-           * 10個のPromiseを先に作り、
-           * Promise.allSettled()でまとめて待つ。
-           *
-           * これによって複数POSTが
-           * 並行して受付へ送られる。
+           * 合計11本のPromiseを、
+           * awaitせず先に作る。
            */
-          const requests = [];
+          const ackPromise =
+            sendAck();
+
+
+          const registrationPromises =
+            [];
 
 
           for (
@@ -545,7 +560,7 @@
             i++
           ) {
 
-            requests.push(
+            registrationPromises.push(
               sendOneRegistration(
                 i
               )
@@ -553,70 +568,115 @@
           }
 
 
-          const settledResults =
+          /*
+           * ackと10件登録をまとめて待つ。
+           */
+          const allResults =
             await Promise.allSettled(
-              requests
+              [
+                ackPromise,
+                ...registrationPromises
+              ]
             );
 
 
+          const ackSettled =
+            allResults[0];
+
+
+          const registrationSettled =
+            allResults.slice(1);
+
+
           /*
-           * 通信成功・失敗を集計。
+           * ack結果を確認。
            */
-          let fulfilledCount = 0;
-          let rejectedCount = 0;
-          let successTrueCount = 0;
-          let successFalseCount = 0;
+          let ackSuccess =
+            false;
 
-          const responseDetails = [];
+          let ackResult =
+            null;
 
 
-          settledResults.forEach(
-            function(item, arrayIndex) {
+          if (
+            ackSettled.status ===
+            "fulfilled"
+          ) {
+
+            ackResult =
+              ackSettled.value;
+
+            ackSuccess =
+              (
+                ackResult &&
+                ackResult.success === true &&
+                ackResult.removedCount === 10
+              );
+          }
+
+
+          /*
+           * 新規登録10件の結果を集計。
+           */
+          let registrationFulfilled =
+            0;
+
+          let registrationSuccess =
+            0;
+
+          let registrationFailed =
+            0;
+
+
+          const registrationResponses =
+            [];
+
+
+          registrationSettled.forEach(
+            function(item, index) {
 
               if (
                 item.status ===
                 "fulfilled"
               ) {
 
-                fulfilledCount++;
-
-                const value =
-                  item.value;
+                registrationFulfilled++;
 
 
                 if (
-                  value.result &&
-                  value.result.success === true
+                  item.value &&
+                  item.value.result &&
+                  item.value.result.success === true
                 ) {
 
-                  successTrueCount++;
+                  registrationSuccess++;
 
                 } else {
 
-                  successFalseCount++;
+                  registrationFailed++;
                 }
 
 
-                responseDetails.push({
+                registrationResponses.push({
                   request:
-                    arrayIndex + 1,
+                    index + 1,
 
                   status:
                     "fulfilled",
 
                   response:
-                    value.result
+                    item.value.result
                 });
 
 
               } else {
 
-                rejectedCount++;
+                registrationFailed++;
 
 
-                responseDetails.push({
+                registrationResponses.push({
                   request:
-                    arrayIndex + 1,
+                    index + 1,
 
                   status:
                     "rejected",
@@ -632,14 +692,8 @@
           );
 
 
-          sendMessage.textContent =
-            "10件の送信処理が完了しました。\n" +
-            "受付の最終状態を確認しています…";
-
-
           /*
-           * 全POST終了後、
-           * 受付をpullして最終状態を確認。
+           * 全処理終了後の受付を確認。
            */
           const finalPull =
             await pullPendingData();
@@ -654,16 +708,57 @@
 
 
           const finalCount =
-            typeof finalPull.count === "number"
-              ? finalPull.count
-              : finalData.length;
+            finalData.length;
 
 
           /*
-           * registrationIdを確認。
+           * 最終受付に古いIDが残っていないか確認。
            */
-          const registrationIds =
-            finalData
+          const finalIdSet =
+            new Set(
+              finalData
+                .map(
+                  function(item) {
+                    return item.registrationId;
+                  }
+                )
+                .filter(
+                  function(id) {
+                    return !!id;
+                  }
+                )
+            );
+
+
+          const oldIdsStillRemaining =
+            oldRegistrationIds.filter(
+              function(id) {
+                return finalIdSet.has(
+                  id
+                );
+              }
+            );
+
+
+          /*
+           * 8-E-2で送った新規データだけを確認。
+           */
+          const newTestData =
+            finalData.filter(
+              function(item) {
+
+                return (
+                  item &&
+                  item.payload &&
+                  item.payload.test ===
+                    "実証テスト8-E-2"
+                );
+              }
+            );
+
+
+          const newRegistrationIds =
+            newTestData
               .map(
                 function(item) {
                   return item.registrationId;
@@ -676,67 +771,91 @@
               );
 
 
-          const uniqueRegistrationIds =
+          const uniqueNewIds =
             new Set(
-              registrationIds
+              newRegistrationIds
             );
 
 
-          const uniqueIdCount =
-            uniqueRegistrationIds.size;
-
-
           /*
-           * 8-E-1成功条件
+           * 成功条件
+           *
+           * ・ack成功
+           * ・古い10件を10件削除
+           * ・新規10POSTすべて成功
+           * ・最終受付10件
+           * ・古いIDは0件
+           * ・新しいテストデータ10件
+           * ・新registrationIdが10個すべて異なる
            */
           const testSuccess =
-            fulfilledCount === 10 &&
-            rejectedCount === 0 &&
-            successTrueCount === 10 &&
-            successFalseCount === 0 &&
+            ackSuccess &&
+            registrationFulfilled === 10 &&
+            registrationSuccess === 10 &&
+            registrationFailed === 0 &&
             finalCount === 10 &&
-            registrationIds.length === 10 &&
-            uniqueIdCount === 10;
+            oldIdsStillRemaining.length === 0 &&
+            newTestData.length === 10 &&
+            newRegistrationIds.length === 10 &&
+            uniqueNewIds.size === 10;
 
 
           if (testSuccess) {
 
-            sendMessage.textContent =
-              "テスト8-E-1：成功\n\n" +
-              "並列送信：10件\n" +
-              "通信完了：10件\n" +
-              "success:true：10件\n" +
-              "通信失敗：0件\n" +
+            runMessage.textContent =
+              "テスト8-E-2：成功\n\n" +
+              "ack対象：10件\n" +
+              "受付から削除：10件\n" +
+              "新規並列送信：10件\n" +
+              "新規登録成功：10件\n" +
+              "新規登録失敗：0件\n" +
               "受付の最終件数：10件\n" +
-              "registrationId：10個\n" +
-              "異なるregistrationId：10個\n\n" +
-              "10件を並列送信しても、受付データの欠落は確認されませんでした。";
+              "古いregistrationId残存：0件\n" +
+              "新しいregistrationId：10個\n" +
+              "異なる新registrationId：10個\n\n" +
+              "ackと新規登録が競合しても、" +
+              "新しく到着した登録の欠落は確認されませんでした。";
 
           } else {
 
-            sendMessage.textContent =
-              "テスト8-E-1：要確認\n\n" +
-              "並列送信：10件\n" +
-              "通信完了：" +
-              fulfilledCount +
+            runMessage.textContent =
+              "テスト8-E-2：要確認\n\n" +
+              "ack成功：" +
+              (
+                ackSuccess
+                  ? "はい"
+                  : "いいえ"
+              ) +
+              "\n" +
+              "ack削除件数：" +
+              (
+                ackResult &&
+                typeof ackResult.removedCount ===
+                  "number"
+                  ? ackResult.removedCount
+                  : "不明"
+              ) +
               "件\n" +
-              "success:true：" +
-              successTrueCount +
+              "新規送信完了：" +
+              registrationFulfilled +
               "件\n" +
-              "success:false：" +
-              successFalseCount +
+              "新規登録成功：" +
+              registrationSuccess +
               "件\n" +
-              "通信失敗：" +
-              rejectedCount +
+              "新規登録失敗：" +
+              registrationFailed +
               "件\n" +
               "受付の最終件数：" +
               finalCount +
               "件\n" +
-              "registrationId：" +
-              registrationIds.length +
-              "個\n" +
-              "異なるregistrationId：" +
-              uniqueIdCount +
+              "古いregistrationId残存：" +
+              oldIdsStillRemaining.length +
+              "件\n" +
+              "8-E-2新規データ：" +
+              newTestData.length +
+              "件\n" +
+              "異なる新registrationId：" +
+              uniqueNewIds.size +
               "個\n\n" +
               "想定と異なる結果です。\n" +
               "追加操作をせず、この結果を確認してください。";
@@ -744,21 +863,28 @@
 
 
           /*
-           * 詳細も画面に残す。
+           * 詳細を画面に表示。
            */
           resultBox.style.display =
             "block";
 
 
           resultBox.textContent =
-            "【各POSTの応答】\n\n" +
+            "【ack応答】\n\n" +
             JSON.stringify(
-              responseDetails,
+              ackSettled,
               null,
               2
             ) +
             "\n\n" +
-            "【受付の最終データ】\n\n" +
+            "【新規登録10件の応答】\n\n" +
+            JSON.stringify(
+              registrationResponses,
+              null,
+              2
+            ) +
+            "\n\n" +
+            "【最終受付データ】\n\n" +
             JSON.stringify(
               finalPull,
               null,
@@ -768,15 +894,17 @@
 
         } catch (error) {
 
-          sendMessage.textContent =
+          runMessage.textContent =
             "テスト中にエラーが発生しました。\n\n" +
-            String(error);
+            String(error) +
+            "\n\n" +
+            "追加操作をせず、この結果を確認してください。";
 
           resultBox.style.display =
             "block";
 
           resultBox.textContent =
-            "この状態では追加送信しないでください。";
+            "処理途中でエラーになりました。";
         }
 
       }
