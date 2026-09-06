@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Test9-D 司書側</title>
+
+  <style>
+
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 0;
+    }
+
+    .box {
+      margin-top: 25px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .info {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .warning {
+      margin-top: 15px;
+      padding: 15px;
+      border: 2px solid #999;
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 8px;
+      padding: 12px;
+      font-size: 16px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 20px;
+      padding: 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+
+    .dataBox {
+      margin-top: 18px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+      font-size: 13px;
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+  <h1>スマホde選書システム</h1>
+
+
+  <div class="box">
+
+    <h2>Test9-D 司書側</h2>
+
+    <div class="info">
+
+      司書PCを閉じている間に、
+      生徒側から送信された3件の暗号化データを
+      後から取得して復号します。
+
+      <br><br>
+
+      生徒A・B・Cの3件すべてが
+      元の選書データと完全一致することを確認します。
+
+    </div>
+
+
+    <div class="warning">
+
+      <strong>このページでは受付データを削除しません。</strong>
+
+      <br><br>
+
+      pullによる取得と復号だけを行います。
+
+      <br><br>
+
+      Test9-Dの確認が完了するまで、
+      受付の3件はそのまま残します。
+
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>① 受付の暗号化データを取得</h2>
+
+    <button id="pullButton">
+      受付から3件を取得する
+    </button>
+
+    <div
+      id="pullMessage"
+      class="message"
+    >
+      まだ取得していません。
+    </div>
+
+    <div
+      id="relaySummary"
+      class="dataBox"
+    >
+      未取得
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>② 選書会用暗号鍵</h2>
+
+    <label for="keyInput">
+      Test9-Bで生成したBase64暗号鍵
+    </label>
+
+    <input
+      id="keyInput"
+      type="password"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="Base64暗号鍵を入力"
+      disabled
+    >
+
+    <button
+      id="decryptButton"
+      disabled
+    >
+      3件を復号して確認する
+    </button>
+
+    <div
+      id="decryptMessage"
+      class="message"
+    >
+      受付データを取得するまで復号できません。
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>③ 復号結果</h2>
+
+    <div
+      id="finalResult"
+      class="message"
+    >
+      未実行
+    </div>
+
+    <div
+      id="decryptedData"
+      class="dataBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <script>
+
+    /*
+     * --------------------------------
+     * 受付URL
+     * --------------------------------
+     */
+    const RECEIVER_URL =
+      "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
+
+
+    /*
+     * --------------------------------
+     * 実証テスト用選書会キー
+     * --------------------------------
+     */
+    const SELECTION_KEY =
+      "TEST8A-001";
+
+
+    /*
+     * --------------------------------
+     * Test9-D識別名
+     * --------------------------------
+     */
+    const TEST_NAME =
+      "実証テスト9-D";
+
+
+    /*
+     * --------------------------------
+     * 生徒側で暗号化した
+     * 元データの期待値
+     * --------------------------------
+     */
+    const EXPECTED_DATA_LIST = [
+
+      {
+        testStudent:
+          "A",
+
+        userName:
+          "TEST9D_生徒A",
+
+        isbn:
+          "9784912345708",
+
+        publisher:
+          "TEST9D_秘密出版社A",
+
+        title:
+          "TEST9D_秘密の本A",
+
+        price:
+          1111
+      },
+
+      {
+        testStudent:
+          "B",
+
+        userName:
+          "TEST9D_生徒B",
+
+        isbn:
+          "9784912345715",
+
+        publisher:
+          "TEST9D_秘密出版社B",
+
+        title:
+          "TEST9D_秘密の本B",
+
+        price:
+          2222
+      },
+
+      {
+        testStudent:
+          "C",
+
+        userName:
+          "TEST9D_生徒C",
+
+        isbn:
+          "9784912345722",
+
+        publisher:
+          "TEST9D_秘密出版社C",
+
+        title:
+          "TEST9D_秘密の本C",
+
+        price:
+          3333
+      }
+
+    ];
+
+
+    const pullButton =
+      document.getElementById(
+        "pullButton"
+      );
+
+
+    const keyInput =
+      document.getElementById(
+        "keyInput"
+      );
+
+
+    const decryptButton =
+      document.getElementById(
+        "decryptButton"
+      );
+
+
+    const pullMessage =
+      document.getElementById(
+        "pullMessage"
+      );
+
+
+    const relaySummary =
+      document.getElementById(
+        "relaySummary"
+      );
+
+
+    const decryptMessage =
+      document.getElementById(
+        "decryptMessage"
+      );
+
+
+    const finalResult =
+      document.getElementById(
+        "finalResult"
+      );
+
+
+    const decryptedData =
+      document.getElementById(
+        "decryptedData"
+      );
+
+
+    /*
+     * pullで取得して確認済みの
+     * Test9-Dデータを保持する。
+     */
+    let test9DItems =
+      [];
+
+
+    /*
+     * --------------------------------
+     * Base64 → Uint8Array
+     * --------------------------------
+     */
+    function base64ToBytes(base64) {
+
+      const binary =
+        atob(
+          base64
+        );
+
+
+      const bytes =
+        new Uint8Array(
+          binary.length
+        );
+
+
+      for (
+        let i = 0;
+        i < binary.length;
+        i++
+      ) {
+
+        bytes[i] =
+          binary.charCodeAt(i);
+      }
+
+
+      return bytes;
+    }
+
+
+    /*
+     * --------------------------------
+     * 受付から現在データを取得
+     * --------------------------------
+     */
+    async function pullPendingData() {
+
+      const url =
+        RECEIVER_URL +
+        "?action=pull" +
+        "&selectionKey=" +
+        encodeURIComponent(
+          SELECTION_KEY
+        ) +
+        "&_=" +
+        Date.now();
+
+
+      const response =
+        await fetch(
+          url,
+          {
+            method:
+              "GET",
+
+            cache:
+              "no-store"
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "受付GET HTTPエラー：" +
+          response.status
+        );
+      }
+
+
+      return await response.json();
+    }
+
+
+    /*
+     * --------------------------------
+     * AES-GCM鍵を復号用として読み込む
+     * --------------------------------
+     */
+    async function importEventKey(
+      base64Key
+    ) {
+
+      const rawKey =
+        base64ToBytes(
+          base64Key
+        );
+
+
+      if (rawKey.length !== 32) {
+
+        throw new Error(
+          "暗号鍵が32バイトではありません。Test9-Bで生成したAES-GCM 256bit鍵を確認してください。"
+        );
+      }
+
+
+      return await crypto.subtle.importKey(
+
+        "raw",
+
+        rawKey,
+
+        {
+          name:
+            "AES-GCM"
+        },
+
+        false,
+
+        [
+          "decrypt"
+        ]
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * 1件を復号
+     * --------------------------------
+     */
+    async function decryptRegistration(
+      item,
+      cryptoKey
+    ) {
+
+      if (
+        !item ||
+        !item.payload
+      ) {
+
+        throw new Error(
+          "受付データのpayloadがありません。"
+        );
+      }
+
+
+      const payload =
+        item.payload;
+
+
+      if (
+        payload.encryption !==
+          "AES-GCM-256"
+      ) {
+
+        throw new Error(
+          "暗号方式がAES-GCM-256ではありません。"
+        );
+      }
+
+
+      if (
+        typeof payload.iv !== "string" ||
+        payload.iv.length === 0
+      ) {
+
+        throw new Error(
+          "IVがありません。"
+        );
+      }
+
+
+      if (
+        typeof payload.ciphertext !== "string" ||
+        payload.ciphertext.length === 0
+      ) {
+
+        throw new Error(
+          "暗号文がありません。"
+        );
+      }
+
+
+      const iv =
+        base64ToBytes(
+          payload.iv
+        );
+
+
+      /*
+       * Test9-Dでは12バイトIVを使用。
+       */
+      if (iv.length !== 12) {
+
+        throw new Error(
+          "IVが12バイトではありません。"
+        );
+      }
+
+
+      const ciphertext =
+        base64ToBytes(
+          payload.ciphertext
+        );
+
+
+      const decryptedBuffer =
+        await crypto.subtle.decrypt(
+
+          {
+            name:
+              "AES-GCM",
+
+            iv:
+              iv
+          },
+
+          cryptoKey,
+
+          ciphertext
+        );
+
+
+      const jsonText =
+        new TextDecoder()
+          .decode(
+            decryptedBuffer
+          );
+
+
+      return JSON.parse(
+        jsonText
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * 2つのデータが完全一致するか確認
+     * --------------------------------
+     */
+    function isExactMatch(
+      actual,
+      expected
+    ) {
+
+      return (
+        actual.testStudent ===
+          expected.testStudent &&
+
+        actual.userName ===
+          expected.userName &&
+
+        actual.isbn ===
+          expected.isbn &&
+
+        actual.publisher ===
+          expected.publisher &&
+
+        actual.title ===
+          expected.title &&
+
+        actual.price ===
+          expected.price &&
+
+        JSON.stringify(actual) ===
+          JSON.stringify(expected)
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * 受付内に鍵や平文フィールドが
+     * 存在しないことを確認
+     * --------------------------------
+     */
+    function inspectRelayPrivacy(
+      items
+    ) {
+
+      const forbiddenFieldNames = [
+
+        "userName",
+        "isbn",
+        "publisher",
+        "title",
+        "price",
+        "rawKey",
+        "encryptionKey",
+        "key"
+
+      ];
+
+
+      const forbiddenPlainValues =
+        [];
+
+
+      EXPECTED_DATA_LIST.forEach(
+        function(item) {
+
+          forbiddenPlainValues.push(
+            item.userName,
+            item.isbn,
+            item.publisher,
+            item.title,
+            String(
+              item.price
+            )
+          );
+        }
+      );
+
+
+      let forbiddenFieldFound =
+        false;
+
+
+      let plainTextFound =
+        false;
+
+
+      items.forEach(
+        function(item) {
+
+          const payload =
+            item &&
+            item.payload
+              ? item.payload
+              : {};
+
+
+          forbiddenFieldNames.forEach(
+            function(field) {
+
+              if (
+                Object.prototype.hasOwnProperty.call(
+                  payload,
+                  field
+                )
+              ) {
+
+                forbiddenFieldFound =
+                  true;
+              }
+            }
+          );
+
+
+          const serialized =
+            JSON.stringify(
+              item
+            );
+
+
+          forbiddenPlainValues.forEach(
+            function(value) {
+
+              if (
+                serialized.includes(
+                  value
+                )
+              ) {
+
+                plainTextFound =
+                  true;
+              }
+            }
+          );
+        }
+      );
+
+
+      return {
+
+        forbiddenFieldFound:
+          forbiddenFieldFound,
+
+        plainTextFound:
+          plainTextFound
+      };
+    }
+
+
+    /*
+     * --------------------------------
+     * STEP 1
+     *
+     * 受付から3件取得
+     * --------------------------------
+     */
+    pullButton.addEventListener(
+      "click",
+      async function() {
+
+        pullButton.disabled =
+          true;
+
+        keyInput.disabled =
+          true;
+
+        decryptButton.disabled =
+          true;
+
+        test9DItems =
+          [];
+
+
+        pullMessage.textContent =
+          "受付の暗号化データを取得しています…";
+
+
+        relaySummary.textContent =
+          "取得中…";
+
+
+        decryptMessage.textContent =
+          "受付確認中です。";
+
+
+        finalResult.textContent =
+          "未実行";
+
+
+        decryptedData.textContent =
+          "未実行";
+
+
+        try {
+
+          const result =
+            await pullPendingData();
+
+
+          const allData =
+            Array.isArray(
+              result.data
+            )
+              ? result.data
+              : [];
+
+
+          /*
+           * Test9-Dだけを抽出。
+           */
+          const items =
+            allData.filter(
+              function(item) {
+
+                return (
+                  item &&
+                  item.payload &&
+                  item.payload.test ===
+                    TEST_NAME
+                );
+              }
+            );
+
+
+          /*
+           * registrationId確認。
+           */
+          const registrationIds =
+            items
+              .map(
+                function(item) {
+
+                  return (
+                    item.registrationId ||
+                    ""
+                  );
+                }
+              )
+              .filter(
+                function(id) {
+
+                  return id.length > 0;
+                }
+              );
+
+
+          const uniqueRegistrationIds =
+            new Set(
+              registrationIds
+            );
+
+
+          /*
+           * IV確認。
+           */
+          const ivs =
+            items
+              .map(
+                function(item) {
+
+                  return (
+                    item.payload &&
+                    item.payload.iv
+                      ? item.payload.iv
+                      : ""
+                  );
+                }
+              )
+              .filter(
+                function(iv) {
+
+                  return iv.length > 0;
+                }
+              );
+
+
+          const uniqueIvs =
+            new Set(
+              ivs
+            );
+
+
+          /*
+           * ciphertext確認。
+           */
+          const ciphertextCount =
+            items.filter(
+              function(item) {
+
+                return (
+                  item.payload &&
+                  typeof item.payload.ciphertext ===
+                    "string" &&
+                  item.payload.ciphertext.length > 0
+                );
+              }
+            ).length;
+
+
+          /*
+           * 暗号方式確認。
+           */
+          const encryptionCount =
+            items.filter(
+              function(item) {
+
+                return (
+                  item.payload &&
+                  item.payload.encryption ===
+                    "AES-GCM-256"
+                );
+              }
+            ).length;
+
+
+          /*
+           * 受付に鍵・平文がないか確認。
+           */
+          const privacyCheck =
+            inspectRelayPrivacy(
+              items
+            );
+
+
+          relaySummary.textContent =
+            JSON.stringify(
+              {
+                success:
+                  result.success,
+
+                relayTotalCount:
+                  allData.length,
+
+                test9DCount:
+                  items.length,
+
+                registrationIdCount:
+                  registrationIds.length,
+
+                uniqueRegistrationIdCount:
+                  uniqueRegistrationIds.size,
+
+                ivCount:
+                  ivs.length,
+
+                uniqueIvCount:
+                  uniqueIvs.size,
+
+                ciphertextCount:
+                  ciphertextCount,
+
+                encryptionCount:
+                  encryptionCount,
+
+                forbiddenFieldFound:
+                  privacyCheck.forbiddenFieldFound,
+
+                plainTextFound:
+                  privacyCheck.plainTextFound
+              },
+              null,
+              2
+            );
+
+
+          /*
+           * 9-D開始時は受付0件だったため、
+           * 現在の受付全体がちょうど3件であることも
+           * 成功条件にする。
+           */
+          const safe =
+
+            result.success === true &&
+
+            allData.length === 3 &&
+
+            items.length === 3 &&
+
+            registrationIds.length === 3 &&
+
+            uniqueRegistrationIds.size === 3 &&
+
+            ivs.length === 3 &&
+
+            uniqueIvs.size === 3 &&
+
+            ciphertextCount === 3 &&
+
+            encryptionCount === 3 &&
+
+            privacyCheck.forbiddenFieldFound ===
+              false &&
+
+            privacyCheck.plainTextFound ===
+              false;
+
+
+          if (safe) {
+
+            test9DItems =
+              items;
+
+
+            pullMessage.textContent =
+              "受付取得：成功\n\n" +
+
+              "受付の現在件数：3件\n" +
+
+              "Test9-D暗号化データ：3件\n\n" +
+
+              "registrationId：3件・すべて異なる\n" +
+
+              "IV：3件・すべて異なる\n" +
+
+              "暗号文：3件\n" +
+
+              "暗号方式：AES-GCM-256 × 3件\n\n" +
+
+              "受付内の暗号鍵：なし\n" +
+
+              "平文フィールド：検出なし\n" +
+
+              "選書内容の平文：検出なし\n\n" +
+
+              "次に選書会用暗号鍵を入力してください。";
+
+
+            keyInput.disabled =
+              false;
+
+
+            decryptButton.disabled =
+              false;
+
+
+            decryptMessage.textContent =
+              "受付の3件を安全に確認しました。\n\n" +
+
+              "Test9-Bで生成した暗号鍵を入力して、" +
+              "3件を復号してください。";
+
+
+          } else {
+
+            pullMessage.textContent =
+              "受付確認：NG\n\n" +
+
+              "Test9-Dで想定した3件の状態と一致しません。\n\n" +
+
+              "安全のため復号操作を停止しました。";
+
+
+            decryptMessage.textContent =
+              "受付状態を確認してください。";
+
+
+            pullButton.disabled =
+              false;
+          }
+
+
+        } catch (error) {
+
+          pullMessage.textContent =
+            "受付取得中にエラーが発生しました。\n\n" +
+
+            String(error);
+
+
+          relaySummary.textContent =
+            "取得に失敗しました。";
+
+
+          pullButton.disabled =
+            false;
+        }
+
+      }
+    );
+
+
+    /*
+     * --------------------------------
+     * STEP 2
+     *
+     * 同じ選書会用鍵で3件を復号
+     * --------------------------------
+     */
+    decryptButton.addEventListener(
+      "click",
+      async function() {
+
+        if (
+          test9DItems.length !== 3
+        ) {
+
+          decryptMessage.textContent =
+            "確認済みのTest9-Dデータが3件ありません。";
+
+          return;
+        }
+
+
+        decryptButton.disabled =
+          true;
+
+        pullButton.disabled =
+          true;
+
+        keyInput.disabled =
+          true;
+
+
+        decryptMessage.textContent =
+          "3件を復号しています…";
+
+
+        finalResult.textContent =
+          "復号中…";
+
+
+        decryptedData.textContent =
+          "復号中…";
+
+
+        try {
+
+          if (
+            !window.crypto ||
+            !window.crypto.subtle
+          ) {
+
+            throw new Error(
+              "このブラウザではWeb Crypto APIを利用できません。"
+            );
+          }
+
+
+          const enteredKey =
+            keyInput.value.trim();
+
+
+          if (!enteredKey) {
+
+            throw new Error(
+              "暗号鍵を入力してください。"
+            );
+          }
+
+
+          const cryptoKey =
+            await importEventKey(
+              enteredKey
+            );
+
+
+          /*
+           * 入力欄から鍵を消す。
+           */
+          keyInput.value =
+            "";
+
+
+          const results =
+            [];
+
+
+          /*
+           * 受付3件を1件ずつ復号。
+           */
+          for (
+            const item of test9DItems
+          ) {
+
+            const plainData =
+              await decryptRegistration(
+                item,
+                cryptoKey
+              );
+
+
+            /*
+             * testStudent A/B/Cを使って
+             * 対応する期待値を探す。
+             */
+            const expected =
+              EXPECTED_DATA_LIST.find(
+                function(candidate) {
+
+                  return (
+                    candidate.testStudent ===
+                      plainData.testStudent
+                  );
+                }
+              );
+
+
+            const matched =
+              expected
+                ? isExactMatch(
+                    plainData,
+                    expected
+                  )
+                : false;
+
+
+            results.push({
+
+              registrationId:
+                item.registrationId,
+
+              testStudent:
+                plainData.testStudent || "",
+
+              matched:
+                matched,
+
+              data:
+                plainData
+            });
+          }
+
+
+          /*
+           * A/B/Cがそれぞれ1件だけあるか確認。
+           */
+          const studentLabels =
+            results.map(
+              function(item) {
+
+                return item.testStudent;
+              }
+            );
+
+
+          const uniqueStudentLabels =
+            new Set(
+              studentLabels
+            );
+
+
+          const expectedLabels = [
+            "A",
+            "B",
+            "C"
+          ];
+
+
+          const missingLabels =
+            expectedLabels.filter(
+              function(label) {
+
+                return !uniqueStudentLabels.has(
+                  label
+                );
+              }
+            );
+
+
+          /*
+           * A/B/C以外がないか。
+           */
+          const unexpectedLabels =
+            studentLabels.filter(
+              function(label) {
+
+                return !expectedLabels.includes(
+                  label
+                );
+              }
+            );
+
+
+          /*
+           * registrationId重複確認。
+           */
+          const registrationIds =
+            results.map(
+              function(item) {
+
+                return item.registrationId;
+              }
+            );
+
+
+          const uniqueRegistrationIds =
+            new Set(
+              registrationIds
+            );
+
+
+          /*
+           * 完全一致数。
+           */
+          const matchedCount =
+            results.filter(
+              function(item) {
+
+                return (
+                  item.matched === true
+                );
+              }
+            ).length;
+
+
+          /*
+           * A/B/Cそれぞれの件数。
+           */
+          const countA =
+            studentLabels.filter(
+              function(label) {
+
+                return label === "A";
+              }
+            ).length;
+
+
+          const countB =
+            studentLabels.filter(
+              function(label) {
+
+                return label === "B";
+              }
+            ).length;
+
+
+          const countC =
+            studentLabels.filter(
+              function(label) {
+
+                return label === "C";
+              }
+            ).length;
+
+
+          const duplicateCount =
+            (
+              countA > 1
+                ? countA - 1
+                : 0
+            ) +
+            (
+              countB > 1
+                ? countB - 1
+                : 0
+            ) +
+            (
+              countC > 1
+                ? countC - 1
+                : 0
+            );
+
+
+          const finalOk =
+
+            results.length === 3 &&
+
+            matchedCount === 3 &&
+
+            countA === 1 &&
+
+            countB === 1 &&
+
+            countC === 1 &&
+
+            uniqueStudentLabels.size === 3 &&
+
+            missingLabels.length === 0 &&
+
+            unexpectedLabels.length === 0 &&
+
+            registrationIds.length === 3 &&
+
+            uniqueRegistrationIds.size === 3 &&
+
+            duplicateCount === 0;
+
+
+          /*
+           * 復号結果を見やすく表示。
+           */
+          decryptedData.textContent =
+            JSON.stringify(
+              {
+                decryptedCount:
+                  results.length,
+
+                matchedCount:
+                  matchedCount,
+
+                studentA:
+                  countA,
+
+                studentB:
+                  countB,
+
+                studentC:
+                  countC,
+
+                missing:
+                  missingLabels,
+
+                duplicateCount:
+                  duplicateCount,
+
+                uniqueRegistrationIdCount:
+                  uniqueRegistrationIds.size,
+
+                results:
+                  results
+              },
+              null,
+              2
+            );
+
+
+          if (finalOk) {
+
+            decryptMessage.textContent =
+              "3件の復号が完了しました。";
+
+
+            finalResult.textContent =
+              "Test9-D 司書側：成功\n\n" +
+
+              "受付から暗号化データを取得：3件\n" +
+
+              "受付に暗号鍵：なし\n" +
+
+              "司書側の選書会用暗号鍵を使用：成功\n\n" +
+
+              "AES-GCM復号：3/3成功\n\n" +
+
+              "生徒A：完全一致\n" +
+
+              "生徒B：完全一致\n" +
+
+              "生徒C：完全一致\n\n" +
+
+              "欠落：0件\n" +
+
+              "重複：0件\n" +
+
+              "registrationId：3件すべて異なる\n\n" +
+
+              "司書PCを閉じている間に受け付けた" +
+              "3件の暗号化データを、" +
+              "後から司書側で全件復号できました。\n\n" +
+
+              "受付の3件は削除していません。";
+
+
+          } else {
+
+            finalResult.textContent =
+              "Test9-D 司書側：要確認\n\n" +
+
+              "3件の復号処理は行いましたが、" +
+              "A・B・Cの完全一致条件を満たしませんでした。\n\n" +
+
+              "受付データは削除していません。";
+
+
+            /*
+             * 要確認の場合は
+             * 追加操作をさせない。
+             */
+          }
+
+
+        } catch (error) {
+
+          /*
+           * 鍵違いの場合も
+           * OperationError等でここに来る。
+           *
+           * 受付は一切変更しない。
+           */
+          decryptMessage.textContent =
+            "復号中にエラーが発生しました。\n\n" +
+
+            String(error) +
+            "\n\n" +
+
+            "暗号鍵が正しいか確認してください。\n" +
+
+            "受付データは削除していません。";
+
+
+          finalResult.textContent =
+            "Test9-D 司書側：復号未完了";
+
+
+          decryptedData.textContent =
+            "受付の3件はそのまま残っています。";
+
+
+          /*
+           * 鍵の再入力を可能にする。
+           */
+          keyInput.disabled =
+            false;
+
+          decryptButton.disabled =
+            false;
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+
+</html>
