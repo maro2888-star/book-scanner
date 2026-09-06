@@ -9,7 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>実証テスト8-F-2</title>
+  <title>実証テスト8-F-2 後片付け</title>
 
   <style>
 
@@ -27,7 +27,6 @@
 
     h2 {
       font-size: 20px;
-      margin-top: 0;
     }
 
     .box {
@@ -48,7 +47,7 @@
       display: block;
       width: 100%;
       box-sizing: border-box;
-      margin-top: 15px;
+      margin-top: 20px;
       padding: 16px;
       font-size: 18px;
       cursor: pointer;
@@ -60,22 +59,14 @@
     }
 
     .message {
-      margin-top: 18px;
+      margin-top: 20px;
       font-weight: bold;
       white-space: pre-wrap;
     }
 
-    .progress {
-      margin-top: 18px;
-      padding: 15px;
-      background: #f5f5f5;
-      border-radius: 8px;
-      white-space: pre-wrap;
-    }
-
-    .dataBox {
+    .details {
       display: none;
-      margin-top: 18px;
+      margin-top: 20px;
       padding: 15px;
       background: #f5f5f5;
       border-radius: 8px;
@@ -92,73 +83,55 @@
 
   <h1>スマホde選書システム</h1>
 
-  <p>
-    実証テスト8-F-2：
-    300件規模の受付・一時保存を確認します。
-  </p>
-
-
   <div class="box">
 
-    <h2>① 受付が0件か確認する</h2>
-
-    <p>
-      前回のテストデータが残っていないことを確認します。
-      受付が0件の場合だけ300件送信を開始できます。
-    </p>
-
-    <button id="checkButton">
-      受付が0件か確認する
-    </button>
-
-    <div
-      id="checkMessage"
-      class="message"
-    >
-      まだ確認していません。
-    </div>
-
-  </div>
-
-
-  <div class="box">
-
-    <h2>② 300件を送信する</h2>
+    <h2>実証テスト8-F-2 後片付け</h2>
 
     <div class="info">
-      10件をほぼ同時に送信し、
-      それを30グループ繰り返します。
+
+      受付に残っている300件が、
+      すべて実証テスト8-F-2のデータであることを確認します。
+
       <br><br>
-      合計300件を受付へ送信します。
+
+      さらに、
+
+      <br>
+
+      ・registrationIdが300個すべて固有<br>
+      ・testIndexが1～300すべて存在<br>
+      ・欠落なし<br>
+      ・重複なし
+
       <br><br>
-      送信方式：10件並列 × 30グループ<br>
-      グループ間隔：300ミリ秒
+
+      を確認できた場合だけ、
+      その300件を受付から削除します。
+
+      <br><br>
+
+      条件が1つでも一致しない場合は、
+      削除しません。
+
     </div>
 
-    <button
-      id="runButton"
-      disabled
-    >
-      300件送信テストを開始する
+
+    <button id="cleanupButton">
+      8-F-2の300件を削除して0件を確認する
     </button>
 
+
     <div
-      id="runMessage"
+      id="message"
       class="message"
     >
       まだ実行していません。
     </div>
 
-    <div
-      id="progress"
-      class="progress"
-    >
-      進行状況：未開始
-    </div>
 
     <div
-      id="resultBox"
-      class="dataBox"
+      id="details"
+      class="details"
     ></div>
 
   </div>
@@ -178,73 +151,26 @@
       "実証テスト8-F-2";
 
 
-    const TOTAL_COUNT =
+    const EXPECTED_COUNT =
       300;
 
 
-    const GROUP_SIZE =
-      10;
-
-
-    const GROUP_COUNT =
-      TOTAL_COUNT / GROUP_SIZE;
-
-
-    const GROUP_INTERVAL_MS =
-      300;
-
-
-    const checkButton =
+    const cleanupButton =
       document.getElementById(
-        "checkButton"
+        "cleanupButton"
       );
 
 
-    const runButton =
+    const message =
       document.getElementById(
-        "runButton"
+        "message"
       );
 
 
-    const checkMessage =
+    const details =
       document.getElementById(
-        "checkMessage"
+        "details"
       );
-
-
-    const runMessage =
-      document.getElementById(
-        "runMessage"
-      );
-
-
-    const progress =
-      document.getElementById(
-        "progress"
-      );
-
-
-    const resultBox =
-      document.getElementById(
-        "resultBox"
-      );
-
-
-    /*
-     * 指定時間待つ。
-     */
-    function sleep(milliseconds) {
-
-      return new Promise(
-        function(resolve) {
-
-          setTimeout(
-            resolve,
-            milliseconds
-          );
-        }
-      );
-    }
 
 
     /*
@@ -289,137 +215,24 @@
 
 
     /*
-     * -------------------------------
-     * STEP 1
-     * 受付が0件か確認。
-     * -------------------------------
+     * 保存済みregistrationIdを
+     * 受付へackする。
      */
-    checkButton.addEventListener(
-      "click",
-      async function() {
+    async function sendAck(
+      registrationIds
+    ) {
 
-        checkButton.disabled =
-          true;
+      const payload = {
 
-        runButton.disabled =
-          true;
-
-        checkMessage.textContent =
-          "現在の受付データを確認しています…";
-
-
-        try {
-
-          const result =
-            await pullPendingData();
-
-
-          const data =
-            Array.isArray(
-              result.data
-            )
-              ? result.data
-              : [];
-
-
-          if (
-            result.success === true &&
-            data.length === 0
-          ) {
-
-            checkMessage.textContent =
-              "開始条件OK\n\n" +
-              "受付の現在件数：0件\n\n" +
-              "8-F-2を開始できます。";
-
-
-            runButton.disabled =
-              false;
-
-
-          } else {
-
-            checkMessage.textContent =
-              "テストを開始しません。\n\n" +
-              "受付の現在件数：" +
-              data.length +
-              "件\n\n" +
-              "受付が0件ではないため、" +
-              "300件送信は実行できません。";
-
-
-            checkButton.disabled =
-              false;
-          }
-
-
-        } catch (error) {
-
-          checkMessage.textContent =
-            "確認中にエラーが発生しました。\n\n" +
-            String(error);
-
-
-          checkButton.disabled =
-            false;
-        }
-
-      }
-    );
-
-
-    /*
-     * 8-F-2用の1件分のテストデータ。
-     */
-    function createTestPayload(index) {
-
-      const number =
-        String(index).padStart(
-          3,
-          "0"
-        );
-
-
-      return {
-
-        test:
-          TEST_NAME,
-
-        testIndex:
-          index,
+        action:
+          "ack",
 
         selectionKey:
           SELECTION_KEY,
 
-        userName:
-          "300件テスト生徒" +
-          number,
-
-        isbn:
-          "9787000" +
-          String(index).padStart(
-            6,
-            "0"
-          ),
-
-        title:
-          "8-F-2 300件テスト書籍" +
-          number
+        registrationIds:
+          registrationIds
       };
-    }
-
-
-    /*
-     * 1件を受付へPOSTする。
-     */
-    async function sendOneRegistration(
-      index
-    ) {
-
-      const payload =
-        createTestPayload(
-          index
-        );
 
 
       const response =
@@ -445,398 +258,61 @@
       if (!response.ok) {
 
         throw new Error(
-          "登録POST HTTPエラー：" +
+          "ack送信でHTTPエラー：" +
           response.status
         );
       }
 
 
-      const result =
-        await response.json();
-
-
-      return {
-
-        index:
-          index,
-
-        payload:
-          payload,
-
-        result:
-          result
-      };
+      return await response.json();
     }
 
 
     /*
-     * -------------------------------
-     * STEP 2
-     * 300件送信。
-     * -------------------------------
+     * 後片付け開始。
      */
-    runButton.addEventListener(
+    cleanupButton.addEventListener(
       "click",
       async function() {
 
-        runButton.disabled =
+        cleanupButton.disabled =
           true;
 
-        checkButton.disabled =
-          true;
-
-        resultBox.style.display =
+        details.style.display =
           "none";
 
-        resultBox.textContent =
+        details.textContent =
           "";
 
-
-        runMessage.textContent =
-          "300件送信テストを実行しています…";
-
-
-        progress.textContent =
-          "進行状況：開始";
-
-
-        const startTime =
-          performance.now();
+        message.textContent =
+          "受付の300件を安全確認しています…";
 
 
         try {
 
           /*
-           * 全300件の通信結果を保持する。
+           * ----------------------------
+           * STEP 1
+           * 現在の受付をpull
+           * ----------------------------
            */
-          const allSettledResults =
-            [];
-
-
-          /*
-           * 途中経過の集計。
-           */
-          let runningFulfilled =
-            0;
-
-          let runningRejected =
-            0;
-
-          let runningSuccessTrue =
-            0;
-
-          let runningSuccessFalse =
-            0;
-
-
-          /*
-           * 10件 × 30グループ。
-           */
-          for (
-            let group = 0;
-            group < GROUP_COUNT;
-            group++
-          ) {
-
-            const firstIndex =
-              group * GROUP_SIZE + 1;
-
-
-            const lastIndex =
-              firstIndex +
-              GROUP_SIZE -
-              1;
-
-
-            progress.textContent =
-              "進行状況：" +
-              (group + 1) +
-              " / " +
-              GROUP_COUNT +
-              " グループ\n\n" +
-
-              "送信中：" +
-              firstIndex +
-              " ～ " +
-              lastIndex +
-              "件目\n\n" +
-
-              "ここまでの通信完了：" +
-              runningFulfilled +
-              "件\n" +
-
-              "ここまでのsuccess:true：" +
-              runningSuccessTrue +
-              "件\n" +
-
-              "ここまでの通信失敗：" +
-              runningRejected +
-              "件";
-
-
-            /*
-             * このグループの10件を
-             * 並列で開始する。
-             */
-            const groupPromises =
-              [];
-
-
-            for (
-              let index = firstIndex;
-              index <= lastIndex;
-              index++
-            ) {
-
-              groupPromises.push(
-                sendOneRegistration(
-                  index
-                )
-              );
-            }
-
-
-            /*
-             * 10件すべての終了を待つ。
-             */
-            const groupResults =
-              await Promise.allSettled(
-                groupPromises
-              );
-
-
-            allSettledResults.push(
-              ...groupResults
-            );
-
-
-            /*
-             * このグループの結果を
-             * すぐに集計しておく。
-             */
-            groupResults.forEach(
-              function(item) {
-
-                if (
-                  item.status ===
-                  "fulfilled"
-                ) {
-
-                  runningFulfilled++;
-
-
-                  if (
-                    item.value &&
-                    item.value.result &&
-                    item.value.result.success === true
-                  ) {
-
-                    runningSuccessTrue++;
-
-                  } else {
-
-                    runningSuccessFalse++;
-                  }
-
-
-                } else {
-
-                  runningRejected++;
-                }
-
-              }
-            );
-
-
-            progress.textContent =
-              "進行状況：" +
-              (group + 1) +
-              " / " +
-              GROUP_COUNT +
-              " グループ完了\n\n" +
-
-              "処理済み：" +
-              allSettledResults.length +
-              " / " +
-              TOTAL_COUNT +
-              "件\n" +
-
-              "通信完了：" +
-              runningFulfilled +
-              "件\n" +
-
-              "success:true：" +
-              runningSuccessTrue +
-              "件\n" +
-
-              "success:false：" +
-              runningSuccessFalse +
-              "件\n" +
-
-              "通信失敗：" +
-              runningRejected +
-              "件";
-
-
-            /*
-             * 最後のグループ以外は
-             * 300ms待つ。
-             */
-            if (
-              group <
-              GROUP_COUNT - 1
-            ) {
-
-              await sleep(
-                GROUP_INTERVAL_MS
-              );
-            }
-          }
-
-
-          const sendEndTime =
-            performance.now();
-
-
-          const sendSeconds =
-            (
-              (
-                sendEndTime -
-                startTime
-              ) /
-              1000
-            ).toFixed(2);
-
-
-          /*
-           * --------------------------------
-           * POST結果の最終集計
-           * --------------------------------
-           */
-          let fulfilledCount =
-            0;
-
-          let rejectedCount =
-            0;
-
-          let successTrueCount =
-            0;
-
-          let successFalseCount =
-            0;
-
-
-          const responseDetails =
-            [];
-
-
-          allSettledResults.forEach(
-            function(item, position) {
-
-              const requestNumber =
-                position + 1;
-
-
-              if (
-                item.status ===
-                "fulfilled"
-              ) {
-
-                fulfilledCount++;
-
-
-                if (
-                  item.value &&
-                  item.value.result &&
-                  item.value.result.success === true
-                ) {
-
-                  successTrueCount++;
-
-                } else {
-
-                  successFalseCount++;
-                }
-
-
-                responseDetails.push({
-
-                  request:
-                    requestNumber,
-
-                  status:
-                    "fulfilled",
-
-                  registrationId:
-                    item.value &&
-                    item.value.result
-                      ? item.value.result.registrationId
-                      : null,
-
-                  response:
-                    item.value
-                      ? item.value.result
-                      : null
-                });
-
-
-              } else {
-
-                rejectedCount++;
-
-
-                responseDetails.push({
-
-                  request:
-                    requestNumber,
-
-                  status:
-                    "rejected",
-
-                  error:
-                    String(
-                      item.reason
-                    )
-                });
-              }
-
-            }
-          );
-
-
-          progress.textContent =
-            "進行状況：300件の送信処理完了\n\n" +
-            "受付の最終状態を確認しています…";
-
-
-          /*
-           * --------------------------------
-           * 受付をpull
-           * --------------------------------
-           */
-          const finalPull =
+          const before =
             await pullPendingData();
 
 
-          const finalData =
+          const allData =
             Array.isArray(
-              finalPull.data
+              before.data
             )
-              ? finalPull.data
+              ? before.data
               : [];
 
 
-          const finalCount =
-            finalData.length;
-
-
           /*
-           * --------------------------------
-           * 8-F-2だけ抽出
-           * --------------------------------
+           * 8-F-2だけ抽出。
            */
-          const testData =
-            finalData.filter(
+          const targetData =
+            allData.filter(
               function(item) {
 
                 return (
@@ -850,12 +326,12 @@
 
 
           /*
-           * --------------------------------
+           * ----------------------------
            * registrationId確認
-           * --------------------------------
+           * ----------------------------
            */
           const registrationIds =
-            testData
+            targetData
               .map(
                 function(item) {
 
@@ -880,12 +356,12 @@
 
 
           /*
-           * --------------------------------
-           * testIndex 1～300確認
-           * --------------------------------
+           * ----------------------------
+           * testIndex確認
+           * ----------------------------
            */
-          const receivedIndexes =
-            testData
+          const testIndexes =
+            targetData
               .map(
                 function(item) {
 
@@ -905,20 +381,22 @@
                       index
                     ) &&
                     index >= 1 &&
-                    index <= TOTAL_COUNT
+                    index <= EXPECTED_COUNT
                   );
                 }
               );
 
 
-          const uniqueIndexes =
+          const uniqueTestIndexes =
             new Set(
-              receivedIndexes
+              testIndexes
             );
 
 
           /*
-           * 欠落番号。
+           * ----------------------------
+           * 欠落番号確認
+           * ----------------------------
            */
           const missingIndexes =
             [];
@@ -926,12 +404,12 @@
 
           for (
             let index = 1;
-            index <= TOTAL_COUNT;
+            index <= EXPECTED_COUNT;
             index++
           ) {
 
             if (
-              !uniqueIndexes.has(
+              !uniqueTestIndexes.has(
                 index
               )
             ) {
@@ -944,17 +422,15 @@
 
 
           /*
-           * 重複番号。
+           * ----------------------------
+           * 重複番号確認
+           * ----------------------------
            */
-          const duplicateIndexes =
-            [];
-
-
           const indexCounts =
             new Map();
 
 
-          receivedIndexes.forEach(
+          testIndexes.forEach(
             function(index) {
 
               indexCounts.set(
@@ -967,6 +443,10 @@
               );
             }
           );
+
+
+          const duplicateIndexes =
+            [];
 
 
           indexCounts.forEach(
@@ -983,81 +463,33 @@
 
 
           /*
-           * 最後に確認できたtestIndex。
-           * 問題発生時の診断にも使う。
+           * ----------------------------
+           * 安全条件
+           * ----------------------------
+           *
+           * 1つでも違えばackしない。
            */
-          let highestReceivedIndex =
-            0;
+          const safeToDelete =
 
+            before.success === true &&
 
-          uniqueIndexes.forEach(
-            function(index) {
+            allData.length ===
+              EXPECTED_COUNT &&
 
-              if (
-                index >
-                highestReceivedIndex
-              ) {
-
-                highestReceivedIndex =
-                  index;
-              }
-            }
-          );
-
-
-          const endTime =
-            performance.now();
-
-
-          const totalSeconds =
-            (
-              (
-                endTime -
-                startTime
-              ) /
-              1000
-            ).toFixed(2);
-
-
-          /*
-           * --------------------------------
-           * 成功条件
-           * --------------------------------
-           */
-          const testSuccess =
-
-            allSettledResults.length ===
-              TOTAL_COUNT &&
-
-            fulfilledCount ===
-              TOTAL_COUNT &&
-
-            rejectedCount ===
-              0 &&
-
-            successTrueCount ===
-              TOTAL_COUNT &&
-
-            successFalseCount ===
-              0 &&
-
-            finalPull.success ===
-              true &&
-
-            finalCount ===
-              TOTAL_COUNT &&
-
-            testData.length ===
-              TOTAL_COUNT &&
+            targetData.length ===
+              EXPECTED_COUNT &&
 
             registrationIds.length ===
-              TOTAL_COUNT &&
+              EXPECTED_COUNT &&
 
             uniqueRegistrationIds.size ===
-              TOTAL_COUNT &&
+              EXPECTED_COUNT &&
 
-            uniqueIndexes.size ===
-              TOTAL_COUNT &&
+            testIndexes.length ===
+              EXPECTED_COUNT &&
+
+            uniqueTestIndexes.size ===
+              EXPECTED_COUNT &&
 
             missingIndexes.length ===
               0 &&
@@ -1067,75 +499,25 @@
 
 
           /*
-           * --------------------------------
-           * 結果表示
-           * --------------------------------
+           * ----------------------------
+           * 条件不一致なら停止。
+           * ackは送らない。
+           * ----------------------------
            */
-          if (testSuccess) {
+          if (!safeToDelete) {
 
-            runMessage.textContent =
-              "テスト8-F-2：成功\n\n" +
+            message.textContent =
+              "後片付けを中止しました。\n\n" +
 
-              "送信：300件\n" +
-              "通信完了：300件\n" +
-              "success:true：300件\n" +
-              "通信失敗：0件\n\n" +
+              "安全条件が一致しないため、" +
+              "受付データは削除していません。\n\n" +
 
-              "受付の最終件数：300件\n" +
-              "8-F-2データ：300件\n\n" +
-
-              "registrationId：300個\n" +
-              "異なるregistrationId：300個\n\n" +
-
-              "テスト番号：1～300すべて確認\n" +
-              "欠落番号：0件\n" +
-              "重複番号：0件\n\n" +
-
-              "300件送信完了まで：" +
-              sendSeconds +
-              "秒\n" +
-
-              "最終確認完了まで：" +
-              totalSeconds +
-              "秒\n\n" +
-
-              "300件規模の連続・並列受付でも、" +
-              "受付データの欠落は確認されませんでした。";
-
-
-          } else {
-
-            runMessage.textContent =
-              "テスト8-F-2：要確認\n\n" +
-
-              "送信予定：300件\n" +
-
-              "処理結果取得：" +
-              allSettledResults.length +
-              "件\n" +
-
-              "通信完了：" +
-              fulfilledCount +
-              "件\n" +
-
-              "success:true：" +
-              successTrueCount +
-              "件\n" +
-
-              "success:false：" +
-              successFalseCount +
-              "件\n" +
-
-              "通信失敗：" +
-              rejectedCount +
-              "件\n\n" +
-
-              "受付の最終件数：" +
-              finalCount +
+              "受付全体：" +
+              allData.length +
               "件\n" +
 
               "8-F-2データ：" +
-              testData.length +
+              targetData.length +
               "件\n\n" +
 
               "registrationId：" +
@@ -1146,13 +528,13 @@
               uniqueRegistrationIds.size +
               "個\n\n" +
 
-              "異なるテスト番号：" +
-              uniqueIndexes.size +
+              "testIndex：" +
+              testIndexes.length +
               "個\n" +
 
-              "最後に確認できた番号：" +
-              highestReceivedIndex +
-              "\n" +
+              "異なるtestIndex：" +
+              uniqueTestIndexes.size +
+              "個\n\n" +
 
               "欠落番号：" +
               missingIndexes.length +
@@ -1173,156 +555,234 @@
               (
                 duplicateIndexes.length > 0
                   ? "重複：" +
-                    duplicateIndexes.join(", ") +
-                    "\n"
+                    duplicateIndexes.join(", ")
                   : ""
               ) +
 
-              "\n300件送信完了まで：" +
-              sendSeconds +
-              "秒\n" +
-
-              "最終確認完了まで：" +
-              totalSeconds +
-              "秒\n\n" +
-
-              "想定と異なる結果です。\n" +
-              "追加操作をせず、" +
+              "\n\n追加操作をせず、" +
               "この結果を確認してください。";
+
+
+            details.style.display =
+              "block";
+
+
+            details.textContent =
+              JSON.stringify(
+                {
+                  beforeSuccess:
+                    before.success,
+
+                  allDataCount:
+                    allData.length,
+
+                  targetDataCount:
+                    targetData.length,
+
+                  registrationIdCount:
+                    registrationIds.length,
+
+                  uniqueRegistrationIdCount:
+                    uniqueRegistrationIds.size,
+
+                  testIndexCount:
+                    testIndexes.length,
+
+                  uniqueTestIndexCount:
+                    uniqueTestIndexes.size,
+
+                  missingIndexes:
+                    missingIndexes,
+
+                  duplicateIndexes:
+                    duplicateIndexes
+                },
+                null,
+                2
+              );
+
+
+            /*
+             * 意図的にボタンは
+             * 再有効化しない。
+             */
+            return;
           }
 
 
-          progress.textContent =
-            "進行状況：テスト終了";
+          /*
+           * ----------------------------
+           * STEP 2
+           * 安全条件一致。
+           * 300件のIDだけack。
+           * ----------------------------
+           */
+          message.textContent =
+            "300件すべての安全確認ができました。\n\n" +
+            "受付から8-F-2の300件を削除しています…";
+
+
+          const ackResult =
+            await sendAck(
+              registrationIds
+            );
 
 
           /*
-           * --------------------------------
-           * 詳細結果
-           * --------------------------------
+           * ackそのものの結果を確認。
            */
-          resultBox.style.display =
-            "block";
+          if (
+            ackResult.success !== true ||
+            ackResult.removedCount !==
+              EXPECTED_COUNT
+          ) {
+
+            message.textContent =
+              "ack結果を確認する必要があります。\n\n" +
+
+              "削除予定：" +
+              EXPECTED_COUNT +
+              "件\n" +
+
+              "受付から削除：" +
+              (
+                typeof ackResult.removedCount ===
+                "number"
+                  ? ackResult.removedCount
+                  : "不明"
+              ) +
+              "件\n\n" +
+
+              "追加操作をせず、" +
+              "この結果を確認してください。";
 
 
-          resultBox.textContent =
-            "【8-F-2集計】\n\n" +
+            details.style.display =
+              "block";
 
-            JSON.stringify(
-              {
-                totalRequested:
-                  TOTAL_COUNT,
 
-                fulfilledCount:
-                  fulfilledCount,
+            details.textContent =
+              JSON.stringify(
+                ackResult,
+                null,
+                2
+              );
 
-                rejectedCount:
-                  rejectedCount,
 
-                successTrueCount:
-                  successTrueCount,
+            return;
+          }
 
-                successFalseCount:
-                  successFalseCount,
 
-                finalCount:
-                  finalCount,
+          /*
+           * ----------------------------
+           * STEP 3
+           * ack後に再pull。
+           * 本当に0件か確認。
+           * ----------------------------
+           */
+          message.textContent =
+            "300件を受付から削除しました。\n\n" +
+            "受付が0件になったことを確認しています…";
 
-                testDataCount:
-                  testData.length,
 
-                registrationIdCount:
-                  registrationIds.length,
+          const after =
+            await pullPendingData();
 
-                uniqueRegistrationIdCount:
-                  uniqueRegistrationIds.size,
 
-                uniqueTestIndexCount:
-                  uniqueIndexes.size,
+          const remainingData =
+            Array.isArray(
+              after.data
+            )
+              ? after.data
+              : [];
 
-                highestReceivedIndex:
-                  highestReceivedIndex,
 
-                missingIndexes:
-                  missingIndexes,
+          /*
+           * ----------------------------
+           * 最終成功条件
+           * ----------------------------
+           */
+          if (
+            after.success === true &&
+            remainingData.length === 0
+          ) {
 
-                duplicateIndexes:
-                  duplicateIndexes,
+            message.textContent =
+              "8-F-2 後片付け：成功\n\n" +
 
-                sendSeconds:
-                  sendSeconds,
+              "削除対象：300件\n" +
+              "受付から削除：300件\n" +
+              "受付の現在件数：0件\n\n" +
 
-                totalSeconds:
-                  totalSeconds
-              },
-              null,
-              2
-            ) +
+              "8-F-2のテストデータを" +
+              "安全に整理しました。";
 
-            "\n\n" +
-            "【POST応答詳細】\n\n" +
 
-            JSON.stringify(
-              responseDetails,
-              null,
-              2
-            ) +
+            details.style.display =
+              "block";
 
-            "\n\n" +
-            "【最終受付データ】\n\n" +
 
-            JSON.stringify(
-              finalPull,
-              null,
-              2
-            );
+            details.textContent =
+              "安全確認結果\n\n" +
+
+              "受付全体：300件\n" +
+              "8-F-2データ：300件\n" +
+              "registrationId：300個\n" +
+              "異なるregistrationId：300個\n" +
+              "testIndex：300個\n" +
+              "異なるtestIndex：300個\n" +
+              "欠落番号：0件\n" +
+              "重複番号：0件\n\n" +
+
+              "ack後の受付：0件";
+
+
+          } else {
+
+            message.textContent =
+              "後片付け後の確認が必要です。\n\n" +
+
+              "受付からの削除処理は実行されましたが、" +
+              "現在の受付件数が0件ではありません。\n\n" +
+
+              "現在の受付：" +
+              remainingData.length +
+              "件\n\n" +
+
+              "追加操作をせず、" +
+              "この結果を確認してください。";
+
+
+            details.style.display =
+              "block";
+
+
+            details.textContent =
+              JSON.stringify(
+                after,
+                null,
+                2
+              );
+          }
 
 
         } catch (error) {
 
-          const errorTime =
-            performance.now();
+          message.textContent =
+            "後片付け処理中にエラーが発生しました。\n\n" +
 
-
-          const elapsedSeconds =
-            (
-              (
-                errorTime -
-                startTime
-              ) /
-              1000
-            ).toFixed(2);
-
-
-          progress.textContent =
-            "進行状況：エラーで停止";
-
-
-          runMessage.textContent =
-            "テスト8-F-2：処理途中で停止\n\n" +
-
-            "経過時間：" +
-            elapsedSeconds +
-            "秒\n\n" +
-
-            "エラー内容：\n" +
             String(error) +
             "\n\n" +
-
-            "300件規模では、" +
-            "受付側の保存容量などの制限に" +
-            "達した可能性もあります。\n\n" +
 
             "追加操作をせず、" +
             "この結果を確認してください。";
 
 
-          resultBox.style.display =
+          details.style.display =
             "block";
 
 
-          resultBox.textContent =
-            "処理途中でエラーになりました。\n\n" +
+          details.textContent =
             String(error);
         }
 
