@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>実証テスト9-C</title>
+
+  <style>
+
+    body {
+      font-family: sans-serif;
+      max-width: 750px;
+      margin: 30px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 0;
+    }
+
+    .box {
+      margin-top: 25px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .info {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 20px;
+      padding: 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 15px;
+      padding: 14px;
+      font-size: 16px;
+    }
+
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+
+    .dataBox {
+      margin-top: 18px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+      font-size: 13px;
+    }
+
+    .warningBox {
+      margin-top: 18px;
+      padding: 15px;
+      border: 2px solid #999;
+      border-radius: 8px;
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+  <h1>スマホde選書システム</h1>
+
+
+  <div class="box">
+
+    <h2>実証テスト9-C</h2>
+
+    <div class="info">
+
+      Test9-Bで受付に保存した暗号化データを、
+      学校司書側のPCから取得します。
+
+      <br><br>
+
+      その後、受付には保存されていない暗号鍵を使い、
+      PCブラウザ内だけで復号します。
+
+      <br><br>
+
+      ① 受付からTest9-Bデータを取得<br>
+      ② 受付に暗号鍵がないことを確認<br>
+      ③ Test9-Bで生成した暗号鍵を入力<br>
+      ④ PCブラウザ内でAES-GCM復号<br>
+      ⑤ 元データとの完全一致を確認
+
+      <br><br>
+
+      このテストでは受付データを削除しません。
+
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>① 受付の暗号化データを取得</h2>
+
+    <button id="pullButton">
+      受付から9-Bデータを取得する
+    </button>
+
+    <div
+      id="pullMessage"
+      class="message"
+    >
+      まだ取得していません。
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>② 受付から取得したデータ</h2>
+
+    <div
+      id="receivedData"
+      class="dataBox"
+    >
+      未取得
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>③ 受付には保存されていない暗号鍵</h2>
+
+    <div class="warningBox">
+
+      AndroidのTest9-B画面に表示されている
+
+      <br><br>
+
+      <strong>【Test9-Cで使用する暗号鍵】</strong>
+
+      <br><br>
+
+      のBase64文字列を入力してください。
+
+      <br><br>
+
+      この鍵は受付GASへ送信しません。
+      PCブラウザ内での復号だけに使用します。
+
+    </div>
+
+
+    <input
+      id="keyInput"
+      type="text"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="Test9-Bの暗号鍵を入力"
+      disabled
+    >
+
+
+    <button
+      id="decryptButton"
+      disabled
+    >
+      この鍵で復号する
+    </button>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>④ 復号したデータ</h2>
+
+    <div
+      id="decryptedData"
+      class="dataBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>⑤ 完全一致確認</h2>
+
+    <div
+      id="comparisonResult"
+      class="message"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <script>
+
+    const RECEIVER_URL =
+      "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
+
+
+    const SELECTION_KEY =
+      "TEST8A-001";
+
+
+    const TEST_NAME =
+      "実証テスト9-B";
+
+
+    /*
+     * Test9-Bで暗号化した元データ。
+     *
+     * Test9-Cでは、復号結果が
+     * この内容と完全一致するかを確認する。
+     */
+    const EXPECTED_DATA = {
+
+      userName:
+        "TEST9B_秘密の生徒_横山",
+
+      isbn:
+        "9784912345678",
+
+      publisher:
+        "TEST9B_秘密出版社",
+
+      title:
+        "TEST9B_受付に見えてはいけない本",
+
+      price:
+        87654321
+    };
+
+
+    const pullButton =
+      document.getElementById(
+        "pullButton"
+      );
+
+
+    const pullMessage =
+      document.getElementById(
+        "pullMessage"
+      );
+
+
+    const receivedDataBox =
+      document.getElementById(
+        "receivedData"
+      );
+
+
+    const keyInput =
+      document.getElementById(
+        "keyInput"
+      );
+
+
+    const decryptButton =
+      document.getElementById(
+        "decryptButton"
+      );
+
+
+    const decryptedDataBox =
+      document.getElementById(
+        "decryptedData"
+      );
+
+
+    const comparisonResult =
+      document.getElementById(
+        "comparisonResult"
+      );
+
+
+    /*
+     * 受付から取得したTest9-Bデータを
+     * 一時的にここへ保持する。
+     *
+     * サーバーへは送信しない。
+     */
+    let encryptedRegistration =
+      null;
+
+
+    /*
+     * Base64 → Uint8Array
+     */
+    function base64ToUint8Array(
+      base64
+    ) {
+
+      const binary =
+        atob(
+          base64
+        );
+
+
+      const bytes =
+        new Uint8Array(
+          binary.length
+        );
+
+
+      for (
+        let i = 0;
+        i < binary.length;
+        i++
+      ) {
+
+        bytes[i] =
+          binary.charCodeAt(
+            i
+          );
+      }
+
+
+      return bytes;
+    }
+
+
+    /*
+     * 受付データ取得。
+     */
+    async function pullPendingData() {
+
+      const url =
+        RECEIVER_URL +
+        "?action=pull" +
+        "&selectionKey=" +
+        encodeURIComponent(
+          SELECTION_KEY
+        ) +
+        "&_=" +
+        Date.now();
+
+
+      const response =
+        await fetch(
+          url,
+          {
+            method:
+              "GET",
+
+            cache:
+              "no-store"
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "受付から正常な応答がありませんでした。"
+        );
+      }
+
+
+      return await response.json();
+    }
+
+
+    /*
+     * --------------------------------
+     * STEP 1
+     * 受付からTest9-Bデータを取得。
+     * --------------------------------
+     */
+    pullButton.addEventListener(
+      "click",
+      async function() {
+
+        pullButton.disabled =
+          true;
+
+        keyInput.disabled =
+          true;
+
+        decryptButton.disabled =
+          true;
+
+
+        pullMessage.textContent =
+          "受付から暗号化データを取得しています…";
+
+
+        receivedDataBox.textContent =
+          "取得中…";
+
+
+        decryptedDataBox.textContent =
+          "未実行";
+
+
+        comparisonResult.textContent =
+          "未実行";
+
+
+        encryptedRegistration =
+          null;
+
+
+        try {
+
+          const result =
+            await pullPendingData();
+
+
+          const allData =
+            Array.isArray(
+              result.data
+            )
+              ? result.data
+              : [];
+
+
+          /*
+           * Test9-Bのデータだけを抽出。
+           */
+          const testData =
+            allData.filter(
+              function(item) {
+
+                return (
+                  item &&
+                  item.payload &&
+                  item.payload.test ===
+                    TEST_NAME
+                );
+              }
+            );
+
+
+          /*
+           * 受付に暗号鍵らしいフィールドが
+           * 存在しないことも確認。
+           */
+          const forbiddenKeyFields = [
+
+            "key",
+            "rawKey",
+            "encryptionKey"
+          ];
+
+
+          let keyFieldFound =
+            false;
+
+
+          if (
+            testData.length === 1 &&
+            testData[0].payload
+          ) {
+
+            keyFieldFound =
+              forbiddenKeyFields.some(
+                function(fieldName) {
+
+                  return Object.prototype.hasOwnProperty.call(
+                    testData[0].payload,
+                    fieldName
+                  );
+                }
+              );
+          }
+
+
+          /*
+           * 必要な暗号化情報を確認。
+           */
+          let encryptedFieldsOk =
+            false;
+
+
+          if (
+            testData.length === 1 &&
+            testData[0].payload
+          ) {
+
+            const payload =
+              testData[0].payload;
+
+
+            encryptedFieldsOk =
+
+              payload.encryption ===
+                "AES-GCM-256" &&
+
+              typeof payload.iv ===
+                "string" &&
+
+              payload.iv.length > 0 &&
+
+              typeof payload.ciphertext ===
+                "string" &&
+
+              payload.ciphertext.length > 0;
+          }
+
+
+          /*
+           * registrationId / receivedAt確認。
+           */
+          let envelopeFieldsOk =
+            false;
+
+
+          if (
+            testData.length === 1
+          ) {
+
+            const item =
+              testData[0];
+
+
+            envelopeFieldsOk =
+
+              typeof item.registrationId ===
+                "string" &&
+
+              item.registrationId.length > 0 &&
+
+              typeof item.receivedAt ===
+                "string" &&
+
+              item.receivedAt.length > 0;
+          }
+
+
+          /*
+           * 取得条件。
+           *
+           * 受付にはTest9-Bの1件だけが
+           * 残っている想定。
+           */
+          const success =
+
+            result.success === true &&
+
+            allData.length === 1 &&
+
+            testData.length === 1 &&
+
+            keyFieldFound === false &&
+
+            encryptedFieldsOk === true &&
+
+            envelopeFieldsOk === true;
+
+
+          receivedDataBox.textContent =
+            JSON.stringify(
+              result,
+              null,
+              2
+            );
+
+
+          if (!success) {
+
+            pullMessage.textContent =
+              "Test9-C：受付データ要確認\n\n" +
+
+              "受付の現在件数：" +
+              allData.length +
+              "件\n" +
+
+              "Test9-Bデータ：" +
+              testData.length +
+              "件\n\n" +
+
+              "受付内の暗号鍵フィールド：" +
+              (
+                keyFieldFound
+                  ? "検出あり"
+                  : "検出なし"
+              ) +
+              "\n" +
+
+              "暗号化項目：" +
+              (
+                encryptedFieldsOk
+                  ? "OK"
+                  : "NG"
+              ) +
+              "\n" +
+
+              "受付管理項目：" +
+              (
+                envelopeFieldsOk
+                  ? "OK"
+                  : "NG"
+              ) +
+              "\n\n" +
+
+              "復号は実行しません。\n" +
+              "追加操作をせず、結果を確認してください。";
+
+
+            pullButton.disabled =
+              false;
+
+
+            return;
+          }
+
+
+          /*
+           * 復号に使う1件を
+           * PCブラウザ内に保持。
+           */
+          encryptedRegistration =
+            testData[0];
+
+
+          pullMessage.textContent =
+            "受付取得：成功\n\n" +
+
+            "受付の現在件数：1件\n" +
+            "Test9-B暗号化データ：1件\n\n" +
+
+            "registrationId：あり\n" +
+            "receivedAt：あり\n" +
+            "暗号方式：AES-GCM-256\n" +
+            "IV：あり\n" +
+            "暗号文：あり\n\n" +
+
+            "受付内の暗号鍵：なし\n\n" +
+
+            "次にTest9-Bで生成した暗号鍵を入力してください。";
+
+
+          keyInput.disabled =
+            false;
+
+          decryptButton.disabled =
+            false;
+
+
+          keyInput.focus();
+
+
+        } catch (error) {
+
+          pullMessage.textContent =
+            "Test9-C：取得エラー\n\n" +
+
+            String(error) +
+            "\n\n" +
+
+            "追加操作をせず、結果を確認してください。";
+
+
+          receivedDataBox.textContent =
+            "取得に失敗しました。";
+
+
+          pullButton.disabled =
+            false;
+        }
+
+      }
+    );
+
+
+    /*
+     * --------------------------------
+     * STEP 2
+     * 入力されたBase64鍵を
+     * AES-GCM鍵として読み込む。
+     * --------------------------------
+     */
+    async function importEncryptionKey(
+      keyBase64
+    ) {
+
+      const rawKey =
+        base64ToUint8Array(
+          keyBase64
+        );
+
+
+      /*
+       * AES-256なので
+       * 生鍵は32バイトである必要がある。
+       */
+      if (
+        rawKey.byteLength !== 32
+      ) {
+
+        throw new Error(
+          "暗号鍵の長さが正しくありません。" +
+          "Test9-B画面の鍵をそのまま入力してください。"
+        );
+      }
+
+
+      return await window.crypto.subtle.importKey(
+        "raw",
+
+        rawKey,
+
+        {
+          name:
+            "AES-GCM"
+        },
+
+        false,
+
+        [
+          "decrypt"
+        ]
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * STEP 3
+     * 受付の暗号文を復号。
+     * --------------------------------
+     */
+    async function decryptRegistration(
+      key,
+      ivBase64,
+      cipherBase64
+    ) {
+
+      const iv =
+        base64ToUint8Array(
+          ivBase64
+        );
+
+
+      const ciphertext =
+        base64ToUint8Array(
+          cipherBase64
+        );
+
+
+      const decryptedBuffer =
+        await window.crypto.subtle.decrypt(
+          {
+            name:
+              "AES-GCM",
+
+            iv:
+              iv
+          },
+
+          key,
+
+          ciphertext
+        );
+
+
+      const decoded =
+        new TextDecoder().decode(
+          decryptedBuffer
+        );
+
+
+      return JSON.parse(
+        decoded
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * STEP 4
+     * 「この鍵で復号する」
+     * --------------------------------
+     */
+    decryptButton.addEventListener(
+      "click",
+      async function() {
+
+        decryptButton.disabled =
+          true;
+
+        keyInput.disabled =
+          true;
+
+
+        decryptedDataBox.textContent =
+          "復号中…";
+
+
+        comparisonResult.textContent =
+          "復号・完全一致確認を実行しています…";
+
+
+        try {
+
+          /*
+           * Web Crypto API確認。
+           */
+          if (
+            !window.crypto ||
+            !window.crypto.subtle
+          ) {
+
+            throw new Error(
+              "このブラウザではWeb Crypto APIを利用できません。"
+            );
+          }
+
+
+          /*
+           * 受付データが取得済みか確認。
+           */
+          if (
+            !encryptedRegistration ||
+            !encryptedRegistration.payload
+          ) {
+
+            throw new Error(
+              "受付の暗号化データがありません。"
+            );
+          }
+
+
+          /*
+           * 入力鍵。
+           *
+           * 前後の空白・改行だけ除去。
+           */
+          const keyBase64 =
+            keyInput.value
+              .trim()
+              .replace(/\s+/g, "");
+
+
+          if (!keyBase64) {
+
+            throw new Error(
+              "暗号鍵が入力されていません。"
+            );
+          }
+
+
+          /*
+           * 入力された鍵を
+           * AES-GCM復号用として読み込む。
+           *
+           * この処理はPCブラウザ内だけ。
+           */
+          const key =
+            await importEncryptionKey(
+              keyBase64
+            );
+
+
+          const payload =
+            encryptedRegistration.payload;
+
+
+          /*
+           * AES-GCM復号。
+           */
+          const decryptedObject =
+            await decryptRegistration(
+              key,
+              payload.iv,
+              payload.ciphertext
+            );
+
+
+          decryptedDataBox.textContent =
+            JSON.stringify(
+              decryptedObject,
+              null,
+              2
+            );
+
+
+          /*
+           * --------------------------------
+           * 項目ごとの完全一致確認。
+           * --------------------------------
+           */
+          const userNameMatch =
+            decryptedObject.userName ===
+              EXPECTED_DATA.userName;
+
+
+          const isbnMatch =
+            decryptedObject.isbn ===
+              EXPECTED_DATA.isbn;
+
+
+          const publisherMatch =
+            decryptedObject.publisher ===
+              EXPECTED_DATA.publisher;
+
+
+          const titleMatch =
+            decryptedObject.title ===
+              EXPECTED_DATA.title;
+
+
+          const priceMatch =
+            decryptedObject.price ===
+              EXPECTED_DATA.price;
+
+
+          /*
+           * オブジェクト全体でも完全一致確認。
+           */
+          const exactMatch =
+            JSON.stringify(
+              decryptedObject
+            ) ===
+            JSON.stringify(
+              EXPECTED_DATA
+            );
+
+
+          const success =
+
+            userNameMatch === true &&
+
+            isbnMatch === true &&
+
+            publisherMatch === true &&
+
+            titleMatch === true &&
+
+            priceMatch === true &&
+
+            exactMatch === true;
+
+
+          if (success) {
+
+            comparisonResult.textContent =
+              "テスト9-C：成功\n\n" +
+
+              "受付から暗号化データを取得：成功\n" +
+              "受付に暗号鍵：なし\n" +
+              "司書側ブラウザへ暗号鍵を入力：成功\n" +
+              "AES-GCM復号：成功\n\n" +
+
+              "登録者名：一致\n" +
+              "ISBN：一致\n" +
+              "出版社：一致\n" +
+              "書名：一致\n" +
+              "価格：一致\n\n" +
+
+              "元データとの完全一致：OK\n\n" +
+
+              "受付に保存された暗号文を、" +
+              "受付には保存されていない鍵を使って、" +
+              "司書側ブラウザで元の選書データへ復号できました。\n\n" +
+
+              "受付の1件は削除していません。";
+
+
+          } else {
+
+            comparisonResult.textContent =
+              "テスト9-C：要確認\n\n" +
+
+              "AES-GCM復号：成功\n\n" +
+
+              "登録者名：" +
+              (
+                userNameMatch
+                  ? "一致"
+                  : "不一致"
+              ) +
+              "\n" +
+
+              "ISBN：" +
+              (
+                isbnMatch
+                  ? "一致"
+                  : "不一致"
+              ) +
+              "\n" +
+
+              "出版社：" +
+              (
+                publisherMatch
+                  ? "一致"
+                  : "不一致"
+              ) +
+              "\n" +
+
+              "書名：" +
+              (
+                titleMatch
+                  ? "一致"
+                  : "不一致"
+              ) +
+              "\n" +
+
+              "価格：" +
+              (
+                priceMatch
+                  ? "一致"
+                  : "不一致"
+              ) +
+              "\n\n" +
+
+              "元データとの完全一致：" +
+              (
+                exactMatch
+                  ? "OK"
+                  : "NG"
+              ) +
+              "\n\n" +
+
+              "受付データは削除していません。";
+          }
+
+
+        } catch (error) {
+
+          decryptedDataBox.textContent =
+            "復号できませんでした。";
+
+
+          comparisonResult.textContent =
+            "テスト9-C：復号エラー\n\n" +
+
+            String(error) +
+            "\n\n" +
+
+            "暗号鍵がTest9-Bのものと一致しているか確認してください。\n\n" +
+
+            "受付データは削除していません。";
+
+
+          /*
+           * 入力間違いの場合に
+           * 再入力できるようにする。
+           */
+          keyInput.disabled =
+            false;
+
+          decryptButton.disabled =
+            false;
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+
+</html>
