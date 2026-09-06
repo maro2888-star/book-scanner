@@ -9,7 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>実証テスト9-A</title>
+  <title>実証テスト9-B</title>
 
   <style>
 
@@ -72,13 +72,14 @@
       border-radius: 8px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      font-size: 14px;
+      word-break: break-all;
+      font-size: 13px;
     }
 
-    .cipherBox {
+    .warningBox {
       margin-top: 18px;
       padding: 15px;
-      background: #f5f5f5;
+      border: 2px solid #999;
       border-radius: 8px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
@@ -96,36 +97,59 @@
 
   <div class="box">
 
-    <h2>実証テスト9-A</h2>
+    <h2>実証テスト9-B</h2>
 
     <div class="info">
 
-      ブラウザ内だけで暗号化と復号を行います。
+      生徒ブラウザ内で書籍登録データを暗号化し、
+      暗号化されたデータだけを受付へ送信します。
 
       <br><br>
 
-      ① AES-GCM 256bit鍵を自動生成<br>
-      ② テスト用書籍データを暗号化<br>
-      ③ 暗号文を確認<br>
-      ④ 同じ鍵で復号<br>
-      ⑤ 元データと完全一致するか確認
+      ① 受付が0件か確認<br>
+      ② AES-GCM 256bit鍵を生成<br>
+      ③ ブラウザ内で登録内容を暗号化<br>
+      ④ 鍵を含めず受付へ送信<br>
+      ⑤ 受付からデータを再取得<br>
+      ⑥ 平文が受付に存在しないことを確認
 
       <br><br>
 
-      このテストでは、
-      受付GASやスプレッドシートへ
-      データを送信しません。
+      今回の1件は削除しません。
+      Test9-Cで同じ暗号文を復号するために残します。
 
     </div>
 
 
-    <button id="runButton">
-      暗号化・復号テストを開始する
+    <button id="checkButton">
+      受付が0件か確認する
     </button>
 
 
     <div
-      id="message"
+      id="checkMessage"
+      class="message"
+    >
+      まだ確認していません。
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>9-B 暗号化データ送信</h2>
+
+    <button
+      id="runButton"
+      disabled
+    >
+      暗号化して1件送信する
+    </button>
+
+
+    <div
+      id="runMessage"
       class="message"
     >
       まだ実行していません。
@@ -136,7 +160,7 @@
 
   <div class="box">
 
-    <h2>① 元データ</h2>
+    <h2>① 暗号化する元データ</h2>
 
     <div
       id="originalData"
@@ -150,11 +174,24 @@
 
   <div class="box">
 
-    <h2>② 暗号化後</h2>
+    <h2>② 9-C用 暗号鍵</h2>
+
+    <div class="info">
+
+      この鍵はTest9-Cで、
+      受付に残した暗号文を復号するために使用します。
+
+      <br><br>
+
+      この実証では画面に表示しますが、
+      受付GASへは送信しません。
+
+    </div>
+
 
     <div
-      id="encryptedData"
-      class="cipherBox"
+      id="keyData"
+      class="warningBox"
     >
       未実行
     </div>
@@ -164,10 +201,10 @@
 
   <div class="box">
 
-    <h2>③ 復号後</h2>
+    <h2>③ 受付へ送信したpayload</h2>
 
     <div
-      id="decryptedData"
+      id="sentPayload"
       class="dataBox"
     >
       未実行
@@ -178,10 +215,24 @@
 
   <div class="box">
 
-    <h2>④ 比較結果</h2>
+    <h2>④ 受付から再取得したデータ</h2>
 
     <div
-      id="comparisonResult"
+      id="receivedData"
+      class="dataBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>⑤ 平文検査結果</h2>
+
+    <div
+      id="inspectionResult"
       class="message"
     >
       未実行
@@ -192,15 +243,62 @@
 
   <script>
 
+    const RECEIVER_URL =
+      "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
+
+
+    const SELECTION_KEY =
+      "TEST8A-001";
+
+
+    const TEST_NAME =
+      "実証テスト9-B";
+
+
+    /*
+     * 受付に平文で存在してはいけない
+     * Test9-B専用データ。
+     */
+    const SECRET_DATA = {
+
+      userName:
+        "TEST9B_秘密の生徒_横山",
+
+      isbn:
+        "9784912345678",
+
+      publisher:
+        "TEST9B_秘密出版社",
+
+      title:
+        "TEST9B_受付に見えてはいけない本",
+
+      price:
+        87654321
+    };
+
+
+    const checkButton =
+      document.getElementById(
+        "checkButton"
+      );
+
+
     const runButton =
       document.getElementById(
         "runButton"
       );
 
 
-    const message =
+    const checkMessage =
       document.getElementById(
-        "message"
+        "checkMessage"
+      );
+
+
+    const runMessage =
+      document.getElementById(
+        "runMessage"
       );
 
 
@@ -210,53 +308,32 @@
       );
 
 
-    const encryptedDataBox =
+    const keyDataBox =
       document.getElementById(
-        "encryptedData"
+        "keyData"
       );
 
 
-    const decryptedDataBox =
+    const sentPayloadBox =
       document.getElementById(
-        "decryptedData"
+        "sentPayload"
       );
 
 
-    const comparisonResult =
+    const receivedDataBox =
       document.getElementById(
-        "comparisonResult"
+        "receivedData"
+      );
+
+
+    const inspectionResult =
+      document.getElementById(
+        "inspectionResult"
       );
 
 
     /*
-     * --------------------------------
-     * Test9-Aで使う元データ
-     * --------------------------------
-     */
-    const TEST_DATA = {
-
-      userName:
-        "テスト生徒",
-
-      isbn:
-        "9784000000001",
-
-      publisher:
-        "テスト出版社",
-
-      title:
-        "暗号化テスト書籍",
-
-      price:
-        1800
-    };
-
-
-    /*
-     * Uint8ArrayをBase64へ変換。
-     *
-     * Test9-Aでは暗号文とIVを
-     * 画面で確認しやすくするために使う。
+     * Uint8Array → Base64
      */
     function uint8ArrayToBase64(
       uint8Array
@@ -298,7 +375,7 @@
 
 
     /*
-     * ArrayBufferをBase64へ変換。
+     * ArrayBuffer → Base64
      */
     function arrayBufferToBase64(
       buffer
@@ -313,9 +390,48 @@
 
 
     /*
-     * --------------------------------
-     * AES-GCM 256bit鍵を生成
-     * --------------------------------
+     * 現在の受付データを取得。
+     */
+    async function pullPendingData() {
+
+      const url =
+        RECEIVER_URL +
+        "?action=pull" +
+        "&selectionKey=" +
+        encodeURIComponent(
+          SELECTION_KEY
+        ) +
+        "&_=" +
+        Date.now();
+
+
+      const response =
+        await fetch(
+          url,
+          {
+            method:
+              "GET",
+
+            cache:
+              "no-store"
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "受付から正常な応答がありませんでした。"
+        );
+      }
+
+
+      return await response.json();
+    }
+
+
+    /*
+     * AES-GCM 256bit鍵を生成。
      */
     async function generateEncryptionKey() {
 
@@ -339,9 +455,7 @@
 
 
     /*
-     * --------------------------------
-     * 暗号化
-     * --------------------------------
+     * 平文をAES-GCMで暗号化。
      */
     async function encryptData(
       key,
@@ -349,10 +463,8 @@
     ) {
 
       /*
-       * AES-GCM用のIV。
-       *
-       * 暗号化のたびに
-       * 新しい12バイトの乱数を作る。
+       * 同じ鍵でIVを再利用しない。
+       * 今回は12バイトのランダムIV。
        */
       const iv =
         window.crypto.getRandomValues(
@@ -362,19 +474,12 @@
         );
 
 
-      /*
-       * JavaScript文字列を
-       * UTF-8のバイト列へ変換。
-       */
-      const encodedData =
+      const encoded =
         new TextEncoder().encode(
           plainText
         );
 
 
-      /*
-       * AES-GCMで暗号化。
-       */
       const encryptedBuffer =
         await window.crypto.subtle.encrypt(
           {
@@ -387,7 +492,7 @@
 
           key,
 
-          encodedData
+          encoded
         );
 
 
@@ -403,41 +508,132 @@
 
 
     /*
-     * --------------------------------
-     * 復号
-     * --------------------------------
+     * 暗号化済みpayloadを
+     * 既存受付GASへPOST。
      */
-    async function decryptData(
-      key,
-      iv,
-      encryptedBuffer
+    async function sendEncryptedPayload(
+      payload
     ) {
 
-      const decryptedBuffer =
-        await window.crypto.subtle.decrypt(
+      const response =
+        await fetch(
+          RECEIVER_URL,
           {
-            name:
-              "AES-GCM",
+            method:
+              "POST",
 
-            iv:
-              iv
-          },
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
+            },
 
-          key,
-
-          encryptedBuffer
+            body:
+              JSON.stringify(
+                payload
+              )
+          }
         );
 
 
-      return new TextDecoder().decode(
-        decryptedBuffer
-      );
+      if (!response.ok) {
+
+        throw new Error(
+          "登録POST HTTPエラー：" +
+          response.status
+        );
+      }
+
+
+      return await response.json();
     }
 
 
     /*
      * --------------------------------
-     * Test9-A開始
+     * STEP 1
+     * 受付が0件か確認。
+     * --------------------------------
+     */
+    checkButton.addEventListener(
+      "click",
+      async function() {
+
+        checkButton.disabled =
+          true;
+
+        runButton.disabled =
+          true;
+
+
+        checkMessage.textContent =
+          "現在の受付データを確認しています…";
+
+
+        try {
+
+          const result =
+            await pullPendingData();
+
+
+          const data =
+            Array.isArray(
+              result.data
+            )
+              ? result.data
+              : [];
+
+
+          if (
+            result.success === true &&
+            data.length === 0
+          ) {
+
+            checkMessage.textContent =
+              "開始条件OK\n\n" +
+              "受付の現在件数：0件\n\n" +
+              "Test9-Bを開始できます。";
+
+
+            runButton.disabled =
+              false;
+
+
+          } else {
+
+            checkMessage.textContent =
+              "Test9-Bを開始しません。\n\n" +
+              "受付の現在件数：" +
+              data.length +
+              "件\n\n" +
+              "受付が0件ではないため、" +
+              "暗号化データは送信しません。";
+
+
+            checkButton.disabled =
+              false;
+          }
+
+
+        } catch (error) {
+
+          checkMessage.textContent =
+            "確認中にエラーが発生しました。\n\n" +
+            String(error);
+
+
+          checkButton.disabled =
+            false;
+        }
+
+      }
+    );
+
+
+    /*
+     * --------------------------------
+     * STEP 2
+     * 暗号化 → 受付へ1件送信
+     * → pull → 平文検査
      * --------------------------------
      */
     runButton.addEventListener(
@@ -447,32 +643,38 @@
         runButton.disabled =
           true;
 
+        checkButton.disabled =
+          true;
 
-        message.textContent =
-          "暗号化・復号テストを実行しています…";
+
+        runMessage.textContent =
+          "暗号化・送信・受付確認を実行しています…";
 
 
         originalDataBox.textContent =
           "処理中…";
 
 
-        encryptedDataBox.textContent =
+        keyDataBox.textContent =
           "処理中…";
 
 
-        decryptedDataBox.textContent =
+        sentPayloadBox.textContent =
           "処理中…";
 
 
-        comparisonResult.textContent =
+        receivedDataBox.textContent =
+          "処理中…";
+
+
+        inspectionResult.textContent =
           "処理中…";
 
 
         try {
 
           /*
-           * Web Crypto APIが
-           * 利用できるか確認。
+           * Web Crypto API確認。
            */
           if (
             !window.crypto ||
@@ -487,19 +689,18 @@
 
           /*
            * --------------------------------
-           * STEP 1
-           * 元データをJSON文字列化
+           * 元データ
            * --------------------------------
            */
           const originalJson =
             JSON.stringify(
-              TEST_DATA
+              SECRET_DATA
             );
 
 
           originalDataBox.textContent =
             JSON.stringify(
-              TEST_DATA,
+              SECRET_DATA,
               null,
               2
             );
@@ -507,7 +708,6 @@
 
           /*
            * --------------------------------
-           * STEP 2
            * AES-GCM 256bit鍵生成
            * --------------------------------
            */
@@ -516,10 +716,11 @@
 
 
           /*
-           * Test9-Aでは確認用として
-           * 鍵を一度エクスポートする。
+           * 9-Cで復号できるよう、
+           * Test9-Bでは鍵をエクスポートして
+           * 画面に残す。
            *
-           * 本番で鍵を画面表示するためではない。
+           * この値は受付には送らない。
            */
           const rawKey =
             await window.crypto.subtle.exportKey(
@@ -534,9 +735,15 @@
             );
 
 
+          keyDataBox.textContent =
+            "【Test9-Cで使用する暗号鍵】\n\n" +
+            keyBase64 +
+            "\n\n" +
+            "※この鍵は受付へ送信していません。";
+
+
           /*
            * --------------------------------
-           * STEP 3
            * 暗号化
            * --------------------------------
            */
@@ -560,53 +767,128 @@
 
 
           /*
-           * 暗号化された結果を表示。
+           * --------------------------------
+           * 受付へ送るpayload
            *
-           * keyはTest9-Aの確認用。
-           * 本番の受付へは送らない。
-           */
-          encryptedDataBox.textContent =
-            "【暗号方式】\n" +
-            "AES-GCM 256bit\n\n" +
-
-            "【Test9-A確認用 鍵】\n" +
-            keyBase64 +
-            "\n\n" +
-
-            "【IV】\n" +
-            ivBase64 +
-            "\n\n" +
-
-            "【暗号文】\n" +
-            cipherBase64;
-
-
-          /*
-           * --------------------------------
-           * STEP 4
-           * 同じ鍵とIVで復号
+           * ここには平文データも
+           * 暗号鍵も入れない。
            * --------------------------------
            */
-          const decryptedJson =
-            await decryptData(
-              key,
-              encrypted.iv,
-              encrypted.encryptedBuffer
-            );
+          const payload = {
+
+            test:
+              TEST_NAME,
+
+            selectionKey:
+              SELECTION_KEY,
+
+            encryption:
+              "AES-GCM-256",
+
+            iv:
+              ivBase64,
+
+            ciphertext:
+              cipherBase64
+          };
 
 
-          /*
-           * JSONとして読み直す。
-           */
-          const decryptedObject =
-            JSON.parse(
-              decryptedJson
-            );
-
-
-          decryptedDataBox.textContent =
+          sentPayloadBox.textContent =
             JSON.stringify(
-              decryptedObject,
+              payload,
+              null,
+              2
+            );
+
+
+          /*
+           * 念のためPOST前にも、
+           * payload自体に秘密データが
+           * 混入していないか検査する。
+           */
+          const payloadText =
+            JSON.stringify(
+              payload
+            );
+
+
+          const forbiddenPlainTexts = [
+
+            SECRET_DATA.userName,
+            SECRET_DATA.isbn,
+            SECRET_DATA.publisher,
+            SECRET_DATA.title,
+            String(
+              SECRET_DATA.price
+            )
+          ];
+
+
+          const leakedBeforePost =
+            forbiddenPlainTexts.filter(
+              function(value) {
+
+                return payloadText.includes(
+                  value
+                );
+              }
+            );
+
+
+          if (
+            leakedBeforePost.length > 0
+          ) {
+
+            throw new Error(
+              "送信前payloadに平文が含まれています。送信を中止しました。"
+            );
+          }
+
+
+          /*
+           * --------------------------------
+           * 既存8-E受付へPOST
+           * --------------------------------
+           */
+          const postResult =
+            await sendEncryptedPayload(
+              payload
+            );
+
+
+          if (
+            postResult.success !== true
+          ) {
+
+            throw new Error(
+              "受付への保存に失敗しました：" +
+              JSON.stringify(
+                postResult
+              )
+            );
+          }
+
+
+          /*
+           * --------------------------------
+           * 受付から再取得
+           * --------------------------------
+           */
+          const pullResult =
+            await pullPendingData();
+
+
+          const allData =
+            Array.isArray(
+              pullResult.data
+            )
+              ? pullResult.data
+              : [];
+
+
+          receivedDataBox.textContent =
+            JSON.stringify(
+              pullResult,
               null,
               2
             );
@@ -614,43 +896,38 @@
 
           /*
            * --------------------------------
-           * STEP 5
-           * 元データと完全一致するか確認
+           * Test9-Bのデータだけ抽出
            * --------------------------------
            */
-          const decryptedNormalizedJson =
-            JSON.stringify(
-              decryptedObject
+          const testData =
+            allData.filter(
+              function(item) {
+
+                return (
+                  item &&
+                  item.payload &&
+                  item.payload.test ===
+                    TEST_NAME
+                );
+              }
             );
 
 
-          const exactMatch =
-            originalJson ===
-            decryptedNormalizedJson;
-
-
           /*
-           * 暗号文の中に
-           * 平文がそのまま存在していないことも
-           * 補助的に確認する。
+           * 受付データ全体を文字列化し、
+           * 平文が存在しないか調べる。
            */
-          const plainTextValues = [
-
-            TEST_DATA.userName,
-            TEST_DATA.isbn,
-            TEST_DATA.publisher,
-            TEST_DATA.title,
-            String(
-              TEST_DATA.price
-            )
-          ];
+          const receivedText =
+            JSON.stringify(
+              pullResult
+            );
 
 
-          const plainTextFound =
-            plainTextValues.some(
+          const leakedAfterPost =
+            forbiddenPlainTexts.filter(
               function(value) {
 
-                return cipherBase64.includes(
+                return receivedText.includes(
                   value
                 );
               }
@@ -659,55 +936,229 @@
 
           /*
            * --------------------------------
-           * 最終判定
+           * 平文フィールド名も確認。
+           *
+           * 対象payloadに、
+           * userName/isbn/publisher/title/price
+           * が直接存在しないことを確認。
            * --------------------------------
            */
+          let plainFieldFound =
+            false;
+
+
+          const forbiddenFields = [
+
+            "userName",
+            "isbn",
+            "publisher",
+            "title",
+            "price",
+            "key",
+            "rawKey",
+            "encryptionKey"
+          ];
+
+
           if (
-            exactMatch === true &&
-            plainTextFound === false
+            testData.length === 1 &&
+            testData[0].payload
           ) {
 
-            message.textContent =
-              "テスト9-A：成功";
+            plainFieldFound =
+              forbiddenFields.some(
+                function(fieldName) {
+
+                  return Object.prototype.hasOwnProperty.call(
+                    testData[0].payload,
+                    fieldName
+                  );
+                }
+              );
+          }
 
 
-            comparisonResult.textContent =
-              "テスト9-A：成功\n\n" +
+          /*
+           * 必要な暗号化項目を確認。
+           */
+          let encryptedFieldsOk =
+            false;
 
-              "AES-GCM 256bit鍵生成：成功\n" +
-              "暗号化：成功\n" +
-              "復号：成功\n" +
-              "元データとの完全一致：OK\n" +
-              "暗号文内の平文確認：検出なし\n\n" +
 
-              "ブラウザ内で、" +
-              "元データを暗号化し、" +
-              "同じ鍵で元のデータへ" +
-              "正しく復号できました。";
+          if (
+            testData.length === 1 &&
+            testData[0].payload
+          ) {
+
+            const p =
+              testData[0].payload;
+
+
+            encryptedFieldsOk =
+
+              p.test ===
+                TEST_NAME &&
+
+              p.encryption ===
+                "AES-GCM-256" &&
+
+              typeof p.iv ===
+                "string" &&
+
+              p.iv.length > 0 &&
+
+              typeof p.ciphertext ===
+                "string" &&
+
+              p.ciphertext.length > 0;
+          }
+
+
+          /*
+           * registrationId / receivedAt確認。
+           */
+          let envelopeFieldsOk =
+            false;
+
+
+          if (
+            testData.length === 1
+          ) {
+
+            const item =
+              testData[0];
+
+
+            envelopeFieldsOk =
+
+              typeof item.registrationId ===
+                "string" &&
+
+              item.registrationId.length > 0 &&
+
+              typeof item.receivedAt ===
+                "string" &&
+
+              item.receivedAt.length > 0;
+          }
+
+
+          /*
+           * --------------------------------
+           * 最終成功条件
+           * --------------------------------
+           */
+          const success =
+
+            pullResult.success === true &&
+
+            allData.length === 1 &&
+
+            testData.length === 1 &&
+
+            leakedBeforePost.length === 0 &&
+
+            leakedAfterPost.length === 0 &&
+
+            plainFieldFound === false &&
+
+            encryptedFieldsOk === true &&
+
+            envelopeFieldsOk === true;
+
+
+          if (success) {
+
+            runMessage.textContent =
+              "テスト9-B：成功";
+
+
+            inspectionResult.textContent =
+              "テスト9-B：成功\n\n" +
+
+              "受付へのPOST：成功\n" +
+              "受付の現在件数：1件\n" +
+              "Test9-Bデータ：1件\n\n" +
+
+              "registrationId：あり\n" +
+              "receivedAt：あり\n" +
+              "IV：あり\n" +
+              "暗号文：あり\n\n" +
+
+              "暗号鍵を受付へ送信：なし\n" +
+              "userNameフィールド：なし\n" +
+              "isbnフィールド：なし\n" +
+              "publisherフィールド：なし\n" +
+              "titleフィールド：なし\n" +
+              "priceフィールド：なし\n\n" +
+
+              "登録者名の平文：検出なし\n" +
+              "ISBNの平文：検出なし\n" +
+              "出版社の平文：検出なし\n" +
+              "書名の平文：検出なし\n" +
+              "価格の平文：検出なし\n\n" +
+
+              "生徒ブラウザで暗号化したデータだけを、" +
+              "既存受付へ保存できました。\n\n" +
+
+              "この1件はTest9-Cで使用するため、" +
+              "受付に残しています。";
 
 
           } else {
 
-            message.textContent =
-              "テスト9-A：要確認";
+            runMessage.textContent =
+              "テスト9-B：要確認";
 
 
-            comparisonResult.textContent =
-              "テスト9-A：要確認\n\n" +
+            inspectionResult.textContent =
+              "テスト9-B：要確認\n\n" +
 
-              "元データとの完全一致：" +
+              "受付全体：" +
+              allData.length +
+              "件\n" +
+
+              "Test9-Bデータ：" +
+              testData.length +
+              "件\n\n" +
+
+              "送信前平文検出：" +
+              leakedBeforePost.length +
+              "件\n" +
+
+              "受付内平文検出：" +
+              leakedAfterPost.length +
+              "件\n" +
+
               (
-                exactMatch
+                leakedAfterPost.length > 0
+                  ? "検出内容：" +
+                    leakedAfterPost.join(", ") +
+                    "\n"
+                  : ""
+              ) +
+
+              "禁止フィールド検出：" +
+              (
+                plainFieldFound
+                  ? "あり"
+                  : "なし"
+              ) +
+              "\n" +
+
+              "暗号化項目確認：" +
+              (
+                encryptedFieldsOk
                   ? "OK"
                   : "NG"
               ) +
               "\n" +
 
-              "暗号文内の平文確認：" +
+              "受付管理項目確認：" +
               (
-                plainTextFound
-                  ? "平文を検出"
-                  : "検出なし"
+                envelopeFieldsOk
+                  ? "OK"
+                  : "NG"
               ) +
               "\n\n" +
 
@@ -718,12 +1169,12 @@
 
         } catch (error) {
 
-          message.textContent =
-            "テスト9-A：エラー";
+          runMessage.textContent =
+            "テスト9-B：エラー";
 
 
-          comparisonResult.textContent =
-            "暗号化・復号テスト中に" +
+          inspectionResult.textContent =
+            "Test9-Bの処理中に" +
             "エラーが発生しました。\n\n" +
 
             String(error) +
@@ -731,14 +1182,6 @@
 
             "追加操作をせず、" +
             "この結果を確認してください。";
-
-
-        } finally {
-
-          /*
-           * Test9-Aは一度だけ実行。
-           * ボタンは再有効化しない。
-           */
         }
 
       }
