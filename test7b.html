@@ -9,7 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>実証テスト8-F-2 後片付け</title>
+  <title>実証テスト9-A</title>
 
   <style>
 
@@ -27,6 +27,7 @@
 
     h2 {
       font-size: 20px;
+      margin-top: 0;
     }
 
     .box {
@@ -64,14 +65,24 @@
       white-space: pre-wrap;
     }
 
-    .details {
-      display: none;
-      margin-top: 20px;
+    .dataBox {
+      margin-top: 18px;
       padding: 15px;
       background: #f5f5f5;
       border-radius: 8px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+
+    .cipherBox {
+      margin-top: 18px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-all;
       font-size: 13px;
     }
 
@@ -85,39 +96,31 @@
 
   <div class="box">
 
-    <h2>実証テスト8-F-2 後片付け</h2>
+    <h2>実証テスト9-A</h2>
 
     <div class="info">
 
-      受付に残っている300件が、
-      すべて実証テスト8-F-2のデータであることを確認します。
+      ブラウザ内だけで暗号化と復号を行います。
 
       <br><br>
 
-      さらに、
-
-      <br>
-
-      ・registrationIdが300個すべて固有<br>
-      ・testIndexが1～300すべて存在<br>
-      ・欠落なし<br>
-      ・重複なし
+      ① AES-GCM 256bit鍵を自動生成<br>
+      ② テスト用書籍データを暗号化<br>
+      ③ 暗号文を確認<br>
+      ④ 同じ鍵で復号<br>
+      ⑤ 元データと完全一致するか確認
 
       <br><br>
 
-      を確認できた場合だけ、
-      その300件を受付から削除します。
-
-      <br><br>
-
-      条件が1つでも一致しない場合は、
-      削除しません。
+      このテストでは、
+      受付GASやスプレッドシートへ
+      データを送信しません。
 
     </div>
 
 
-    <button id="cleanupButton">
-      8-F-2の300件を削除して0件を確認する
+    <button id="runButton">
+      暗号化・復号テストを開始する
     </button>
 
 
@@ -128,36 +131,70 @@
       まだ実行していません。
     </div>
 
+  </div>
+
+
+  <div class="box">
+
+    <h2>① 元データ</h2>
 
     <div
-      id="details"
-      class="details"
-    ></div>
+      id="originalData"
+      class="dataBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>② 暗号化後</h2>
+
+    <div
+      id="encryptedData"
+      class="cipherBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>③ 復号後</h2>
+
+    <div
+      id="decryptedData"
+      class="dataBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>④ 比較結果</h2>
+
+    <div
+      id="comparisonResult"
+      class="message"
+    >
+      未実行
+    </div>
 
   </div>
 
 
   <script>
 
-    const RECEIVER_URL =
-      "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
-
-
-    const SELECTION_KEY =
-      "TEST8A-001";
-
-
-    const TEST_NAME =
-      "実証テスト8-F-2";
-
-
-    const EXPECTED_COUNT =
-      300;
-
-
-    const cleanupButton =
+    const runButton =
       document.getElementById(
-        "cleanupButton"
+        "runButton"
       );
 
 
@@ -167,609 +204,527 @@
       );
 
 
-    const details =
+    const originalDataBox =
       document.getElementById(
-        "details"
+        "originalData"
+      );
+
+
+    const encryptedDataBox =
+      document.getElementById(
+        "encryptedData"
+      );
+
+
+    const decryptedDataBox =
+      document.getElementById(
+        "decryptedData"
+      );
+
+
+    const comparisonResult =
+      document.getElementById(
+        "comparisonResult"
       );
 
 
     /*
-     * 現在の受付データを取得する。
+     * --------------------------------
+     * Test9-Aで使う元データ
+     * --------------------------------
      */
-    async function pullPendingData() {
+    const TEST_DATA = {
 
-      const url =
-        RECEIVER_URL +
-        "?action=pull" +
-        "&selectionKey=" +
-        encodeURIComponent(
-          SELECTION_KEY
-        ) +
-        "&_=" +
-        Date.now();
+      userName:
+        "テスト生徒",
 
+      isbn:
+        "9784000000001",
 
-      const response =
-        await fetch(
-          url,
-          {
-            method:
-              "GET",
+      publisher:
+        "テスト出版社",
 
-            cache:
-              "no-store"
-          }
-        );
+      title:
+        "暗号化テスト書籍",
 
-
-      if (!response.ok) {
-
-        throw new Error(
-          "受付から正常な応答がありませんでした。"
-        );
-      }
-
-
-      return await response.json();
-    }
+      price:
+        1800
+    };
 
 
     /*
-     * 保存済みregistrationIdを
-     * 受付へackする。
+     * Uint8ArrayをBase64へ変換。
+     *
+     * Test9-Aでは暗号文とIVを
+     * 画面で確認しやすくするために使う。
      */
-    async function sendAck(
-      registrationIds
+    function uint8ArrayToBase64(
+      uint8Array
     ) {
 
-      const payload = {
-
-        action:
-          "ack",
-
-        selectionKey:
-          SELECTION_KEY,
-
-        registrationIds:
-          registrationIds
-      };
+      let binary =
+        "";
 
 
-      const response =
-        await fetch(
-          RECEIVER_URL,
-          {
-            method:
-              "POST",
-
-            headers: {
-              "Content-Type":
-                "text/plain;charset=utf-8"
-            },
-
-            body:
-              JSON.stringify(
-                payload
-              )
-          }
-        );
+      const chunkSize =
+        0x8000;
 
 
-      if (!response.ok) {
+      for (
+        let i = 0;
+        i < uint8Array.length;
+        i += chunkSize
+      ) {
 
-        throw new Error(
-          "ack送信でHTTPエラー：" +
-          response.status
-        );
+        const chunk =
+          uint8Array.subarray(
+            i,
+            i + chunkSize
+          );
+
+
+        binary +=
+          String.fromCharCode.apply(
+            null,
+            chunk
+          );
       }
 
 
-      return await response.json();
+      return btoa(
+        binary
+      );
     }
 
 
     /*
-     * 後片付け開始。
+     * ArrayBufferをBase64へ変換。
      */
-    cleanupButton.addEventListener(
+    function arrayBufferToBase64(
+      buffer
+    ) {
+
+      return uint8ArrayToBase64(
+        new Uint8Array(
+          buffer
+        )
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * AES-GCM 256bit鍵を生成
+     * --------------------------------
+     */
+    async function generateEncryptionKey() {
+
+      return await window.crypto.subtle.generateKey(
+        {
+          name:
+            "AES-GCM",
+
+          length:
+            256
+        },
+
+        true,
+
+        [
+          "encrypt",
+          "decrypt"
+        ]
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * 暗号化
+     * --------------------------------
+     */
+    async function encryptData(
+      key,
+      plainText
+    ) {
+
+      /*
+       * AES-GCM用のIV。
+       *
+       * 暗号化のたびに
+       * 新しい12バイトの乱数を作る。
+       */
+      const iv =
+        window.crypto.getRandomValues(
+          new Uint8Array(
+            12
+          )
+        );
+
+
+      /*
+       * JavaScript文字列を
+       * UTF-8のバイト列へ変換。
+       */
+      const encodedData =
+        new TextEncoder().encode(
+          plainText
+        );
+
+
+      /*
+       * AES-GCMで暗号化。
+       */
+      const encryptedBuffer =
+        await window.crypto.subtle.encrypt(
+          {
+            name:
+              "AES-GCM",
+
+            iv:
+              iv
+          },
+
+          key,
+
+          encodedData
+        );
+
+
+      return {
+
+        iv:
+          iv,
+
+        encryptedBuffer:
+          encryptedBuffer
+      };
+    }
+
+
+    /*
+     * --------------------------------
+     * 復号
+     * --------------------------------
+     */
+    async function decryptData(
+      key,
+      iv,
+      encryptedBuffer
+    ) {
+
+      const decryptedBuffer =
+        await window.crypto.subtle.decrypt(
+          {
+            name:
+              "AES-GCM",
+
+            iv:
+              iv
+          },
+
+          key,
+
+          encryptedBuffer
+        );
+
+
+      return new TextDecoder().decode(
+        decryptedBuffer
+      );
+    }
+
+
+    /*
+     * --------------------------------
+     * Test9-A開始
+     * --------------------------------
+     */
+    runButton.addEventListener(
       "click",
       async function() {
 
-        cleanupButton.disabled =
+        runButton.disabled =
           true;
 
-        details.style.display =
-          "none";
-
-        details.textContent =
-          "";
 
         message.textContent =
-          "受付の300件を安全確認しています…";
+          "暗号化・復号テストを実行しています…";
+
+
+        originalDataBox.textContent =
+          "処理中…";
+
+
+        encryptedDataBox.textContent =
+          "処理中…";
+
+
+        decryptedDataBox.textContent =
+          "処理中…";
+
+
+        comparisonResult.textContent =
+          "処理中…";
 
 
         try {
 
           /*
-           * ----------------------------
+           * Web Crypto APIが
+           * 利用できるか確認。
+           */
+          if (
+            !window.crypto ||
+            !window.crypto.subtle
+          ) {
+
+            throw new Error(
+              "このブラウザではWeb Crypto APIを利用できません。"
+            );
+          }
+
+
+          /*
+           * --------------------------------
            * STEP 1
-           * 現在の受付をpull
-           * ----------------------------
+           * 元データをJSON文字列化
+           * --------------------------------
            */
-          const before =
-            await pullPendingData();
+          const originalJson =
+            JSON.stringify(
+              TEST_DATA
+            );
 
 
-          const allData =
-            Array.isArray(
-              before.data
-            )
-              ? before.data
-              : [];
-
-
-          /*
-           * 8-F-2だけ抽出。
-           */
-          const targetData =
-            allData.filter(
-              function(item) {
-
-                return (
-                  item &&
-                  item.payload &&
-                  item.payload.test ===
-                    TEST_NAME
-                );
-              }
+          originalDataBox.textContent =
+            JSON.stringify(
+              TEST_DATA,
+              null,
+              2
             );
 
 
           /*
-           * ----------------------------
-           * registrationId確認
-           * ----------------------------
-           */
-          const registrationIds =
-            targetData
-              .map(
-                function(item) {
-
-                  return item.registrationId;
-                }
-              )
-              .filter(
-                function(id) {
-
-                  return (
-                    typeof id === "string" &&
-                    id.length > 0
-                  );
-                }
-              );
-
-
-          const uniqueRegistrationIds =
-            new Set(
-              registrationIds
-            );
-
-
-          /*
-           * ----------------------------
-           * testIndex確認
-           * ----------------------------
-           */
-          const testIndexes =
-            targetData
-              .map(
-                function(item) {
-
-                  return (
-                    item &&
-                    item.payload
-                  )
-                    ? item.payload.testIndex
-                    : null;
-                }
-              )
-              .filter(
-                function(index) {
-
-                  return (
-                    Number.isInteger(
-                      index
-                    ) &&
-                    index >= 1 &&
-                    index <= EXPECTED_COUNT
-                  );
-                }
-              );
-
-
-          const uniqueTestIndexes =
-            new Set(
-              testIndexes
-            );
-
-
-          /*
-           * ----------------------------
-           * 欠落番号確認
-           * ----------------------------
-           */
-          const missingIndexes =
-            [];
-
-
-          for (
-            let index = 1;
-            index <= EXPECTED_COUNT;
-            index++
-          ) {
-
-            if (
-              !uniqueTestIndexes.has(
-                index
-              )
-            ) {
-
-              missingIndexes.push(
-                index
-              );
-            }
-          }
-
-
-          /*
-           * ----------------------------
-           * 重複番号確認
-           * ----------------------------
-           */
-          const indexCounts =
-            new Map();
-
-
-          testIndexes.forEach(
-            function(index) {
-
-              indexCounts.set(
-                index,
-                (
-                  indexCounts.get(
-                    index
-                  ) || 0
-                ) + 1
-              );
-            }
-          );
-
-
-          const duplicateIndexes =
-            [];
-
-
-          indexCounts.forEach(
-            function(count, index) {
-
-              if (count > 1) {
-
-                duplicateIndexes.push(
-                  index
-                );
-              }
-            }
-          );
-
-
-          /*
-           * ----------------------------
-           * 安全条件
-           * ----------------------------
-           *
-           * 1つでも違えばackしない。
-           */
-          const safeToDelete =
-
-            before.success === true &&
-
-            allData.length ===
-              EXPECTED_COUNT &&
-
-            targetData.length ===
-              EXPECTED_COUNT &&
-
-            registrationIds.length ===
-              EXPECTED_COUNT &&
-
-            uniqueRegistrationIds.size ===
-              EXPECTED_COUNT &&
-
-            testIndexes.length ===
-              EXPECTED_COUNT &&
-
-            uniqueTestIndexes.size ===
-              EXPECTED_COUNT &&
-
-            missingIndexes.length ===
-              0 &&
-
-            duplicateIndexes.length ===
-              0;
-
-
-          /*
-           * ----------------------------
-           * 条件不一致なら停止。
-           * ackは送らない。
-           * ----------------------------
-           */
-          if (!safeToDelete) {
-
-            message.textContent =
-              "後片付けを中止しました。\n\n" +
-
-              "安全条件が一致しないため、" +
-              "受付データは削除していません。\n\n" +
-
-              "受付全体：" +
-              allData.length +
-              "件\n" +
-
-              "8-F-2データ：" +
-              targetData.length +
-              "件\n\n" +
-
-              "registrationId：" +
-              registrationIds.length +
-              "個\n" +
-
-              "異なるregistrationId：" +
-              uniqueRegistrationIds.size +
-              "個\n\n" +
-
-              "testIndex：" +
-              testIndexes.length +
-              "個\n" +
-
-              "異なるtestIndex：" +
-              uniqueTestIndexes.size +
-              "個\n\n" +
-
-              "欠落番号：" +
-              missingIndexes.length +
-              "件\n" +
-
-              (
-                missingIndexes.length > 0
-                  ? "欠落：" +
-                    missingIndexes.join(", ") +
-                    "\n"
-                  : ""
-              ) +
-
-              "重複番号：" +
-              duplicateIndexes.length +
-              "件\n" +
-
-              (
-                duplicateIndexes.length > 0
-                  ? "重複：" +
-                    duplicateIndexes.join(", ")
-                  : ""
-              ) +
-
-              "\n\n追加操作をせず、" +
-              "この結果を確認してください。";
-
-
-            details.style.display =
-              "block";
-
-
-            details.textContent =
-              JSON.stringify(
-                {
-                  beforeSuccess:
-                    before.success,
-
-                  allDataCount:
-                    allData.length,
-
-                  targetDataCount:
-                    targetData.length,
-
-                  registrationIdCount:
-                    registrationIds.length,
-
-                  uniqueRegistrationIdCount:
-                    uniqueRegistrationIds.size,
-
-                  testIndexCount:
-                    testIndexes.length,
-
-                  uniqueTestIndexCount:
-                    uniqueTestIndexes.size,
-
-                  missingIndexes:
-                    missingIndexes,
-
-                  duplicateIndexes:
-                    duplicateIndexes
-                },
-                null,
-                2
-              );
-
-
-            /*
-             * 意図的にボタンは
-             * 再有効化しない。
-             */
-            return;
-          }
-
-
-          /*
-           * ----------------------------
+           * --------------------------------
            * STEP 2
-           * 安全条件一致。
-           * 300件のIDだけack。
-           * ----------------------------
+           * AES-GCM 256bit鍵生成
+           * --------------------------------
            */
-          message.textContent =
-            "300件すべての安全確認ができました。\n\n" +
-            "受付から8-F-2の300件を削除しています…";
+          const key =
+            await generateEncryptionKey();
 
 
-          const ackResult =
-            await sendAck(
-              registrationIds
+          /*
+           * Test9-Aでは確認用として
+           * 鍵を一度エクスポートする。
+           *
+           * 本番で鍵を画面表示するためではない。
+           */
+          const rawKey =
+            await window.crypto.subtle.exportKey(
+              "raw",
+              key
+            );
+
+
+          const keyBase64 =
+            arrayBufferToBase64(
+              rawKey
             );
 
 
           /*
-           * ackそのものの結果を確認。
-           */
-          if (
-            ackResult.success !== true ||
-            ackResult.removedCount !==
-              EXPECTED_COUNT
-          ) {
-
-            message.textContent =
-              "ack結果を確認する必要があります。\n\n" +
-
-              "削除予定：" +
-              EXPECTED_COUNT +
-              "件\n" +
-
-              "受付から削除：" +
-              (
-                typeof ackResult.removedCount ===
-                "number"
-                  ? ackResult.removedCount
-                  : "不明"
-              ) +
-              "件\n\n" +
-
-              "追加操作をせず、" +
-              "この結果を確認してください。";
-
-
-            details.style.display =
-              "block";
-
-
-            details.textContent =
-              JSON.stringify(
-                ackResult,
-                null,
-                2
-              );
-
-
-            return;
-          }
-
-
-          /*
-           * ----------------------------
+           * --------------------------------
            * STEP 3
-           * ack後に再pull。
-           * 本当に0件か確認。
-           * ----------------------------
+           * 暗号化
+           * --------------------------------
            */
-          message.textContent =
-            "300件を受付から削除しました。\n\n" +
-            "受付が0件になったことを確認しています…";
+          const encrypted =
+            await encryptData(
+              key,
+              originalJson
+            );
 
 
-          const after =
-            await pullPendingData();
+          const ivBase64 =
+            uint8ArrayToBase64(
+              encrypted.iv
+            );
 
 
-          const remainingData =
-            Array.isArray(
-              after.data
-            )
-              ? after.data
-              : [];
+          const cipherBase64 =
+            arrayBufferToBase64(
+              encrypted.encryptedBuffer
+            );
 
 
           /*
-           * ----------------------------
-           * 最終成功条件
-           * ----------------------------
+           * 暗号化された結果を表示。
+           *
+           * keyはTest9-Aの確認用。
+           * 本番の受付へは送らない。
+           */
+          encryptedDataBox.textContent =
+            "【暗号方式】\n" +
+            "AES-GCM 256bit\n\n" +
+
+            "【Test9-A確認用 鍵】\n" +
+            keyBase64 +
+            "\n\n" +
+
+            "【IV】\n" +
+            ivBase64 +
+            "\n\n" +
+
+            "【暗号文】\n" +
+            cipherBase64;
+
+
+          /*
+           * --------------------------------
+           * STEP 4
+           * 同じ鍵とIVで復号
+           * --------------------------------
+           */
+          const decryptedJson =
+            await decryptData(
+              key,
+              encrypted.iv,
+              encrypted.encryptedBuffer
+            );
+
+
+          /*
+           * JSONとして読み直す。
+           */
+          const decryptedObject =
+            JSON.parse(
+              decryptedJson
+            );
+
+
+          decryptedDataBox.textContent =
+            JSON.stringify(
+              decryptedObject,
+              null,
+              2
+            );
+
+
+          /*
+           * --------------------------------
+           * STEP 5
+           * 元データと完全一致するか確認
+           * --------------------------------
+           */
+          const decryptedNormalizedJson =
+            JSON.stringify(
+              decryptedObject
+            );
+
+
+          const exactMatch =
+            originalJson ===
+            decryptedNormalizedJson;
+
+
+          /*
+           * 暗号文の中に
+           * 平文がそのまま存在していないことも
+           * 補助的に確認する。
+           */
+          const plainTextValues = [
+
+            TEST_DATA.userName,
+            TEST_DATA.isbn,
+            TEST_DATA.publisher,
+            TEST_DATA.title,
+            String(
+              TEST_DATA.price
+            )
+          ];
+
+
+          const plainTextFound =
+            plainTextValues.some(
+              function(value) {
+
+                return cipherBase64.includes(
+                  value
+                );
+              }
+            );
+
+
+          /*
+           * --------------------------------
+           * 最終判定
+           * --------------------------------
            */
           if (
-            after.success === true &&
-            remainingData.length === 0
+            exactMatch === true &&
+            plainTextFound === false
           ) {
 
             message.textContent =
-              "8-F-2 後片付け：成功\n\n" +
-
-              "削除対象：300件\n" +
-              "受付から削除：300件\n" +
-              "受付の現在件数：0件\n\n" +
-
-              "8-F-2のテストデータを" +
-              "安全に整理しました。";
+              "テスト9-A：成功";
 
 
-            details.style.display =
-              "block";
+            comparisonResult.textContent =
+              "テスト9-A：成功\n\n" +
 
+              "AES-GCM 256bit鍵生成：成功\n" +
+              "暗号化：成功\n" +
+              "復号：成功\n" +
+              "元データとの完全一致：OK\n" +
+              "暗号文内の平文確認：検出なし\n\n" +
 
-            details.textContent =
-              "安全確認結果\n\n" +
-
-              "受付全体：300件\n" +
-              "8-F-2データ：300件\n" +
-              "registrationId：300個\n" +
-              "異なるregistrationId：300個\n" +
-              "testIndex：300個\n" +
-              "異なるtestIndex：300個\n" +
-              "欠落番号：0件\n" +
-              "重複番号：0件\n\n" +
-
-              "ack後の受付：0件";
+              "ブラウザ内で、" +
+              "元データを暗号化し、" +
+              "同じ鍵で元のデータへ" +
+              "正しく復号できました。";
 
 
           } else {
 
             message.textContent =
-              "後片付け後の確認が必要です。\n\n" +
+              "テスト9-A：要確認";
 
-              "受付からの削除処理は実行されましたが、" +
-              "現在の受付件数が0件ではありません。\n\n" +
 
-              "現在の受付：" +
-              remainingData.length +
-              "件\n\n" +
+            comparisonResult.textContent =
+              "テスト9-A：要確認\n\n" +
+
+              "元データとの完全一致：" +
+              (
+                exactMatch
+                  ? "OK"
+                  : "NG"
+              ) +
+              "\n" +
+
+              "暗号文内の平文確認：" +
+              (
+                plainTextFound
+                  ? "平文を検出"
+                  : "検出なし"
+              ) +
+              "\n\n" +
 
               "追加操作をせず、" +
               "この結果を確認してください。";
-
-
-            details.style.display =
-              "block";
-
-
-            details.textContent =
-              JSON.stringify(
-                after,
-                null,
-                2
-              );
           }
 
 
         } catch (error) {
 
           message.textContent =
-            "後片付け処理中にエラーが発生しました。\n\n" +
+            "テスト9-A：エラー";
+
+
+          comparisonResult.textContent =
+            "暗号化・復号テスト中に" +
+            "エラーが発生しました。\n\n" +
 
             String(error) +
             "\n\n" +
@@ -778,12 +733,12 @@
             "この結果を確認してください。";
 
 
-          details.style.display =
-            "block";
+        } finally {
 
-
-          details.textContent =
-            String(error);
+          /*
+           * Test9-Aは一度だけ実行。
+           * ボタンは再有効化しない。
+           */
         }
 
       }
