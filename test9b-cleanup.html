@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Test9-B 後片付け</title>
+
+  <style>
+
+    body {
+      font-family: sans-serif;
+      max-width: 750px;
+      margin: 30px auto;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 0;
+    }
+
+    .box {
+      margin-top: 25px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .info {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .warning {
+      margin-top: 15px;
+      padding: 15px;
+      border: 2px solid #999;
+      border-radius: 8px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 20px;
+      padding: 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+
+    .dataBox {
+      margin-top: 18px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+      font-size: 13px;
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+  <h1>スマホde選書システム</h1>
+
+
+  <div class="box">
+
+    <h2>Test9-B 後片付け</h2>
+
+    <div class="info">
+
+      Test9-B / Test9-Cで使用した
+      暗号化テストデータ1件だけを、
+      registrationIdを指定して受付から削除します。
+
+      <br><br>
+
+      ① 現在の受付データを確認<br>
+      ② 対象registrationIdが唯一の1件か確認<br>
+      ③ そのregistrationIdだけをack<br>
+      ④ 再度受付を取得して0件を確認
+
+    </div>
+
+
+    <div class="warning">
+
+      削除対象：
+
+      <br><br>
+
+      <strong>
+        963d26b0-0461-4c9c-95ce-d095deba2143
+      </strong>
+
+      <br><br>
+
+      このID以外は削除対象にしません。
+
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>① 削除前の安全確認</h2>
+
+    <button id="checkButton">
+      受付データを確認する
+    </button>
+
+
+    <div
+      id="checkMessage"
+      class="message"
+    >
+      まだ確認していません。
+    </div>
+
+
+    <div
+      id="beforeData"
+      class="dataBox"
+    >
+      未確認
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>② Test9-Bの1件だけを削除</h2>
+
+    <button
+      id="ackButton"
+      disabled
+    >
+      確認した1件だけをackする
+    </button>
+
+
+    <div
+      id="ackMessage"
+      class="message"
+    >
+      安全確認が完了するまで実行できません。
+    </div>
+
+
+    <div
+      id="ackData"
+      class="dataBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <h2>③ 削除後の確認</h2>
+
+    <div
+      id="finalResult"
+      class="message"
+    >
+      未実行
+    </div>
+
+
+    <div
+      id="afterData"
+      class="dataBox"
+    >
+      未実行
+    </div>
+
+  </div>
+
+
+  <script>
+
+    const RECEIVER_URL =
+      "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
+
+
+    const SELECTION_KEY =
+      "TEST8A-001";
+
+
+    /*
+     * 今回削除してよい
+     * Test9-BのregistrationId。
+     *
+     * この1件以外はackしない。
+     */
+    const TARGET_REGISTRATION_ID =
+      "963d26b0-0461-4c9c-95ce-d095deba2143";
+
+
+    /*
+     * Test9-Bで付けたテスト名。
+     *
+     * registrationIdだけでなく
+     * payload.testも確認する。
+     */
+    const TARGET_TEST_NAME =
+      "実証テスト9-B";
+
+
+    const checkButton =
+      document.getElementById(
+        "checkButton"
+      );
+
+
+    const ackButton =
+      document.getElementById(
+        "ackButton"
+      );
+
+
+    const checkMessage =
+      document.getElementById(
+        "checkMessage"
+      );
+
+
+    const ackMessage =
+      document.getElementById(
+        "ackMessage"
+      );
+
+
+    const beforeDataBox =
+      document.getElementById(
+        "beforeData"
+      );
+
+
+    const ackDataBox =
+      document.getElementById(
+        "ackData"
+      );
+
+
+    const finalResult =
+      document.getElementById(
+        "finalResult"
+      );
+
+
+    const afterDataBox =
+      document.getElementById(
+        "afterData"
+      );
+
+
+    /*
+     * 安全確認済みかどうか。
+     *
+     * trueにならない限り
+     * ackは実行できない。
+     */
+    let safetyCheckPassed =
+      false;
+
+
+    /*
+     * --------------------------------
+     * 受付から現在データを取得
+     * --------------------------------
+     */
+    async function pullPendingData() {
+
+      const url =
+        RECEIVER_URL +
+        "?action=pull" +
+        "&selectionKey=" +
+        encodeURIComponent(
+          SELECTION_KEY
+        ) +
+        "&_=" +
+        Date.now();
+
+
+      const response =
+        await fetch(
+          url,
+          {
+            method:
+              "GET",
+
+            cache:
+              "no-store"
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "受付から正常な応答がありませんでした。"
+        );
+      }
+
+
+      return await response.json();
+    }
+
+
+    /*
+     * --------------------------------
+     * 指定したregistrationIdだけをack
+     * --------------------------------
+     */
+    async function acknowledgeTarget() {
+
+      const requestData = {
+
+        action:
+          "ack",
+
+        selectionKey:
+          SELECTION_KEY,
+
+        registrationIds: [
+          TARGET_REGISTRATION_ID
+        ]
+      };
+
+
+      const response =
+        await fetch(
+          RECEIVER_URL,
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
+            },
+
+            body:
+              JSON.stringify(
+                requestData
+              )
+          }
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "ack HTTPエラー：" +
+          response.status
+        );
+      }
+
+
+      return await response.json();
+    }
+
+
+    /*
+     * --------------------------------
+     * STEP 1
+     *
+     * 削除前の安全確認。
+     * --------------------------------
+     */
+    checkButton.addEventListener(
+      "click",
+      async function() {
+
+        checkButton.disabled =
+          true;
+
+        ackButton.disabled =
+          true;
+
+        safetyCheckPassed =
+          false;
+
+
+        checkMessage.textContent =
+          "現在の受付データを確認しています…";
+
+
+        beforeDataBox.textContent =
+          "確認中…";
+
+
+        ackMessage.textContent =
+          "安全確認が完了するまで実行できません。";
+
+
+        finalResult.textContent =
+          "未実行";
+
+
+        afterDataBox.textContent =
+          "未実行";
+
+
+        try {
+
+          const result =
+            await pullPendingData();
+
+
+          const allData =
+            Array.isArray(
+              result.data
+            )
+              ? result.data
+              : [];
+
+
+          beforeDataBox.textContent =
+            JSON.stringify(
+              result,
+              null,
+              2
+            );
+
+
+          /*
+           * 対象registrationIdを探す。
+           */
+          const targetData =
+            allData.filter(
+              function(item) {
+
+                return (
+                  item &&
+                  item.registrationId ===
+                    TARGET_REGISTRATION_ID
+                );
+              }
+            );
+
+
+          /*
+           * payload.testも
+           * Test9-Bであることを確認。
+           */
+          let testNameOk =
+            false;
+
+
+          if (
+            targetData.length === 1 &&
+            targetData[0].payload
+          ) {
+
+            testNameOk =
+              targetData[0].payload.test ===
+                TARGET_TEST_NAME;
+          }
+
+
+          /*
+           * 今回は受付全体が1件、
+           * その唯一の1件が対象ID、
+           * さらにTest9-Bである場合だけ
+           * ackボタンを有効にする。
+           */
+          const safe =
+
+            result.success === true &&
+
+            allData.length === 1 &&
+
+            targetData.length === 1 &&
+
+            testNameOk === true;
+
+
+          if (safe) {
+
+            safetyCheckPassed =
+              true;
+
+
+            checkMessage.textContent =
+              "安全確認：OK\n\n" +
+
+              "受付の現在件数：1件\n" +
+
+              "対象registrationId：一致\n" +
+
+              "Test9-Bデータ：一致\n\n" +
+
+              "受付にある唯一の1件が、" +
+              "今回削除するTest9-Bデータであることを確認しました。\n\n" +
+
+              "次のack操作へ進めます。";
+
+
+            ackMessage.textContent =
+              "安全確認済みです。\n\n" +
+              "下のボタンを押すと、" +
+              "確認したregistrationIdの1件だけをackします。";
+
+
+            ackButton.disabled =
+              false;
+
+
+          } else {
+
+            checkMessage.textContent =
+              "安全確認：NG\n\n" +
+
+              "受付の現在件数：" +
+              allData.length +
+              "件\n" +
+
+              "対象registrationIdの件数：" +
+              targetData.length +
+              "件\n" +
+
+              "Test9-B確認：" +
+              (
+                testNameOk
+                  ? "一致"
+                  : "不一致"
+              ) +
+              "\n\n" +
+
+              "想定した状態と異なるため、" +
+              "削除処理は実行できません。";
+
+
+            ackMessage.textContent =
+              "安全のためackを停止しています。";
+
+
+            checkButton.disabled =
+              false;
+          }
+
+
+        } catch (error) {
+
+          checkMessage.textContent =
+            "安全確認中にエラーが発生しました。\n\n" +
+
+            String(error);
+
+
+          beforeDataBox.textContent =
+            "確認に失敗しました。";
+
+
+          checkButton.disabled =
+            false;
+        }
+
+      }
+    );
+
+
+    /*
+     * --------------------------------
+     * STEP 2
+     *
+     * 確認済みの1件だけack。
+     * --------------------------------
+     */
+    ackButton.addEventListener(
+      "click",
+      async function() {
+
+        /*
+         * 念のためもう一度
+         * safetyCheckPassedを確認。
+         */
+        if (!safetyCheckPassed) {
+
+          ackMessage.textContent =
+            "安全確認が完了していないため、" +
+            "ackを実行しません。";
+
+          return;
+        }
+
+
+        /*
+         * 二重クリック防止。
+         */
+        ackButton.disabled =
+          true;
+
+        checkButton.disabled =
+          true;
+
+
+        ackMessage.textContent =
+          "対象の1件だけをackしています…";
+
+
+        ackDataBox.textContent =
+          "実行中…";
+
+
+        finalResult.textContent =
+          "ack後の受付を確認しています…";
+
+
+        afterDataBox.textContent =
+          "確認待ち";
+
+
+        try {
+
+          /*
+           * --------------------------------
+           * registrationId指定でack
+           * --------------------------------
+           */
+          const ackResult =
+            await acknowledgeTarget();
+
+
+          ackDataBox.textContent =
+            JSON.stringify(
+              ackResult,
+              null,
+              2
+            );
+
+
+          /*
+           * ack応答そのものを厳密に確認。
+           */
+          const removedIds =
+            Array.isArray(
+              ackResult.removedIds
+            )
+              ? ackResult.removedIds
+              : [];
+
+
+          const ackResponseOk =
+
+            ackResult.success === true &&
+
+            ackResult.removedCount === 1 &&
+
+            ackResult.remainingCount === 0 &&
+
+            removedIds.length === 1 &&
+
+            removedIds[0] ===
+              TARGET_REGISTRATION_ID;
+
+
+          if (!ackResponseOk) {
+
+            ackMessage.textContent =
+              "ack応答：要確認\n\n" +
+
+              "想定した削除結果と一致しません。\n\n" +
+
+              "追加操作は行わず、" +
+              "表示されたack応答を確認してください。";
+
+
+            finalResult.textContent =
+              "削除後pullは実行していません。";
+
+
+            return;
+          }
+
+
+          ackMessage.textContent =
+            "ack応答：OK\n\n" +
+
+            "removedCount：1\n" +
+
+            "removedId：一致\n" +
+
+            "remainingCount：0";
+
+
+          /*
+           * --------------------------------
+           * STEP 3
+           *
+           * ack成功後に再pull。
+           * 本当に0件になったか確認する。
+           * --------------------------------
+           */
+          const afterResult =
+            await pullPendingData();
+
+
+          const remainingData =
+            Array.isArray(
+              afterResult.data
+            )
+              ? afterResult.data
+              : [];
+
+
+          afterDataBox.textContent =
+            JSON.stringify(
+              afterResult,
+              null,
+              2
+            );
+
+
+          const finalOk =
+
+            afterResult.success === true &&
+
+            remainingData.length === 0 &&
+
+            (
+              afterResult.count === 0 ||
+              typeof afterResult.count ===
+                "undefined"
+            );
+
+
+          if (finalOk) {
+
+            finalResult.textContent =
+              "Test9-B 後片付け：成功\n\n" +
+
+              "削除対象：1件\n" +
+
+              "削除したregistrationId：\n" +
+              TARGET_REGISTRATION_ID +
+              "\n\n" +
+
+              "受付から削除：1件\n" +
+
+              "受付の現在件数：0件\n\n" +
+
+              "Test9-B / Test9-Cで使用した" +
+              "テストデータ1件だけを安全に整理しました。\n\n" +
+
+              "Test9-Dを開始できる状態です。";
+
+
+          } else {
+
+            finalResult.textContent =
+              "削除後確認：要確認\n\n" +
+
+              "ack自体は成功しましたが、" +
+              "再取得した受付データが0件ではありません。\n\n" +
+
+              "追加操作をせず、" +
+              "表示されたデータを確認してください。";
+          }
+
+
+        } catch (error) {
+
+          ackMessage.textContent =
+            "後片付け処理中にエラーが発生しました。\n\n" +
+
+            String(error) +
+            "\n\n" +
+
+            "追加操作をせず、" +
+            "結果を確認してください。";
+
+
+          finalResult.textContent =
+            "処理を停止しました。";
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+
+</html>
