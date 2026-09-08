@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Test9-H 司書側 公開鍵方式最小実証</title>
+
+  <style>
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        "Meiryo",
+        sans-serif;
+
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+      line-height: 1.7;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 32px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .notice {
+      background: #fff8dc;
+      border: 1px solid #e0c96d;
+      border-radius: 8px;
+      padding: 14px;
+      margin: 16px 0;
+    }
+
+    .success {
+      background: #eef9ee;
+      border: 1px solid #8bc48b;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+      white-space: pre-wrap;
+    }
+
+    .error {
+      background: #fff0f0;
+      border: 1px solid #d88;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+      white-space: pre-wrap;
+    }
+
+    button {
+      font-size: 17px;
+      padding: 12px 20px;
+      margin: 8px 8px 8px 0;
+      border: 1px solid #777;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #f0f0f0;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 180px;
+      padding: 10px;
+      margin-top: 8px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    .small {
+      font-size: 14px;
+      color: #555;
+    }
+
+    .status-row {
+      margin: 8px 0;
+    }
+
+    .label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>スマホde選書システム</h1>
+
+  <p>
+    実証テスト9-H：公開鍵＋AES-GCM 最小実証
+  </p>
+
+  <div class="notice">
+    このページは暗号方式を確認するための独立した実証ページです。<br>
+    Test9-Gまでの受付データ、管理スプレッドシート、暗号鍵には触れません。
+  </div>
+
+
+  <div class="card">
+
+    <h2>① 司書用の公開鍵・秘密鍵を生成</h2>
+
+    <p>
+      RSA-OAEPの公開鍵・秘密鍵を、このブラウザ内で生成します。
+    </p>
+
+    <button id="generateButton">
+      公開鍵・秘密鍵を生成
+    </button>
+
+    <div id="generateResult"></div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>② 生徒へ渡す公開鍵</h2>
+
+    <p>
+      この公開鍵は、生徒側へ渡して構わない情報です。
+    </p>
+
+    <p class="small">
+      今回の実証では、次の段階でこの文字列を生徒Androidへ渡します。
+    </p>
+
+    <textarea
+      id="publicKeyOutput"
+      readonly
+      placeholder="①で鍵を生成すると、ここに公開鍵が表示されます。"
+    ></textarea>
+
+    <button id="copyPublicKeyButton" disabled>
+      公開鍵をコピー
+    </button>
+
+    <div id="copyResult"></div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>③ 秘密鍵の確認</h2>
+
+    <div class="status-row">
+      <span class="label">秘密鍵：</span>
+      <span id="privateKeyStatus">まだ生成されていません</span>
+    </div>
+
+    <div class="status-row">
+      <span class="label">秘密鍵の画面表示：</span>
+      <span>なし</span>
+    </div>
+
+    <div class="status-row">
+      <span class="label">生徒への秘密鍵受け渡し：</span>
+      <span>なし</span>
+    </div>
+
+    <p class="small">
+      Test9-Hのこの段階では、秘密鍵はこのページを開いているブラウザのメモリ内だけに保持します。
+      ページを閉じると失われます。
+    </p>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>実証状況</h2>
+
+    <div id="summary">
+      まだ実証を開始していません。
+    </div>
+
+  </div>
+
+
+<script>
+
+  /*
+   * Test9-H
+   *
+   * 第1段階
+   *
+   * ・司書PCでRSA-OAEP鍵ペアを生成
+   * ・公開鍵だけを表示
+   * ・秘密鍵は画面に表示しない
+   *
+   * この段階では
+   * ・受付への送信
+   * ・GAS
+   * ・スプレッドシート
+   * ・QRコード
+   * ・鍵の永続保存
+   *
+   * は行わない。
+   */
+
+
+  let librarianPrivateKey = null;
+  let librarianPublicKey = null;
+
+
+  const generateButton =
+    document.getElementById("generateButton");
+
+  const generateResult =
+    document.getElementById("generateResult");
+
+  const publicKeyOutput =
+    document.getElementById("publicKeyOutput");
+
+  const copyPublicKeyButton =
+    document.getElementById("copyPublicKeyButton");
+
+  const copyResult =
+    document.getElementById("copyResult");
+
+  const privateKeyStatus =
+    document.getElementById("privateKeyStatus");
+
+  const summary =
+    document.getElementById("summary");
+
+
+  /*
+   * ArrayBuffer / Uint8Array
+   * ↓
+   * Base64文字列
+   */
+  function arrayBufferToBase64(buffer) {
+
+    const bytes = new Uint8Array(buffer);
+
+    let binary = "";
+
+    const chunkSize = 0x8000;
+
+    for (
+      let i = 0;
+      i < bytes.length;
+      i += chunkSize
+    ) {
+
+      const chunk =
+        bytes.subarray(
+          i,
+          Math.min(i + chunkSize, bytes.length)
+        );
+
+      binary +=
+        String.fromCharCode.apply(
+          null,
+          chunk
+        );
+    }
+
+    return btoa(binary);
+  }
+
+
+  /*
+   * Base64を見やすいPEM形式にする
+   */
+  function base64ToPem(base64, label) {
+
+    const lines =
+      base64.match(/.{1,64}/g) || [];
+
+    return (
+      "-----BEGIN " + label + "-----\n" +
+      lines.join("\n") +
+      "\n-----END " + label + "-----"
+    );
+  }
+
+
+  /*
+   * 公開鍵・秘密鍵生成
+   */
+  async function generateKeyPair() {
+
+    generateButton.disabled = true;
+
+    copyPublicKeyButton.disabled = true;
+
+    generateResult.className = "";
+    generateResult.textContent =
+      "公開鍵・秘密鍵を生成しています...";
+
+    publicKeyOutput.value = "";
+
+    copyResult.textContent = "";
+
+    privateKeyStatus.textContent =
+      "生成中";
+
+    summary.textContent =
+      "鍵ペアを生成しています。";
+
+
+    try {
+
+      /*
+       * RSA-OAEP 2048bit
+       *
+       * extractable=true は
+       * 今回の最小実証で公開鍵を書き出すため。
+       *
+       * 秘密鍵はJavaScript変数に保持し、
+       * 画面には出さない。
+       */
+      const keyPair =
+        await window.crypto.subtle.generateKey(
+          {
+            name: "RSA-OAEP",
+            modulusLength: 2048,
+            publicExponent:
+              new Uint8Array([1, 0, 1]),
+            hash: "SHA-256"
+          },
+          true,
+          [
+            "encrypt",
+            "decrypt"
+          ]
+        );
+
+
+      librarianPublicKey =
+        keyPair.publicKey;
+
+      librarianPrivateKey =
+        keyPair.privateKey;
+
+
+      /*
+       * 公開鍵だけを書き出す
+       *
+       * spki形式
+       */
+      const exportedPublicKey =
+        await window.crypto.subtle.exportKey(
+          "spki",
+          librarianPublicKey
+        );
+
+
+      const publicKeyBase64 =
+        arrayBufferToBase64(
+          exportedPublicKey
+        );
+
+
+      const publicKeyPem =
+        base64ToPem(
+          publicKeyBase64,
+          "PUBLIC KEY"
+        );
+
+
+      publicKeyOutput.value =
+        publicKeyPem;
+
+
+      privateKeyStatus.textContent =
+        "生成済み（司書ブラウザ内のみ）";
+
+
+      generateResult.className =
+        "success";
+
+      generateResult.textContent =
+        "鍵生成：成功\n\n" +
+        "暗号方式：RSA-OAEP\n" +
+        "鍵長：2048 bit\n" +
+        "ハッシュ：SHA-256\n\n" +
+        "公開鍵：生成成功\n" +
+        "秘密鍵：生成成功\n\n" +
+        "秘密鍵の画面表示：なし\n" +
+        "秘密鍵の生徒側への送信：なし";
+
+
+      summary.innerHTML =
+        "<strong>Test9-H 第1段階：成功</strong><br><br>" +
+        "司書PCでRSA-OAEPの公開鍵・秘密鍵を生成できました。<br>" +
+        "公開鍵だけを生徒へ渡せる状態です。<br>" +
+        "秘密鍵は画面には表示していません。";
+
+
+      copyPublicKeyButton.disabled =
+        false;
+
+    }
+    catch (error) {
+
+      console.error(error);
+
+      librarianPublicKey = null;
+      librarianPrivateKey = null;
+
+      privateKeyStatus.textContent =
+        "生成失敗";
+
+      generateResult.className =
+        "error";
+
+      generateResult.textContent =
+        "鍵生成：失敗\n\n" +
+        String(
+          error &&
+          error.message
+            ? error.message
+            : error
+        );
+
+      summary.textContent =
+        "Test9-H 第1段階は失敗しました。";
+
+    }
+    finally {
+
+      generateButton.disabled =
+        false;
+    }
+  }
+
+
+  /*
+   * 公開鍵をクリップボードへコピー
+   */
+  async function copyPublicKey() {
+
+    const text =
+      publicKeyOutput.value;
+
+    if (!text) {
+
+      copyResult.className =
+        "error";
+
+      copyResult.textContent =
+        "コピーする公開鍵がありません。";
+
+      return;
+    }
+
+
+    try {
+
+      await navigator.clipboard.writeText(
+        text
+      );
+
+      copyResult.className =
+        "success";
+
+      copyResult.textContent =
+        "公開鍵をコピーしました。";
+
+    }
+    catch (error) {
+
+      console.error(error);
+
+      /*
+       * Clipboard APIが使えない環境では
+       * textareaを選択状態にする。
+       */
+      publicKeyOutput.focus();
+
+      publicKeyOutput.select();
+
+      copyResult.className =
+        "error";
+
+      copyResult.textContent =
+        "自動コピーできませんでした。\n" +
+        "公開鍵を選択しましたので、手動でコピーしてください。";
+    }
+  }
+
+
+  generateButton.addEventListener(
+    "click",
+    generateKeyPair
+  );
+
+
+  copyPublicKeyButton.addEventListener(
+    "click",
+    copyPublicKey
+  );
+
+</script>
+
+</body>
+</html>
