@@ -35,6 +35,11 @@
       margin-top: 32px;
     }
 
+    h3 {
+      font-size: 17px;
+      margin-top: 24px;
+    }
+
     .card {
       background: #fff;
       border: 1px solid #ddd;
@@ -112,6 +117,25 @@
     .label {
       font-weight: bold;
     }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .result-table th,
+    .result-table td {
+      border: 1px solid #ccc;
+      padding: 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .result-table th {
+      width: 30%;
+      background: #f5f5f5;
+    }
   </style>
 </head>
 
@@ -124,11 +148,15 @@
   </p>
 
   <div class="notice">
-    このページは暗号方式を確認するための独立した実証ページです。<br>
-    Test9-Gまでの受付データ、管理スプレッドシート、暗号鍵には触れません。
+    このページでは、司書PCで公開鍵・秘密鍵を生成し、
+    生徒側で作成した暗号化パッケージを
+    司書の秘密鍵で復号します。<br><br>
+
+    今回は受付・GAS・スプレッドシートには接続しません。
   </div>
 
 
+  <!-- ① 鍵生成 -->
   <div class="card">
 
     <h2>① 司書用の公開鍵・秘密鍵を生成</h2>
@@ -146,16 +174,13 @@
   </div>
 
 
+  <!-- ② 公開鍵 -->
   <div class="card">
 
     <h2>② 生徒へ渡す公開鍵</h2>
 
     <p>
-      この公開鍵は、生徒側へ渡して構わない情報です。
-    </p>
-
-    <p class="small">
-      今回の実証では、次の段階でこの文字列を生徒Androidへ渡します。
+      この公開鍵だけを生徒Androidへ渡します。
     </p>
 
     <textarea
@@ -164,7 +189,10 @@
       placeholder="①で鍵を生成すると、ここに公開鍵が表示されます。"
     ></textarea>
 
-    <button id="copyPublicKeyButton" disabled>
+    <button
+      id="copyPublicKeyButton"
+      disabled
+    >
       公開鍵をコピー
     </button>
 
@@ -173,13 +201,16 @@
   </div>
 
 
+  <!-- ③ 秘密鍵 -->
   <div class="card">
 
-    <h2>③ 秘密鍵の確認</h2>
+    <h2>③ 秘密鍵の状態</h2>
 
     <div class="status-row">
       <span class="label">秘密鍵：</span>
-      <span id="privateKeyStatus">まだ生成されていません</span>
+      <span id="privateKeyStatus">
+        まだ生成されていません
+      </span>
     </div>
 
     <div class="status-row">
@@ -193,13 +224,72 @@
     </div>
 
     <p class="small">
-      Test9-Hのこの段階では、秘密鍵はこのページを開いているブラウザのメモリ内だけに保持します。
-      ページを閉じると失われます。
+      Test9-Hでは秘密鍵をブラウザのメモリ内だけに保持します。
+      ページを閉じたり再読み込みすると失われます。
     </p>
 
   </div>
 
 
+  <!-- ④ 暗号化パッケージ -->
+  <div class="card">
+
+    <h2>④ 生徒の暗号化パッケージを貼り付け</h2>
+
+    <p>
+      Android側の「暗号化パッケージをコピー」で取得したJSONを、
+      ここへ全文貼り付けます。
+    </p>
+
+    <textarea
+      id="encryptedPackageInput"
+      placeholder='{
+  "test": "実証テスト9-H",
+  "dataEncryption": "AES-GCM-256",
+  "keyEncryption": "RSA-OAEP-2048-SHA-256",
+  "iv": "...",
+  "encryptedKey": "...",
+  "ciphertext": "..."
+}'
+    ></textarea>
+
+    <button
+      id="decryptButton"
+      disabled
+    >
+      司書の秘密鍵で復号
+    </button>
+
+    <div id="decryptResult"></div>
+
+  </div>
+
+
+  <!-- ⑤ 復号結果 -->
+  <div class="card">
+
+    <h2>⑤ 復号結果</h2>
+
+    <div id="decryptedDataResult">
+      まだ復号していません。
+    </div>
+
+  </div>
+
+
+  <!-- ⑥ 完全一致 -->
+  <div class="card">
+
+    <h2>⑥ 元データとの完全一致確認</h2>
+
+    <div id="comparisonResult">
+      まだ確認していません。
+    </div>
+
+  </div>
+
+
+  <!-- 実証状況 -->
   <div class="card">
 
     <h2>実証状況</h2>
@@ -216,25 +306,31 @@
   /*
    * Test9-H
    *
-   * 第1段階
+   * 司書側 完全版
    *
-   * ・司書PCでRSA-OAEP鍵ペアを生成
-   * ・公開鍵だけを表示
-   * ・秘密鍵は画面に表示しない
+   * 1. RSA-OAEP鍵ペア生成
+   * 2. 公開鍵だけを生徒へ渡す
+   * 3. 生徒側の暗号化パッケージを受け取る
+   * 4. RSA秘密鍵で一時AES鍵を復号
+   * 5. AES-GCMで選書データを復号
+   * 6. 元の実証データとの完全一致確認
    *
-   * この段階では
-   * ・受付への送信
-   * ・GAS
-   * ・スプレッドシート
-   * ・QRコード
-   * ・鍵の永続保存
-   *
-   * は行わない。
+   * 受付・GAS・スプレッドシートは使用しない。
    */
 
 
   let librarianPrivateKey = null;
   let librarianPublicKey = null;
+
+
+  const EXPECTED_DATA = {
+    test: "実証テスト9-H",
+    userName: "TEST9H_生徒A",
+    isbn: "9784912345763",
+    publisher: "TEST9H_秘密出版社",
+    title: "TEST9H_秘密の本",
+    price: 5111
+  };
 
 
   const generateButton =
@@ -255,22 +351,34 @@
   const privateKeyStatus =
     document.getElementById("privateKeyStatus");
 
+  const encryptedPackageInput =
+    document.getElementById("encryptedPackageInput");
+
+  const decryptButton =
+    document.getElementById("decryptButton");
+
+  const decryptResult =
+    document.getElementById("decryptResult");
+
+  const decryptedDataResult =
+    document.getElementById("decryptedDataResult");
+
+  const comparisonResult =
+    document.getElementById("comparisonResult");
+
   const summary =
     document.getElementById("summary");
 
 
-  /*
-   * ArrayBuffer / Uint8Array
-   * ↓
-   * Base64文字列
-   */
   function arrayBufferToBase64(buffer) {
 
-    const bytes = new Uint8Array(buffer);
+    const bytes =
+      new Uint8Array(buffer);
 
     let binary = "";
 
-    const chunkSize = 0x8000;
+    const chunkSize =
+      0x8000;
 
     for (
       let i = 0;
@@ -281,7 +389,10 @@
       const chunk =
         bytes.subarray(
           i,
-          Math.min(i + chunkSize, bytes.length)
+          Math.min(
+            i + chunkSize,
+            bytes.length
+          )
         );
 
       binary +=
@@ -295,9 +406,28 @@
   }
 
 
-  /*
-   * Base64を見やすいPEM形式にする
-   */
+  function base64ToArrayBuffer(base64) {
+
+    const binary =
+      atob(base64);
+
+    const bytes =
+      new Uint8Array(binary.length);
+
+    for (
+      let i = 0;
+      i < binary.length;
+      i++
+    ) {
+
+      bytes[i] =
+        binary.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+  }
+
+
   function base64ToPem(base64, label) {
 
     const lines =
@@ -312,40 +442,33 @@
 
 
   /*
-   * 公開鍵・秘密鍵生成
+   * ① RSA-OAEP鍵ペア生成
    */
   async function generateKeyPair() {
 
     generateButton.disabled = true;
-
     copyPublicKeyButton.disabled = true;
+    decryptButton.disabled = true;
 
     generateResult.className = "";
     generateResult.textContent =
       "公開鍵・秘密鍵を生成しています...";
 
     publicKeyOutput.value = "";
-
     copyResult.textContent = "";
 
     privateKeyStatus.textContent =
       "生成中";
 
-    summary.textContent =
-      "鍵ペアを生成しています。";
+    decryptedDataResult.textContent =
+      "まだ復号していません。";
+
+    comparisonResult.textContent =
+      "まだ確認していません。";
 
 
     try {
 
-      /*
-       * RSA-OAEP 2048bit
-       *
-       * extractable=true は
-       * 今回の最小実証で公開鍵を書き出すため。
-       *
-       * 秘密鍵はJavaScript変数に保持し、
-       * 画面には出さない。
-       */
       const keyPair =
         await window.crypto.subtle.generateKey(
           {
@@ -370,11 +493,6 @@
         keyPair.privateKey;
 
 
-      /*
-       * 公開鍵だけを書き出す
-       *
-       * spki形式
-       */
       const exportedPublicKey =
         await window.crypto.subtle.exportKey(
           "spki",
@@ -418,13 +536,15 @@
 
 
       summary.innerHTML =
-        "<strong>Test9-H 第1段階：成功</strong><br><br>" +
-        "司書PCでRSA-OAEPの公開鍵・秘密鍵を生成できました。<br>" +
-        "公開鍵だけを生徒へ渡せる状態です。<br>" +
-        "秘密鍵は画面には表示していません。";
+        "<strong>Test9-H 鍵生成：成功</strong><br><br>" +
+        "新しい公開鍵・秘密鍵を生成しました。<br>" +
+        "この新しい公開鍵をAndroid側へ渡してください。";
 
 
       copyPublicKeyButton.disabled =
+        false;
+
+      decryptButton.disabled =
         false;
 
     }
@@ -438,6 +558,7 @@
       privateKeyStatus.textContent =
         "生成失敗";
 
+
       generateResult.className =
         "error";
 
@@ -450,8 +571,9 @@
             : error
         );
 
+
       summary.textContent =
-        "Test9-H 第1段階は失敗しました。";
+        "Test9-H 鍵生成に失敗しました。";
 
     }
     finally {
@@ -463,12 +585,13 @@
 
 
   /*
-   * 公開鍵をクリップボードへコピー
+   * 公開鍵コピー
    */
   async function copyPublicKey() {
 
     const text =
       publicKeyOutput.value;
+
 
     if (!text) {
 
@@ -488,6 +611,7 @@
         text
       );
 
+
       copyResult.className =
         "success";
 
@@ -499,13 +623,9 @@
 
       console.error(error);
 
-      /*
-       * Clipboard APIが使えない環境では
-       * textareaを選択状態にする。
-       */
       publicKeyOutput.focus();
-
       publicKeyOutput.select();
+
 
       copyResult.className =
         "error";
@@ -514,6 +634,380 @@
         "自動コピーできませんでした。\n" +
         "公開鍵を選択しましたので、手動でコピーしてください。";
     }
+  }
+
+
+  /*
+   * 暗号化パッケージを復号
+   */
+  async function decryptPackage() {
+
+    decryptButton.disabled = true;
+
+    decryptResult.className = "";
+    decryptResult.textContent =
+      "復号しています...";
+
+    decryptedDataResult.textContent =
+      "復号中...";
+
+    comparisonResult.textContent =
+      "確認中...";
+
+
+    try {
+
+      if (!librarianPrivateKey) {
+
+        throw new Error(
+          "司書の秘密鍵がありません。先に①で鍵を生成してください。"
+        );
+      }
+
+
+      const input =
+        encryptedPackageInput.value.trim();
+
+
+      if (!input) {
+
+        throw new Error(
+          "暗号化パッケージが入力されていません。"
+        );
+      }
+
+
+      let encryptedPackage;
+
+
+      try {
+
+        encryptedPackage =
+          JSON.parse(input);
+
+      }
+      catch (error) {
+
+        throw new Error(
+          "暗号化パッケージが正しいJSON形式ではありません。"
+        );
+      }
+
+
+      /*
+       * パッケージ形式確認
+       */
+      if (
+        encryptedPackage.test !==
+          "実証テスト9-H" ||
+        encryptedPackage.dataEncryption !==
+          "AES-GCM-256" ||
+        encryptedPackage.keyEncryption !==
+          "RSA-OAEP-2048-SHA-256" ||
+        !encryptedPackage.iv ||
+        !encryptedPackage.encryptedKey ||
+        !encryptedPackage.ciphertext
+      ) {
+
+        throw new Error(
+          "Test9-Hの暗号化パッケージ形式と一致しません。"
+        );
+      }
+
+
+      const iv =
+        new Uint8Array(
+          base64ToArrayBuffer(
+            encryptedPackage.iv
+          )
+        );
+
+
+      const encryptedAesKey =
+        base64ToArrayBuffer(
+          encryptedPackage.encryptedKey
+        );
+
+
+      const ciphertext =
+        base64ToArrayBuffer(
+          encryptedPackage.ciphertext
+        );
+
+
+      /*
+       * RSA秘密鍵で
+       * 一時AES鍵を復号
+       */
+      const rawAesKey =
+        await window.crypto.subtle.decrypt(
+          {
+            name: "RSA-OAEP"
+          },
+          librarianPrivateKey,
+          encryptedAesKey
+        );
+
+
+      /*
+       * 復号したAES鍵を
+       * AES-GCM復号専用として読み込む
+       */
+      const aesKey =
+        await window.crypto.subtle.importKey(
+          "raw",
+          rawAesKey,
+          {
+            name: "AES-GCM",
+            length: 256
+          },
+          false,
+          [
+            "decrypt"
+          ]
+        );
+
+
+      /*
+       * AES-GCMで
+       * 選書データを復号
+       */
+      const decryptedBuffer =
+        await window.crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv: iv
+          },
+          aesKey,
+          ciphertext
+        );
+
+
+      const decoder =
+        new TextDecoder();
+
+
+      const decryptedJson =
+        decoder.decode(
+          decryptedBuffer
+        );
+
+
+      let decryptedData;
+
+
+      try {
+
+        decryptedData =
+          JSON.parse(decryptedJson);
+
+      }
+      catch (error) {
+
+        throw new Error(
+          "復号後のデータをJSONとして読み取れませんでした。"
+        );
+      }
+
+
+      /*
+       * 復号内容を表示
+       */
+      decryptedDataResult.innerHTML =
+        '<div class="success">' +
+        '<strong>選書データ復号：成功</strong>' +
+        '</div>' +
+
+        '<table class="result-table">' +
+
+        '<tr>' +
+        '<th>登録者名</th>' +
+        '<td>' +
+        escapeHtml(decryptedData.userName) +
+        '</td>' +
+        '</tr>' +
+
+        '<tr>' +
+        '<th>ISBN</th>' +
+        '<td>' +
+        escapeHtml(decryptedData.isbn) +
+        '</td>' +
+        '</tr>' +
+
+        '<tr>' +
+        '<th>出版社</th>' +
+        '<td>' +
+        escapeHtml(decryptedData.publisher) +
+        '</td>' +
+        '</tr>' +
+
+        '<tr>' +
+        '<th>書名</th>' +
+        '<td>' +
+        escapeHtml(decryptedData.title) +
+        '</td>' +
+        '</tr>' +
+
+        '<tr>' +
+        '<th>本体価格</th>' +
+        '<td>' +
+        escapeHtml(
+          String(decryptedData.price)
+        ) +
+        '</td>' +
+        '</tr>' +
+
+        '</table>';
+
+
+      /*
+       * 完全一致確認
+       */
+      const fields = [
+        "test",
+        "userName",
+        "isbn",
+        "publisher",
+        "title",
+        "price"
+      ];
+
+
+      const mismatches = [];
+
+
+      for (const field of fields) {
+
+        if (
+          decryptedData[field] !==
+          EXPECTED_DATA[field]
+        ) {
+
+          mismatches.push(field);
+        }
+      }
+
+
+      if (mismatches.length > 0) {
+
+        comparisonResult.className =
+          "error";
+
+        comparisonResult.textContent =
+          "完全一致確認：失敗\n\n" +
+          "一致しなかった項目：\n" +
+          mismatches.join("\n");
+
+
+        throw new Error(
+          "復号結果がTest9-Hの元データと完全一致しませんでした。"
+        );
+      }
+
+
+      comparisonResult.className =
+        "success";
+
+      comparisonResult.textContent =
+        "完全一致確認：成功\n\n" +
+        "登録者名：完全一致\n" +
+        "ISBN：完全一致\n" +
+        "出版社：完全一致\n" +
+        "書名：完全一致\n" +
+        "本体価格：完全一致";
+
+
+      decryptResult.className =
+        "success";
+
+      decryptResult.textContent =
+        "Test9-H 司書側復号：成功\n\n" +
+        "RSA-OAEP秘密鍵による一時AES鍵の復号：成功\n" +
+        "AES-GCMによる選書データの復号：成功\n\n" +
+        "司書秘密鍵の生徒側への送信：なし\n" +
+        "司書秘密鍵の受付への送信：なし";
+
+
+      summary.innerHTML =
+        "<strong>Test9-H：成功</strong><br><br>" +
+
+        "司書PCで公開鍵・秘密鍵を生成：成功<br>" +
+
+        "生徒側へ渡したもの：公開鍵のみ<br>" +
+
+        "生徒側でAES-GCM暗号化：成功<br>" +
+
+        "一時AES鍵をRSA-OAEP公開鍵で暗号化：成功<br>" +
+
+        "司書秘密鍵で一時AES鍵を復号：成功<br>" +
+
+        "AES-GCMで選書内容を復号：成功<br>" +
+
+        "元の選書内容との完全一致：成功<br><br>" +
+
+        "公開鍵だけを持つ生徒側で暗号化し、" +
+        "司書側の秘密鍵で復号する最小経路を確認できました。";
+
+    }
+    catch (error) {
+
+      console.error(error);
+
+
+      decryptResult.className =
+        "error";
+
+      decryptResult.textContent =
+        "復号：失敗\n\n" +
+        String(
+          error &&
+          error.message
+            ? error.message
+            : error
+        );
+
+
+      if (
+        comparisonResult.textContent ===
+        "確認中..."
+      ) {
+
+        comparisonResult.className =
+          "error";
+
+        comparisonResult.textContent =
+          "完全一致確認：未完了";
+      }
+
+
+      summary.textContent =
+        "Test9-H 司書側復号は完了していません。";
+
+    }
+    finally {
+
+      decryptButton.disabled =
+        false;
+    }
+  }
+
+
+  /*
+   * HTML表示用エスケープ
+   */
+  function escapeHtml(value) {
+
+    return String(
+      value === undefined ||
+      value === null
+        ? ""
+        : value
+    )
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
 
@@ -526,6 +1020,12 @@
   copyPublicKeyButton.addEventListener(
     "click",
     copyPublicKey
+  );
+
+
+  decryptButton.addEventListener(
+    "click",
+    decryptPackage
   );
 
 </script>
