@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Test9-H 生徒側 公開鍵方式最小実証</title>
+
+  <style>
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        "Meiryo",
+        sans-serif;
+
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.7;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 25px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 28px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 18px;
+      margin: 18px 0;
+    }
+
+    .notice {
+      background: #fff8dc;
+      border: 1px solid #e0c96d;
+      border-radius: 8px;
+      padding: 14px;
+      margin: 16px 0;
+    }
+
+    .success {
+      background: #eef9ee;
+      border: 1px solid #8bc48b;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+      white-space: pre-wrap;
+    }
+
+    .error {
+      background: #fff0f0;
+      border: 1px solid #d88;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+      white-space: pre-wrap;
+    }
+
+    button {
+      width: 100%;
+      font-size: 17px;
+      padding: 13px 16px;
+      margin: 8px 0;
+      border: 1px solid #777;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    textarea,
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      font-size: 16px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+    }
+
+    textarea {
+      min-height: 180px;
+      font-family: monospace;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .small {
+      font-size: 14px;
+      color: #555;
+    }
+
+    .status-row {
+      margin: 7px 0;
+    }
+
+    .label {
+      font-weight: bold;
+    }
+
+    .output {
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>スマホde選書システム</h1>
+
+  <p>
+    実証テスト9-H：生徒側 公開鍵＋AES-GCM 最小実証
+  </p>
+
+  <div class="notice">
+    このページでは、司書から受け取った「公開鍵」だけを使って
+    選書データを暗号化します。<br><br>
+
+    司書の秘密鍵は、生徒側には渡しません。<br>
+    今回は受付への送信も行いません。
+  </div>
+
+
+  <div class="card">
+
+    <h2>① 司書の公開鍵を読み込む</h2>
+
+    <p class="small">
+      司書PCのTest9-H画面に表示されている
+      PUBLIC KEYを全文貼り付けます。
+    </p>
+
+    <textarea
+      id="publicKeyInput"
+      placeholder="-----BEGIN PUBLIC KEY-----
+...
+-----END PUBLIC KEY-----"
+    ></textarea>
+
+    <button id="loadPublicKeyButton">
+      公開鍵を読み込む
+    </button>
+
+    <div id="loadPublicKeyResult"></div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>② 実証用の選書データ</h2>
+
+    <label for="userName">登録者名</label>
+    <input
+      id="userName"
+      type="text"
+      value="TEST9H_生徒A"
+    >
+
+    <label for="isbn">ISBN</label>
+    <input
+      id="isbn"
+      type="text"
+      value="9784912345763"
+    >
+
+    <label for="publisher">出版社</label>
+    <input
+      id="publisher"
+      type="text"
+      value="TEST9H_秘密出版社"
+    >
+
+    <label for="title">書名</label>
+    <input
+      id="title"
+      type="text"
+      value="TEST9H_秘密の本"
+    >
+
+    <label for="price">本体価格</label>
+    <input
+      id="price"
+      type="number"
+      value="5111"
+    >
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>③ 公開鍵＋AES-GCMで暗号化</h2>
+
+    <button
+      id="encryptButton"
+      disabled
+    >
+      選書データを暗号化
+    </button>
+
+    <div id="encryptResult"></div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>④ 暗号化結果</h2>
+
+    <div class="status-row">
+      <span class="label">選書データ：</span>
+      <span id="dataEncryptionStatus">
+        まだ暗号化していません
+      </span>
+    </div>
+
+    <div class="status-row">
+      <span class="label">一時AES鍵：</span>
+      <span id="aesKeyStatus">
+        まだ生成していません
+      </span>
+    </div>
+
+    <div class="status-row">
+      <span class="label">一時AES鍵の保護：</span>
+      <span id="wrappedKeyStatus">
+        未実行
+      </span>
+    </div>
+
+    <div class="status-row">
+      <span class="label">司書秘密鍵：</span>
+      <span>
+        生徒側にはありません
+      </span>
+    </div>
+
+    <h3>受付へ送ることができる暗号化パッケージ</h3>
+
+    <textarea
+      id="encryptedPackageOutput"
+      readonly
+      placeholder="暗号化後、ここに暗号化パッケージが表示されます。"
+    ></textarea>
+
+    <button
+      id="copyPackageButton"
+      disabled
+    >
+      暗号化パッケージをコピー
+    </button>
+
+    <div id="copyResult"></div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>⑤ 平文混入チェック</h2>
+
+    <div id="plaintextCheck">
+      まだ確認していません。
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>実証状況</h2>
+
+    <div id="summary">
+      まだ実証を開始していません。
+    </div>
+
+  </div>
+
+
+<script>
+
+  /*
+   * Test9-H
+   * 生徒側 最小実証
+   *
+   * 1. 司書のRSA公開鍵だけを読み込む
+   * 2. 登録ごとにAES-256-GCM鍵を生成
+   * 3. 選書データをAES-GCMで暗号化
+   * 4. AES鍵をRSA-OAEP公開鍵で暗号化
+   * 5. 暗号化パッケージを作成
+   *
+   * 受付への送信はまだ行わない。
+   */
+
+
+  let librarianPublicKey = null;
+
+
+  const publicKeyInput =
+    document.getElementById("publicKeyInput");
+
+  const loadPublicKeyButton =
+    document.getElementById("loadPublicKeyButton");
+
+  const loadPublicKeyResult =
+    document.getElementById("loadPublicKeyResult");
+
+  const encryptButton =
+    document.getElementById("encryptButton");
+
+  const encryptResult =
+    document.getElementById("encryptResult");
+
+  const encryptedPackageOutput =
+    document.getElementById("encryptedPackageOutput");
+
+  const copyPackageButton =
+    document.getElementById("copyPackageButton");
+
+  const copyResult =
+    document.getElementById("copyResult");
+
+  const dataEncryptionStatus =
+    document.getElementById("dataEncryptionStatus");
+
+  const aesKeyStatus =
+    document.getElementById("aesKeyStatus");
+
+  const wrappedKeyStatus =
+    document.getElementById("wrappedKeyStatus");
+
+  const plaintextCheck =
+    document.getElementById("plaintextCheck");
+
+  const summary =
+    document.getElementById("summary");
+
+
+  function arrayBufferToBase64(buffer) {
+
+    const bytes =
+      new Uint8Array(buffer);
+
+    let binary = "";
+
+    const chunkSize =
+      0x8000;
+
+    for (
+      let i = 0;
+      i < bytes.length;
+      i += chunkSize
+    ) {
+
+      const chunk =
+        bytes.subarray(
+          i,
+          Math.min(
+            i + chunkSize,
+            bytes.length
+          )
+        );
+
+      binary +=
+        String.fromCharCode.apply(
+          null,
+          chunk
+        );
+    }
+
+    return btoa(binary);
+  }
+
+
+  function base64ToArrayBuffer(base64) {
+
+    const binary =
+      atob(base64);
+
+    const bytes =
+      new Uint8Array(binary.length);
+
+    for (
+      let i = 0;
+      i < binary.length;
+      i++
+    ) {
+      bytes[i] =
+        binary.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+  }
+
+
+  function pemToBase64(pem) {
+
+    return pem
+      .replace(
+        /-----BEGIN PUBLIC KEY-----/g,
+        ""
+      )
+      .replace(
+        /-----END PUBLIC KEY-----/g,
+        ""
+      )
+      .replace(
+        /\s/g,
+        ""
+      );
+  }
+
+
+  async function loadPublicKey() {
+
+    loadPublicKeyResult.className = "";
+
+    loadPublicKeyResult.textContent =
+      "公開鍵を確認しています...";
+
+    encryptButton.disabled = true;
+
+    librarianPublicKey = null;
+
+
+    try {
+
+      const pem =
+        publicKeyInput.value.trim();
+
+
+      if (!pem) {
+        throw new Error(
+          "公開鍵が入力されていません。"
+        );
+      }
+
+
+      if (
+        !pem.includes(
+          "-----BEGIN PUBLIC KEY-----"
+        ) ||
+        !pem.includes(
+          "-----END PUBLIC KEY-----"
+        )
+      ) {
+
+        throw new Error(
+          "PUBLIC KEY形式を確認してください。"
+        );
+      }
+
+
+      const base64 =
+        pemToBase64(pem);
+
+
+      const keyData =
+        base64ToArrayBuffer(base64);
+
+
+      librarianPublicKey =
+        await window.crypto.subtle.importKey(
+          "spki",
+          keyData,
+          {
+            name: "RSA-OAEP",
+            hash: "SHA-256"
+          },
+          false,
+          [
+            "encrypt"
+          ]
+        );
+
+
+      loadPublicKeyResult.className =
+        "success";
+
+      loadPublicKeyResult.textContent =
+        "公開鍵読込：成功\n\n" +
+        "暗号方式：RSA-OAEP\n" +
+        "ハッシュ：SHA-256\n" +
+        "用途：暗号化のみ\n\n" +
+        "司書秘密鍵の読込：なし";
+
+
+      encryptButton.disabled = false;
+
+
+      summary.innerHTML =
+        "<strong>公開鍵読込：成功</strong><br><br>" +
+        "生徒側には司書の公開鍵だけが読み込まれています。";
+
+    }
+    catch (error) {
+
+      console.error(error);
+
+      librarianPublicKey = null;
+
+      loadPublicKeyResult.className =
+        "error";
+
+      loadPublicKeyResult.textContent =
+        "公開鍵読込：失敗\n\n" +
+        String(
+          error &&
+          error.message
+            ? error.message
+            : error
+        );
+
+      summary.textContent =
+        "公開鍵を読み込めませんでした。";
+    }
+  }
+
+
+  async function encryptSelectionData() {
+
+    encryptButton.disabled = true;
+
+    copyPackageButton.disabled = true;
+
+    encryptResult.className = "";
+
+    encryptResult.textContent =
+      "暗号化しています...";
+
+    encryptedPackageOutput.value = "";
+
+    plaintextCheck.textContent =
+      "確認中...";
+
+
+    try {
+
+      if (!librarianPublicKey) {
+
+        throw new Error(
+          "司書の公開鍵が読み込まれていません。"
+        );
+      }
+
+
+      const plainData = {
+
+        test:
+          "実証テスト9-H",
+
+        userName:
+          document
+            .getElementById("userName")
+            .value,
+
+        isbn:
+          document
+            .getElementById("isbn")
+            .value,
+
+        publisher:
+          document
+            .getElementById("publisher")
+            .value,
+
+        title:
+          document
+            .getElementById("title")
+            .value,
+
+        price:
+          Number(
+            document
+              .getElementById("price")
+              .value
+          )
+      };
+
+
+      const plainJson =
+        JSON.stringify(plainData);
+
+
+      /*
+       * 登録ごとの一時AES鍵
+       */
+      const aesKey =
+        await window.crypto.subtle.generateKey(
+          {
+            name: "AES-GCM",
+            length: 256
+          },
+          true,
+          [
+            "encrypt"
+          ]
+        );
+
+
+      /*
+       * AES-GCM用ランダムIV
+       * 96bit = 12byte
+       */
+      const iv =
+        window.crypto.getRandomValues(
+          new Uint8Array(12)
+        );
+
+
+      /*
+       * 選書データをAES-GCMで暗号化
+       */
+      const encoder =
+        new TextEncoder();
+
+
+      const ciphertext =
+        await window.crypto.subtle.encrypt(
+          {
+            name: "AES-GCM",
+            iv: iv
+          },
+          aesKey,
+          encoder.encode(plainJson)
+        );
+
+
+      /*
+       * 一時AES鍵を書き出す
+       *
+       * 直後にRSA公開鍵で暗号化する。
+       * 平文AES鍵はパッケージには入れない。
+       */
+      const rawAesKey =
+        await window.crypto.subtle.exportKey(
+          "raw",
+          aesKey
+        );
+
+
+      /*
+       * 一時AES鍵を
+       * 司書のRSA公開鍵で暗号化
+       */
+      const encryptedAesKey =
+        await window.crypto.subtle.encrypt(
+          {
+            name: "RSA-OAEP"
+          },
+          librarianPublicKey,
+          rawAesKey
+        );
+
+
+      /*
+       * 受付へ送ることを想定した
+       * 暗号化パッケージ
+       */
+      const encryptedPackage = {
+
+        test:
+          "実証テスト9-H",
+
+        dataEncryption:
+          "AES-GCM-256",
+
+        keyEncryption:
+          "RSA-OAEP-2048-SHA-256",
+
+        iv:
+          arrayBufferToBase64(iv.buffer),
+
+        encryptedKey:
+          arrayBufferToBase64(
+            encryptedAesKey
+          ),
+
+        ciphertext:
+          arrayBufferToBase64(
+            ciphertext
+          )
+      };
+
+
+      const packageJson =
+        JSON.stringify(
+          encryptedPackage,
+          null,
+          2
+        );
+
+
+      encryptedPackageOutput.value =
+        packageJson;
+
+
+      dataEncryptionStatus.textContent =
+        "AES-GCM-256 暗号化成功";
+
+
+      aesKeyStatus.textContent =
+        "登録専用AES-256鍵を生成済み";
+
+
+      wrappedKeyStatus.textContent =
+        "RSA-OAEP公開鍵による暗号化成功";
+
+
+      /*
+       * 平文混入確認
+       */
+      const secretsToCheck = [
+        plainData.userName,
+        plainData.isbn,
+        plainData.publisher,
+        plainData.title,
+        String(plainData.price)
+      ];
+
+
+      const foundPlaintext =
+        secretsToCheck.filter(
+          value =>
+            value &&
+            packageJson.includes(value)
+        );
+
+
+      if (foundPlaintext.length > 0) {
+
+        plaintextCheck.className =
+          "error";
+
+        plaintextCheck.textContent =
+          "平文混入：検出\n\n" +
+          foundPlaintext.join("\n");
+
+        throw new Error(
+          "暗号化パッケージ内に選書内容の平文が検出されました。"
+        );
+      }
+
+
+      plaintextCheck.className =
+        "success";
+
+      plaintextCheck.textContent =
+        "平文混入チェック：成功\n\n" +
+        "登録者名：検出なし\n" +
+        "ISBN：検出なし\n" +
+        "出版社：検出なし\n" +
+        "書名：検出なし\n" +
+        "本体価格：検出なし\n\n" +
+        "司書秘密鍵：パッケージへの添付なし\n" +
+        "平文AES鍵：パッケージへの添付なし";
+
+
+      encryptResult.className =
+        "success";
+
+      encryptResult.textContent =
+        "Test9-H 生徒側暗号化：成功\n\n" +
+        "選書データ：AES-GCM-256で暗号化成功\n" +
+        "一時AES鍵：登録ごとに生成\n" +
+        "一時AES鍵：RSA-OAEPで暗号化成功\n\n" +
+        "司書秘密鍵の使用：なし\n" +
+        "司書秘密鍵の保持：なし\n" +
+        "受付への送信：まだ実行していません";
+
+
+      summary.innerHTML =
+        "<strong>Test9-H 生徒側：成功</strong><br><br>" +
+        "司書の公開鍵だけを使って、" +
+        "選書データと一時AES鍵を暗号化できました。<br><br>" +
+        "次は、この暗号化パッケージを司書PCへ渡し、" +
+        "司書の秘密鍵でのみ復号できることを確認します。";
+
+
+      copyPackageButton.disabled =
+        false;
+
+    }
+    catch (error) {
+
+      console.error(error);
+
+      encryptResult.className =
+        "error";
+
+      encryptResult.textContent =
+        "暗号化：失敗\n\n" +
+        String(
+          error &&
+          error.message
+            ? error.message
+            : error
+        );
+
+      summary.textContent =
+        "Test9-H 生徒側暗号化は失敗しました。";
+
+    }
+    finally {
+
+      encryptButton.disabled =
+        false;
+    }
+  }
+
+
+  async function copyPackage() {
+
+    const text =
+      encryptedPackageOutput.value;
+
+
+    if (!text) {
+
+      copyResult.className =
+        "error";
+
+      copyResult.textContent =
+        "コピーする暗号化パッケージがありません。";
+
+      return;
+    }
+
+
+    try {
+
+      await navigator.clipboard.writeText(
+        text
+      );
+
+
+      copyResult.className =
+        "success";
+
+      copyResult.textContent =
+        "暗号化パッケージをコピーしました。";
+
+    }
+    catch (error) {
+
+      console.error(error);
+
+      encryptedPackageOutput.focus();
+
+      encryptedPackageOutput.select();
+
+
+      copyResult.className =
+        "error";
+
+      copyResult.textContent =
+        "自動コピーできませんでした。\n" +
+        "暗号化パッケージを選択しましたので、" +
+        "手動でコピーしてください。";
+    }
+  }
+
+
+  loadPublicKeyButton.addEventListener(
+    "click",
+    loadPublicKey
+  );
+
+
+  encryptButton.addEventListener(
+    "click",
+    encryptSelectionData
+  );
+
+
+  copyPackageButton.addEventListener(
+    "click",
+    copyPackage
+  );
+
+</script>
+
+</body>
+</html>
