@@ -1,598 +1,543 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>Test9-D 生徒側</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>実証テスト9-G 生徒側</title>
   <style>
-
     body {
-      font-family: sans-serif;
-      max-width: 750px;
-      margin: 30px auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
       padding: 20px;
-      line-height: 1.7;
+      background: #f5f6f8;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
     }
 
     h1 {
       font-size: 24px;
+      margin-bottom: 4px;
     }
 
     h2 {
-      font-size: 20px;
+      font-size: 19px;
       margin-top: 0;
     }
 
-    .box {
-      margin-top: 25px;
-      padding: 20px;
-      border: 1px solid #ccc;
+    .lead {
+      margin-top: 0;
+      color: #444;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 18px;
+      margin: 16px 0;
+    }
+
+    .note {
+      background: #fff8dc;
+      border: 1px solid #e5d58a;
       border-radius: 10px;
-    }
-
-    .info {
-      margin-top: 15px;
-      padding: 15px;
-      background: #f5f5f5;
-      border-radius: 8px;
-    }
-
-    .warning {
-      margin-top: 15px;
-      padding: 15px;
-      border: 2px solid #999;
-      border-radius: 8px;
+      padding: 12px;
+      margin: 14px 0;
     }
 
     label {
       display: block;
-      margin-top: 15px;
-      font-weight: bold;
+      font-weight: 600;
+      margin-bottom: 6px;
     }
 
     input {
-      display: block;
-      width: 100%;
       box-sizing: border-box;
-      margin-top: 8px;
-      padding: 12px;
+      width: 100%;
       font-size: 16px;
+      padding: 12px;
+      border: 1px solid #bbb;
+      border-radius: 8px;
     }
 
     button {
-      display: block;
       width: 100%;
-      box-sizing: border-box;
-      margin-top: 20px;
-      padding: 16px;
-      font-size: 18px;
+      min-height: 52px;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 17px;
+      font-weight: 600;
+      border: 1px solid #999;
+      border-radius: 9px;
+      background: #fff;
       cursor: pointer;
     }
 
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: default;
     }
 
-    .message {
-      margin-top: 20px;
-      font-weight: bold;
+    .result {
       white-space: pre-wrap;
-    }
-
-    .dataBox {
-      margin-top: 18px;
-      padding: 15px;
-      background: #f5f5f5;
+      word-break: break-word;
+      background: #f7f7f7;
       border-radius: 8px;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      word-break: break-all;
-      font-size: 13px;
+      padding: 12px;
+      margin-top: 12px;
+      min-height: 24px;
     }
 
+    .small {
+      font-size: 14px;
+      color: #555;
+    }
+
+    .ok {
+      font-weight: 700;
+    }
+
+    code {
+      word-break: break-all;
+    }
   </style>
 </head>
 
-
 <body>
+<div class="container">
 
   <h1>スマホde選書システム</h1>
+  <p class="lead">実証テスト9-G 生徒側</p>
 
-
-  <div class="box">
-
-    <h2>Test9-D 生徒側</h2>
-
-    <div class="info">
-
-      司書PCを閉じた状態を想定して、
-      生徒A・B・Cの3件を暗号化して受付へ送信します。
-
-      <br><br>
-
-      3件とも同じ「選書会用暗号鍵」を使用します。
-
-      <br><br>
-
-      ただし、それぞれの登録で
-      新しいIVを生成します。
-
-    </div>
-
-
-    <div class="warning">
-
-      <strong>実証テスト専用です。</strong>
-
-      <br><br>
-
-      今回はTest9-Bで生成した
-      Base64形式の暗号鍵を手入力します。
-
-      <br><br>
-
-      暗号鍵はブラウザ内で暗号化に使用するだけで、
-      受付へ送信しません。
-
-    </div>
-
+  <div class="note">
+    Test9-G専用の新しい3件を、AES-GCMで暗号化して受付へ送信します。<br>
+    受付には暗号鍵・氏名・ISBN・出版社・書名・価格の平文を送りません。
   </div>
 
+  <div class="card">
+    <h2>① 選書会用暗号鍵を読み込む</h2>
 
-  <div class="box">
+    <p class="small">
+      Test9-D～Fで使用したものと同じ選書会用AES-GCM鍵を使います。
+      この実証ページでは、鍵をブラウザのWeb Cryptoへ読み込んだ後、
+      入力欄の文字列を消します。
+    </p>
 
-    <h2>① 選書会用暗号鍵</h2>
-
-    <label for="keyInput">
-      Test9-Bで生成したBase64暗号鍵
-    </label>
-
+    <label for="keyInput">Base64暗号鍵</label>
     <input
       id="keyInput"
       type="password"
       autocomplete="off"
+      autocapitalize="off"
       spellcheck="false"
-      placeholder="Base64暗号鍵を入力"
+      placeholder="Test9-Dで使用したBase64鍵を入力"
     >
 
-    <button id="prepareButton">
-      暗号鍵を確認する
+    <button id="loadKeyButton" onclick="loadKey()">
+      暗号鍵を読み込む
     </button>
 
-    <div
-      id="keyMessage"
-      class="message"
-    >
-      まだ暗号鍵を確認していません。
-    </div>
-
+    <div id="keyResult" class="result"></div>
   </div>
 
+  <div class="card">
+    <h2>② Test9-G専用3件を送信</h2>
 
-  <div class="box">
+    <p class="small">
+      各ボタンは1回だけ押します。<br>
+      A・B・Cで毎回ランダムな12byte IVを生成します。
+    </p>
 
-    <h2>② 3件を暗号化して送信</h2>
-
-    <div class="info">
-
-      送信するテストデータ：
-
-      <br><br>
-
-      A：TEST9D_生徒A<br>
-      B：TEST9D_生徒B<br>
-      C：TEST9D_生徒C
-
-    </div>
-
-    <button
-      id="sendButton"
-      disabled
-    >
-      A・B・Cの3件を暗号化して送信する
+    <button id="sendAButton" onclick="sendStudent('A')" disabled>
+      生徒Aを暗号化して送信
     </button>
 
-    <div
-      id="sendMessage"
-      class="message"
-    >
-      暗号鍵の確認が完了するまで送信できません。
-    </div>
+    <button id="sendBButton" onclick="sendStudent('B')" disabled>
+      生徒Bを暗号化して送信
+    </button>
 
-    <div
-      id="sendData"
-      class="dataBox"
-    >
-      未送信
-    </div>
+    <button id="sendCButton" onclick="sendStudent('C')" disabled>
+      生徒Cを暗号化して送信
+    </button>
 
+    <div id="sendResult" class="result"></div>
   </div>
 
-
-  <div class="box">
-
-    <h2>③ 受付を確認</h2>
-
-    <div
-      id="finalResult"
-      class="message"
-    >
-      未実行
+  <div class="card">
+    <h2>Test9-G送信データ</h2>
+    <div class="small">
+      A：TEST9G_生徒A / 9784912345732 / TEST9G_秘密出版社A / TEST9G_秘密の本A / 4111円<br>
+      B：TEST9G_生徒B / 9784912345749 / TEST9G_秘密出版社B / TEST9G_秘密の本B / 4222円<br>
+      C：TEST9G_生徒C / 9784912345756 / TEST9G_秘密出版社C / TEST9G_秘密の本C / 4333円
     </div>
-
-    <div
-      id="relayData"
-      class="dataBox"
-    >
-      未実行
-    </div>
-
   </div>
 
+</div>
 
-  <script>
+<script>
+  const RELAY_URL =
+    "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
 
-    /*
-     * --------------------------------
-     * 受付URL
-     * --------------------------------
-     */
-    const RECEIVER_URL =
-      "https://script.google.com/macros/s/AKfycbzwrpenfMoWg_39jjqn102JhJQph90vjldiwVNs9fyrX_8Y6EswcN4jI_ZlotR2Qc3i6Q/exec";
+  const SELECTION_KEY =
+    "TEST8A-001";
 
+  const TEST_NAME =
+    "実証テスト9-G";
 
-    /*
-     * --------------------------------
-     * 実証テスト用選書会キー
-     * --------------------------------
-     */
-    const SELECTION_KEY =
-      "TEST8A-001";
+  const ENCRYPTION_NAME =
+    "AES-GCM-256";
 
-
-    /*
-     * --------------------------------
-     * Test9-D識別名
-     * --------------------------------
-     */
-    const TEST_NAME =
-      "実証テスト9-D";
-
-
-    /*
-     * --------------------------------
-     * 生徒A・B・Cのテストデータ
-     *
-     * 復号後に取り違えや欠落を
-     * 確認しやすいよう、
-     * すべて異なる値にする。
-     * --------------------------------
-     */
-    const TEST_DATA_LIST = [
-
-      {
-        testStudent:
-          "A",
-
-        userName:
-          "TEST9D_生徒A",
-
-        isbn:
-          "9784912345708",
-
-        publisher:
-          "TEST9D_秘密出版社A",
-
-        title:
-          "TEST9D_秘密の本A",
-
-        price:
-          1111
-      },
-
-      {
-        testStudent:
-          "B",
-
-        userName:
-          "TEST9D_生徒B",
-
-        isbn:
-          "9784912345715",
-
-        publisher:
-          "TEST9D_秘密出版社B",
-
-        title:
-          "TEST9D_秘密の本B",
-
-        price:
-          2222
-      },
-
-      {
-        testStudent:
-          "C",
-
-        userName:
-          "TEST9D_生徒C",
-
-        isbn:
-          "9784912345722",
-
-        publisher:
-          "TEST9D_秘密出版社C",
-
-        title:
-          "TEST9D_秘密の本C",
-
-        price:
-          3333
-      }
-
-    ];
-
-
-    const keyInput =
-      document.getElementById(
-        "keyInput"
-      );
-
-
-    const prepareButton =
-      document.getElementById(
-        "prepareButton"
-      );
-
-
-    const sendButton =
-      document.getElementById(
-        "sendButton"
-      );
-
-
-    const keyMessage =
-      document.getElementById(
-        "keyMessage"
-      );
-
-
-    const sendMessage =
-      document.getElementById(
-        "sendMessage"
-      );
-
-
-    const sendData =
-      document.getElementById(
-        "sendData"
-      );
-
-
-    const finalResult =
-      document.getElementById(
-        "finalResult"
-      );
-
-
-    const relayData =
-      document.getElementById(
-        "relayData"
-      );
-
-
-    /*
-     * 確認済みCryptoKey。
-     */
-    let eventCryptoKey =
-      null;
-
-
-    /*
-     * --------------------------------
-     * Base64 → Uint8Array
-     * --------------------------------
-     */
-    function base64ToBytes(base64) {
-
-      const binary =
-        atob(
-          base64
-        );
-
-
-      const bytes =
-        new Uint8Array(
-          binary.length
-        );
-
-
-      for (
-        let i = 0;
-        i < binary.length;
-        i++
-      ) {
-
-        bytes[i] =
-          binary.charCodeAt(i);
-      }
-
-
-      return bytes;
+  const STUDENTS = {
+    A: {
+      testStudent: "A",
+      userName: "TEST9G_生徒A",
+      isbn: "9784912345732",
+      publisher: "TEST9G_秘密出版社A",
+      title: "TEST9G_秘密の本A",
+      price: 4111
+    },
+    B: {
+      testStudent: "B",
+      userName: "TEST9G_生徒B",
+      isbn: "9784912345749",
+      publisher: "TEST9G_秘密出版社B",
+      title: "TEST9G_秘密の本B",
+      price: 4222
+    },
+    C: {
+      testStudent: "C",
+      userName: "TEST9G_生徒C",
+      isbn: "9784912345756",
+      publisher: "TEST9G_秘密出版社C",
+      title: "TEST9G_秘密の本C",
+      price: 4333
     }
+  };
+
+  let cryptoKey = null;
+
+  const sent = {
+    A: false,
+    B: false,
+    C: false
+  };
+
+  const sendLogs = [];
 
 
-    /*
-     * --------------------------------
-     * ArrayBuffer / Uint8Array
-     * → Base64
-     * --------------------------------
-     */
-    function bytesToBase64(value) {
-
-      const bytes =
-        value instanceof Uint8Array
-          ? value
-          : new Uint8Array(
-              value
-            );
+  function setText(id, text) {
+    document.getElementById(id).textContent = text;
+  }
 
 
-      let binary =
-        "";
+  function setEnabled(id, enabled) {
+    document.getElementById(id).disabled = !enabled;
+  }
 
 
-      for (
-        let i = 0;
-        i < bytes.length;
-        i++
-      ) {
+  function base64ToUint8Array(base64) {
+    const normalized =
+      String(base64 || "")
+        .trim()
+        .replace(/\s+/g, "");
 
-        binary +=
-          String.fromCharCode(
-            bytes[i]
-          );
-      }
+    const binary =
+      atob(normalized);
 
+    const bytes =
+      new Uint8Array(binary.length);
 
-      return btoa(
-        binary
-      );
-    }
-
-
-    /*
-     * --------------------------------
-     * AES-GCM鍵を読み込む
-     * --------------------------------
-     */
-    async function importEventKey(
-      base64Key
+    for (
+      let i = 0;
+      i < binary.length;
+      i++
     ) {
+      bytes[i] =
+        binary.charCodeAt(i);
+    }
 
-      const rawKey =
-        base64ToBytes(
+    return bytes;
+  }
+
+
+  function uint8ArrayToBase64(bytes) {
+    let binary = "";
+
+    for (
+      let i = 0;
+      i < bytes.length;
+      i++
+    ) {
+      binary +=
+        String.fromCharCode(bytes[i]);
+    }
+
+    return btoa(binary);
+  }
+
+
+  async function importAesKey(base64Key) {
+    const rawKey =
+      base64ToUint8Array(base64Key);
+
+    if (
+      rawKey.length !== 32
+    ) {
+      throw new Error(
+        "暗号鍵が256bit（32byte）ではありません。"
+      );
+    }
+
+    return await crypto.subtle.importKey(
+      "raw",
+      rawKey,
+      {
+        name: "AES-GCM"
+      },
+      false,
+      ["encrypt"]
+    );
+  }
+
+
+  async function loadKey() {
+    setEnabled(
+      "loadKeyButton",
+      false
+    );
+
+    setText(
+      "keyResult",
+      "暗号鍵を読み込んでいます…"
+    );
+
+    try {
+      if (
+        !window.crypto ||
+        !window.crypto.subtle
+      ) {
+        throw new Error(
+          "このブラウザではWeb Cryptoを利用できません。"
+        );
+      }
+
+      const input =
+        document.getElementById(
+          "keyInput"
+        );
+
+      const base64Key =
+        String(input.value || "")
+          .trim();
+
+      if (!base64Key) {
+        throw new Error(
+          "Base64暗号鍵を入力してください。"
+        );
+      }
+
+      cryptoKey =
+        await importAesKey(
           base64Key
         );
 
-
       /*
-       * AES-256なので32バイトであることを確認。
+       * 入力欄から鍵文字列を消す。
+       * CryptoKeyはextractable:falseで読み込んでいるため、
+       * このページからraw鍵を再取得できない。
        */
-      if (rawKey.length !== 32) {
+      input.value = "";
 
-        throw new Error(
-          "暗号鍵が32バイトではありません。Test9-Bで生成したAES-GCM 256bit鍵を確認してください。"
-        );
-      }
+      setText(
+        "keyResult",
+        "暗号鍵読込：成功\n" +
+        "暗号方式：AES-GCM-256\n" +
+        "暗号鍵の画面表示：なし\n" +
+        "送信データへの暗号鍵添付：なし"
+      );
+
+      setEnabled(
+        "sendAButton",
+        true
+      );
+
+      setEnabled(
+        "sendBButton",
+        true
+      );
+
+      setEnabled(
+        "sendCButton",
+        true
+      );
+
+    } catch (error) {
+      cryptoKey = null;
+
+      setText(
+        "keyResult",
+        "暗号鍵読込：失敗\n" +
+        error.message
+      );
+
+      setEnabled(
+        "loadKeyButton",
+        true
+      );
+    }
+  }
 
 
-      return await crypto.subtle.importKey(
-
-        "raw",
-
-        rawKey,
-
-        {
-          name:
-            "AES-GCM"
-        },
-
-        false,
-
-        [
-          "encrypt"
-        ]
+  async function encryptData(data) {
+    if (!cryptoKey) {
+      throw new Error(
+        "暗号鍵が読み込まれていません。"
       );
     }
 
+    const iv =
+      crypto.getRandomValues(
+        new Uint8Array(12)
+      );
 
-    /*
-     * --------------------------------
-     * 1件を暗号化
-     * --------------------------------
-     */
-    async function encryptRegistration(
-      plainData,
-      cryptoKey
-    ) {
-
-      /*
-       * 登録ごとに
-       * 新しい12バイトIVを生成。
-       */
-      const iv =
-        crypto.getRandomValues(
-          new Uint8Array(12)
+    const plaintext =
+      new TextEncoder()
+        .encode(
+          JSON.stringify(data)
         );
 
+    const encryptedBuffer =
+      await crypto.subtle.encrypt(
+        {
+          name: "AES-GCM",
+          iv: iv
+        },
+        cryptoKey,
+        plaintext
+      );
 
-      const plainText =
-        JSON.stringify(
-          plainData
-        );
+    return {
+      iv:
+        uint8ArrayToBase64(iv),
+
+      ciphertext:
+        uint8ArrayToBase64(
+          new Uint8Array(
+            encryptedBuffer
+          )
+        )
+    };
+  }
 
 
-      const encoded =
-        new TextEncoder()
-          .encode(
-            plainText
-          );
+  async function postToRelay(payload) {
+    const response =
+      await fetch(
+        RELAY_URL,
+        {
+          method: "POST",
 
-
-      const encrypted =
-        await crypto.subtle.encrypt(
-
-          {
-            name:
-              "AES-GCM",
-
-            iv:
-              iv
+          /*
+           * Apps Script公開Webアプリへの
+           * ブラウザPOST実証で扱いやすいよう
+           * text/plainでJSON文字列を送る。
+           */
+          headers: {
+            "Content-Type":
+              "text/plain;charset=utf-8"
           },
 
-          cryptoKey,
+          body:
+            JSON.stringify(payload),
 
-          encoded
-        );
+          redirect:
+            "follow"
+        }
+      );
 
+    const text =
+      await response.text();
 
-      return {
+    let json;
 
-        iv:
-          bytesToBase64(
-            iv
-          ),
-
-        ciphertext:
-          bytesToBase64(
-            encrypted
-          )
-      };
+    try {
+      json =
+        JSON.parse(text);
+    } catch (error) {
+      throw new Error(
+        "受付からJSON応答を取得できませんでした。" +
+        " HTTP " +
+        response.status
+      );
     }
 
-
-    /*
-     * --------------------------------
-     * 受付へ1件POST
-     *
-     * 平文データは入れない。
-     * --------------------------------
-     */
-    async function postEncryptedData(
-      encryptedData
+    if (
+      !json ||
+      json.success !== true
     ) {
+      throw new Error(
+        json &&
+        (
+          json.message ||
+          json.error
+        )
+          ? (
+              json.message ||
+              json.error
+            )
+          : "受付への送信に失敗しました。"
+      );
+    }
 
-      const requestData = {
+    return json;
+  }
 
+
+  async function sendStudent(studentKey) {
+    const buttonId =
+      "send" +
+      studentKey +
+      "Button";
+
+    if (
+      sent[studentKey]
+    ) {
+      return;
+    }
+
+    setEnabled(
+      buttonId,
+      false
+    );
+
+    const data =
+      STUDENTS[studentKey];
+
+    setText(
+      "sendResult",
+      "生徒" +
+      studentKey +
+      "を暗号化して受付へ送信しています…"
+    );
+
+    try {
+      const encrypted =
+        await encryptData(data);
+
+      /*
+       * 受付へ送るのは
+       * test / selectionKey / encryption /
+       * iv / ciphertext のみ。
+       *
+       * 氏名・ISBN・出版社・書名・価格・暗号鍵は
+       * payloadの外側に置かない。
+       */
+      const relayPayload = {
         test:
           TEST_NAME,
 
@@ -600,825 +545,122 @@
           SELECTION_KEY,
 
         encryption:
-          "AES-GCM-256",
+          ENCRYPTION_NAME,
 
         iv:
-          encryptedData.iv,
+          encrypted.iv,
 
         ciphertext:
-          encryptedData.ciphertext
+          encrypted.ciphertext
       };
 
+      const result =
+        await postToRelay(
+          relayPayload
+        );
 
-      /*
-       * 念のためPOST直前に、
-       * 平文フィールドがないことを確認。
-       */
-      const forbiddenFields = [
+      sent[studentKey] = true;
 
-        "userName",
-        "isbn",
-        "publisher",
-        "title",
-        "price",
-        "rawKey",
-        "encryptionKey",
-        "key"
+      sendLogs.push(
+        "生徒" +
+        studentKey +
+        "：成功" +
+        "\nregistrationId：" +
+        String(
+          result.registrationId || ""
+        ) +
+        "\nreceivedAt：" +
+        String(
+          result.receivedAt || ""
+        ) +
+        "\n受付件数：" +
+        String(
+          result.count ?? ""
+        )
+      );
 
-      ];
+      setText(
+        "sendResult",
+        sendLogs.join(
+          "\n\n"
+        ) +
+        "\n\n送信済み：" +
+        Object.values(sent)
+          .filter(Boolean)
+          .length +
+        "/3件"
+      );
 
-
-      for (
-        const field of forbiddenFields
+      if (
+        sent.A &&
+        sent.B &&
+        sent.C
       ) {
+        setText(
+          "sendResult",
+          sendLogs.join(
+            "\n\n"
+          ) +
+          "\n\nTest9-G 生徒側：3/3送信成功" +
+          "\n受付には暗号化データ3件が残っています。" +
+          "\nここではack・削除を実行していません。"
+        );
+      }
+
+    } catch (error) {
+      setText(
+        "sendResult",
+        "生徒" +
+        studentKey +
+        "：失敗\n" +
+        error.message +
+        "\n\n成功済みの他の登録は削除していません。"
+      );
+
+      setEnabled(
+        buttonId,
+        true
+      );
+    }
+  }
+
+
+  /*
+   * 任意：
+   * URLフラグメント
+   *   #key=<Base64鍵>
+   * がある場合は入力欄へセットする。
+   *
+   * フラグメントはHTTPリクエストには送られないが、
+   * 今回は実証用の補助機能にとどめる。
+   */
+  window.addEventListener(
+    "DOMContentLoaded",
+    function() {
+      try {
+        const hash =
+          window.location.hash || "";
 
         if (
-          Object.prototype.hasOwnProperty.call(
-            requestData,
-            field
-          )
+          hash.indexOf("#key=") === 0
         ) {
+          const key =
+            decodeURIComponent(
+              hash.substring(5)
+            );
 
-          throw new Error(
-            "POSTデータに送信禁止フィールドがあります：" +
-            field
-          );
-        }
-      }
-
-
-      const response =
-        await fetch(
-          RECEIVER_URL,
-          {
-            method:
-              "POST",
-
-            headers: {
-              "Content-Type":
-                "text/plain;charset=utf-8"
-            },
-
-            body:
-              JSON.stringify(
-                requestData
-              )
-          }
-        );
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          "受付POST HTTPエラー：" +
-          response.status
-        );
-      }
-
-
-      return await response.json();
-    }
-
-
-    /*
-     * --------------------------------
-     * 受付から現在データを取得
-     * --------------------------------
-     */
-    async function pullPendingData() {
-
-      const url =
-        RECEIVER_URL +
-        "?action=pull" +
-        "&selectionKey=" +
-        encodeURIComponent(
-          SELECTION_KEY
-        ) +
-        "&_=" +
-        Date.now();
-
-
-      const response =
-        await fetch(
-          url,
-          {
-            method:
-              "GET",
-
-            cache:
-              "no-store"
-          }
-        );
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          "受付GET HTTPエラー：" +
-          response.status
-        );
-      }
-
-
-      return await response.json();
-    }
-
-
-    /*
-     * --------------------------------
-     * 平文や鍵が受付データに
-     * 含まれていないか検査
-     * --------------------------------
-     */
-    function inspectRelayData(
-      testItems
-    ) {
-
-      const forbiddenFieldNames = [
-
-        "userName",
-        "isbn",
-        "publisher",
-        "title",
-        "price",
-        "rawKey",
-        "encryptionKey",
-        "key"
-
-      ];
-
-
-      const forbiddenPlainValues = [];
-
-
-      TEST_DATA_LIST.forEach(
-        function(item) {
-
-          forbiddenPlainValues.push(
-            item.userName,
-            item.isbn,
-            item.publisher,
-            item.title,
-            String(
-              item.price
+          document
+            .getElementById(
+              "keyInput"
             )
-          );
+            .value = key;
         }
-      );
-
-
-      let forbiddenFieldFound =
-        false;
-
-
-      let plainTextFound =
-        false;
-
-
-      testItems.forEach(
-        function(item) {
-
-          const payload =
-            item &&
-            item.payload
-              ? item.payload
-              : {};
-
-
-          forbiddenFieldNames.forEach(
-            function(field) {
-
-              if (
-                Object.prototype.hasOwnProperty.call(
-                  payload,
-                  field
-                )
-              ) {
-
-                forbiddenFieldFound =
-                  true;
-              }
-            }
-          );
-
-
-          /*
-           * JSON文字列全体にも
-           * 平文が紛れ込んでいないか確認。
-           */
-          const serialized =
-            JSON.stringify(
-              item
-            );
-
-
-          forbiddenPlainValues.forEach(
-            function(value) {
-
-              if (
-                serialized.includes(
-                  value
-                )
-              ) {
-
-                plainTextFound =
-                  true;
-              }
-            }
-          );
-        }
-      );
-
-
-      return {
-
-        forbiddenFieldFound:
-          forbiddenFieldFound,
-
-        plainTextFound:
-          plainTextFound
-      };
+      } catch (error) {
+        console.error(error);
+      }
     }
-
-
-    /*
-     * --------------------------------
-     * STEP 1
-     *
-     * 暗号鍵確認
-     * --------------------------------
-     */
-    prepareButton.addEventListener(
-      "click",
-      async function() {
-
-        prepareButton.disabled =
-          true;
-
-        sendButton.disabled =
-          true;
-
-        eventCryptoKey =
-          null;
-
-
-        keyMessage.textContent =
-          "暗号鍵を確認しています…";
-
-
-        try {
-
-          if (!window.crypto) {
-
-            throw new Error(
-              "このブラウザではWeb Crypto APIを利用できません。"
-            );
-          }
-
-
-          if (!window.crypto.subtle) {
-
-            throw new Error(
-              "このブラウザではcrypto.subtleを利用できません。"
-            );
-          }
-
-
-          const enteredKey =
-            keyInput.value.trim();
-
-
-          if (!enteredKey) {
-
-            throw new Error(
-              "暗号鍵を入力してください。"
-            );
-          }
-
-
-          eventCryptoKey =
-            await importEventKey(
-              enteredKey
-            );
-
-
-          /*
-           * 入力欄に鍵を残さない。
-           *
-           * CryptoKeyだけを
-           * このページを開いている間保持する。
-           */
-          keyInput.value =
-            "";
-
-
-          keyMessage.textContent =
-            "暗号鍵確認：OK\n\n" +
-
-            "AES-GCM 256bit鍵として読み込みました。\n" +
-
-            "入力欄から暗号鍵を消去しました。\n" +
-
-            "受付へ暗号鍵は送信しません。\n\n" +
-
-            "A・B・Cの送信へ進めます。";
-
-
-          sendMessage.textContent =
-            "送信準備ができました。";
-
-
-          sendButton.disabled =
-            false;
-
-
-        } catch (error) {
-
-          eventCryptoKey =
-            null;
-
-
-          keyMessage.textContent =
-            "暗号鍵確認：NG\n\n" +
-
-            String(error);
-
-
-          prepareButton.disabled =
-            false;
-        }
-
-      }
-    );
-
-
-    /*
-     * --------------------------------
-     * STEP 2
-     *
-     * A・B・Cを暗号化して送信
-     * --------------------------------
-     */
-    sendButton.addEventListener(
-      "click",
-      async function() {
-
-        if (!eventCryptoKey) {
-
-          sendMessage.textContent =
-            "暗号鍵が読み込まれていません。";
-
-          return;
-        }
-
-
-        /*
-         * 二重送信防止。
-         */
-        sendButton.disabled =
-          true;
-
-        prepareButton.disabled =
-          true;
-
-
-        sendMessage.textContent =
-          "A・B・Cを暗号化して送信しています…";
-
-
-        sendData.textContent =
-          "処理中…";
-
-
-        finalResult.textContent =
-          "受付確認待ち";
-
-
-        relayData.textContent =
-          "受付確認待ち";
-
-
-        try {
-
-          /*
-           * 送信前に受付が0件か確認する。
-           */
-          const beforeResult =
-            await pullPendingData();
-
-
-          const beforeList =
-            Array.isArray(
-              beforeResult.data
-            )
-              ? beforeResult.data
-              : [];
-
-
-          if (
-            beforeResult.success !== true ||
-            beforeList.length !== 0
-          ) {
-
-            throw new Error(
-              "送信前の受付が0件ではありません。安全のためTest9-Dを停止しました。現在件数：" +
-              beforeList.length
-            );
-          }
-
-
-          const sendResults =
-            [];
-
-
-          const generatedIvs =
-            [];
-
-
-          /*
-           * A → B → C の順に送信。
-           *
-           * 今回は大量同時送信テストではなく、
-           * PC停止中の暗号化登録継続を
-           * 確認するテストなので順次送信する。
-           */
-          for (
-            const plainData of TEST_DATA_LIST
-          ) {
-
-            const encryptedData =
-              await encryptRegistration(
-                plainData,
-                eventCryptoKey
-              );
-
-
-            generatedIvs.push(
-              encryptedData.iv
-            );
-
-
-            const response =
-              await postEncryptedData(
-                encryptedData
-              );
-
-
-            sendResults.push({
-
-              testStudent:
-                plainData.testStudent,
-
-              success:
-                response.success === true,
-
-              registrationId:
-                response.registrationId || "",
-
-              receivedAt:
-                response.receivedAt || "",
-
-              count:
-                response.count
-
-            });
-
-
-            if (
-              response.success !== true
-            ) {
-
-              throw new Error(
-                "生徒" +
-                plainData.testStudent +
-                "の受付に失敗しました。"
-              );
-            }
-          }
-
-
-          /*
-           * IVが3件すべて異なるか確認。
-           */
-          const uniqueIvCount =
-            new Set(
-              generatedIvs
-            ).size;
-
-
-          /*
-           * 受付から3件を取得。
-           */
-          const afterResult =
-            await pullPendingData();
-
-
-          const allData =
-            Array.isArray(
-              afterResult.data
-            )
-              ? afterResult.data
-              : [];
-
-
-          /*
-           * Test9-Dだけを抽出。
-           */
-          const testItems =
-            allData.filter(
-              function(item) {
-
-                return (
-                  item &&
-                  item.payload &&
-                  item.payload.test ===
-                    TEST_NAME
-                );
-              }
-            );
-
-
-          /*
-           * registrationIdを確認。
-           */
-          const registrationIds =
-            testItems
-              .map(
-                function(item) {
-
-                  return (
-                    item.registrationId ||
-                    ""
-                  );
-                }
-              )
-              .filter(
-                function(id) {
-
-                  return id.length > 0;
-                }
-              );
-
-
-          const uniqueRegistrationIdCount =
-            new Set(
-              registrationIds
-            ).size;
-
-
-          /*
-           * 受付内IVを確認。
-           */
-          const relayIvs =
-            testItems
-              .map(
-                function(item) {
-
-                  return (
-                    item.payload &&
-                    item.payload.iv
-                      ? item.payload.iv
-                      : ""
-                  );
-                }
-              )
-              .filter(
-                function(iv) {
-
-                  return iv.length > 0;
-                }
-              );
-
-
-          const uniqueRelayIvCount =
-            new Set(
-              relayIvs
-            ).size;
-
-
-          /*
-           * ciphertextが全件存在するか。
-           */
-          const ciphertextCount =
-            testItems.filter(
-              function(item) {
-
-                return (
-                  item &&
-                  item.payload &&
-                  typeof item.payload.ciphertext ===
-                    "string" &&
-                  item.payload.ciphertext.length > 0
-                );
-              }
-            ).length;
-
-
-          /*
-           * 暗号方式確認。
-           */
-          const encryptionCount =
-            testItems.filter(
-              function(item) {
-
-                return (
-                  item &&
-                  item.payload &&
-                  item.payload.encryption ===
-                    "AES-GCM-256"
-                );
-              }
-            ).length;
-
-
-          /*
-           * 平文・鍵がないか確認。
-           */
-          const privacyCheck =
-            inspectRelayData(
-              testItems
-            );
-
-
-          /*
-           * 送信結果を表示。
-           *
-           * 暗号文そのものは
-           * ここでは表示しなくてよい。
-           */
-          sendData.textContent =
-            JSON.stringify(
-              sendResults,
-              null,
-              2
-            );
-
-
-          relayData.textContent =
-            JSON.stringify(
-              {
-                success:
-                  afterResult.success,
-
-                relayTotalCount:
-                  allData.length,
-
-                test9DCount:
-                  testItems.length,
-
-                registrationIds:
-                  registrationIds,
-
-                uniqueRegistrationIdCount:
-                  uniqueRegistrationIdCount,
-
-                ivCount:
-                  relayIvs.length,
-
-                uniqueIvCount:
-                  uniqueRelayIvCount,
-
-                ciphertextCount:
-                  ciphertextCount,
-
-                encryptionCount:
-                  encryptionCount,
-
-                forbiddenFieldFound:
-                  privacyCheck.forbiddenFieldFound,
-
-                plainTextFound:
-                  privacyCheck.plainTextFound
-              },
-              null,
-              2
-            );
-
-
-          /*
-           * 最終成功条件。
-           */
-          const allSendSuccess =
-            sendResults.length === 3 &&
-            sendResults.every(
-              function(item) {
-
-                return (
-                  item.success === true &&
-                  item.registrationId.length > 0
-                );
-              }
-            );
-
-
-          const finalOk =
-
-            afterResult.success === true &&
-
-            allData.length === 3 &&
-
-            testItems.length === 3 &&
-
-            allSendSuccess === true &&
-
-            generatedIvs.length === 3 &&
-
-            uniqueIvCount === 3 &&
-
-            relayIvs.length === 3 &&
-
-            uniqueRelayIvCount === 3 &&
-
-            registrationIds.length === 3 &&
-
-            uniqueRegistrationIdCount === 3 &&
-
-            ciphertextCount === 3 &&
-
-            encryptionCount === 3 &&
-
-            privacyCheck.forbiddenFieldFound ===
-              false &&
-
-            privacyCheck.plainTextFound ===
-              false;
-
-
-          if (finalOk) {
-
-            sendMessage.textContent =
-              "3件の暗号化送信が完了しました。";
-
-
-            finalResult.textContent =
-              "Test9-D 生徒側：成功\n\n" +
-
-              "送信：3件\n" +
-
-              "受付成功：3件\n" +
-
-              "受付の現在件数：3件\n\n" +
-
-              "AES-GCM-256：3件\n" +
-
-              "IV：3件\n" +
-
-              "IV 3件すべて異なる：OK\n\n" +
-
-              "registrationId：3件\n" +
-
-              "registrationId 3件すべて異なる：OK\n\n" +
-
-              "暗号文：3件\n\n" +
-
-              "暗号鍵を受付へ送信：なし\n" +
-
-              "平文フィールド：検出なし\n" +
-
-              "選書内容の平文：検出なし\n\n" +
-
-              "司書PCが動いていない状態を想定した、" +
-              "3件の暗号化登録を受付に保持しました。\n\n" +
-
-              "受付の3件は削除していません。";
-
-
-          } else {
-
-            sendMessage.textContent =
-              "Test9-D 生徒側：要確認";
-
-
-            finalResult.textContent =
-              "想定した成功条件と一致しません。\n\n" +
-
-              "受付データは削除していません。\n" +
-
-              "追加操作をせず、表示結果を確認してください。";
-          }
-
-
-        } catch (error) {
-
-          sendMessage.textContent =
-            "Test9-D 生徒側でエラーが発生しました。\n\n" +
-
-            String(error);
-
-
-          finalResult.textContent =
-            "処理を停止しました。\n\n" +
-
-            "受付に一部のデータが残っている可能性があります。\n" +
-
-            "再送信せず、まず受付状態を確認してください。";
-        }
-
-      }
-    );
-
-  </script>
+  );
+</script>
 
 </body>
-
 </html>
