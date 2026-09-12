@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スマホde選書 Test10-D</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f5f5f5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>スマホde選書 Test10-D</h1>
+
+  <p>
+    2件保存 → 1件だけACK → 残り1件を確認
+  </p>
+
+  <button id="runButton">
+    Test10-Dを実行
+  </button>
+
+  <div id="result">
+    まだ実行していません。
+  </div>
+
+  <script>
+    const WORKER_URL =
+      "https://sumaho-de-sensho-test10.maro2888.workers.dev/";
+
+    document
+      .getElementById("runButton")
+      .addEventListener("click", runTest10D);
+
+    async function runTest10D() {
+      const button =
+        document.getElementById("runButton");
+
+      const result =
+        document.getElementById("result");
+
+      button.disabled = true;
+
+      try {
+        const baseId =
+          Date.now() +
+          "-" +
+          crypto.randomUUID();
+
+        const idA =
+          "test10d-A-" + baseId;
+
+        const idB =
+          "test10d-B-" + baseId;
+
+        result.textContent =
+          "1. テストデータAを保存中...";
+
+        await postRegistration(idA, "A");
+
+        result.textContent +=
+          "\n2. テストデータBを保存中...";
+
+        await postRegistration(idB, "B");
+
+        result.textContent +=
+          "\n3. A・Bの存在を確認中...";
+
+        const beforeA =
+          await getRegistration(idA);
+
+        const beforeB =
+          await getRegistration(idB);
+
+        if (!beforeA || !beforeB) {
+          throw new Error(
+            "ACK前のA・B確認に失敗しました。"
+          );
+        }
+
+        result.textContent +=
+          "\n4. ACK前：Aあり / Bあり";
+
+        result.textContent +=
+          "\n5. AだけACK中...";
+
+        const ackResponse =
+          await fetch(
+            WORKER_URL + "ack",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+              body: JSON.stringify({
+                registrationId: idA
+              })
+            }
+          );
+
+        const ackData =
+          await ackResponse.json();
+
+        if (
+          !ackResponse.ok ||
+          ackData.ok !== true
+        ) {
+          throw new Error(
+            "ACKに失敗しました: " +
+            JSON.stringify(ackData)
+          );
+        }
+
+        result.textContent +=
+          "\n6. AのACK成功";
+
+        result.textContent +=
+          "\n7. ACK後の状態を確認中...";
+
+        const afterA =
+          await getRegistration(idA);
+
+        const afterB =
+          await getRegistration(idB);
+
+        const aDeleted =
+          afterA === null;
+
+        const bRemains =
+          afterB !== null;
+
+        result.textContent =
+          "Test10-D 結果\n\n" +
+          "A registrationId:\n" +
+          idA +
+          "\n\n" +
+          "B registrationId:\n" +
+          idB +
+          "\n\n" +
+          "ACK前:\n" +
+          "A = あり\n" +
+          "B = あり\n\n" +
+          "ACK後:\n" +
+          "A = " +
+          (aDeleted ? "削除済み" : "残っている") +
+          "\n" +
+          "B = " +
+          (bRemains ? "残っている" : "削除されている") +
+          "\n\n" +
+          (
+            aDeleted && bRemains
+              ? "✅ Aだけ削除され、Bは残っています。"
+              : "❌ 想定どおりの結果ではありません。"
+          );
+
+      } catch (error) {
+        result.textContent =
+          "Test10-D エラー\n\n" +
+          error.message;
+
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function postRegistration(
+      registrationId,
+      label
+    ) {
+      const data = {
+        registrationId:
+          registrationId,
+        eventId:
+          "test10-event-001",
+        iv:
+          "TEST10D_IV_" + label,
+        encryptedKey:
+          "TEST10D_ENCRYPTED_KEY_" + label,
+        ciphertext:
+          "TEST10D_CIPHERTEXT_" + label,
+        schemaVersion:
+          "test10d-1"
+      };
+
+      const response =
+        await fetch(
+          WORKER_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body:
+              JSON.stringify(data)
+          }
+        );
+
+      const responseData =
+        await response.json();
+
+      if (
+        !response.ok ||
+        responseData.ok !== true
+      ) {
+        throw new Error(
+          "保存に失敗しました: " +
+          JSON.stringify(responseData)
+        );
+      }
+    }
+
+    async function getRegistration(
+      registrationId
+    ) {
+      const response =
+        await fetch(
+          WORKER_URL +
+          "?registrationId=" +
+          encodeURIComponent(
+            registrationId
+          )
+        );
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        data.ok !== true
+      ) {
+        throw new Error(
+          "取得に失敗しました: " +
+          JSON.stringify(data)
+        );
+      }
+
+      return data.registration;
+    }
+  </script>
+
+</body>
+</html>
