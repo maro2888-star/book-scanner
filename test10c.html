@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スマホde選書 Test10-C</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .box {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid #ccc;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: #f5f5f5;
+      padding: 16px;
+    }
+
+    #result {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f5f5f5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>スマホde選書 Test10-C</h1>
+
+  <p>
+    暗号化 → Worker → D1 → Worker → 復号<br>
+    往復確認テスト
+  </p>
+
+  <div class="box">
+    <strong>元のテストデータ</strong>
+    <pre id="plainDataView"></pre>
+  </div>
+
+  <button id="runButton">
+    Test10-Cを実行
+  </button>
+
+  <div id="result">
+    まだ実行していません。
+  </div>
+
+  <script>
+    const WORKER_URL =
+      "https://sumaho-de-sensho-test10.maro2888.workers.dev/";
+
+    const plainData = {
+      registrantName: "Aさん",
+      isbn: "9784167920616",
+      publisher: "テスト出版社",
+      title: "Test10-C 往復確認用書籍",
+      author: "テスト著者",
+      price: 1800
+    };
+
+    document.getElementById("plainDataView").textContent =
+      JSON.stringify(plainData, null, 2);
+
+    document
+      .getElementById("runButton")
+      .addEventListener("click", runTest10C);
+
+    async function runTest10C() {
+      const button =
+        document.getElementById("runButton");
+
+      const result =
+        document.getElementById("result");
+
+      button.disabled = true;
+
+      try {
+        result.textContent =
+          "1. RSA鍵ペアを作成中...";
+
+        // RSA-OAEP鍵ペア
+        const rsaKeyPair =
+          await crypto.subtle.generateKey(
+            {
+              name: "RSA-OAEP",
+              modulusLength: 2048,
+              publicExponent:
+                new Uint8Array([1, 0, 1]),
+              hash: "SHA-256"
+            },
+            true,
+            ["encrypt", "decrypt"]
+          );
+
+        result.textContent +=
+          "\n2. AES-GCM鍵を作成中...";
+
+        // AES-GCM鍵
+        const aesKey =
+          await crypto.subtle.generateKey(
+            {
+              name: "AES-GCM",
+              length: 256
+            },
+            true,
+            ["encrypt", "decrypt"]
+          );
+
+        // 12byte IV
+        const iv =
+          crypto.getRandomValues(
+            new Uint8Array(12)
+          );
+
+        const encodedPlainData =
+          new TextEncoder().encode(
+            JSON.stringify(plainData)
+          );
+
+        result.textContent +=
+          "\n3. 選書データをAES-GCMで暗号化中...";
+
+        // 本文暗号化
+        const ciphertextBuffer =
+          await crypto.subtle.encrypt(
+            {
+              name: "AES-GCM",
+              iv: iv
+            },
+            aesKey,
+            encodedPlainData
+          );
+
+        // AES生鍵
+        const rawAesKey =
+          await crypto.subtle.exportKey(
+            "raw",
+            aesKey
+          );
+
+        result.textContent +=
+          "\n4. AES鍵をRSA-OAEPで暗号化中...";
+
+        // AES鍵をRSA公開鍵で暗号化
+        const encryptedKeyBuffer =
+          await crypto.subtle.encrypt(
+            {
+              name: "RSA-OAEP"
+            },
+            rsaKeyPair.publicKey,
+            rawAesKey
+          );
+
+        const registrationId =
+          "test10c-" +
+          Date.now() +
+          "-" +
+          crypto.randomUUID();
+
+        const packageData = {
+          registrationId:
+            registrationId,
+          eventId:
+            "test10-event-001",
+          iv:
+            arrayBufferToBase64(
+              iv.buffer
+            ),
+          encryptedKey:
+            arrayBufferToBase64(
+              encryptedKeyBuffer
+            ),
+          ciphertext:
+            arrayBufferToBase64(
+              ciphertextBuffer
+            ),
+          schemaVersion:
+            "test10c-1"
+        };
+
+        result.textContent +=
+          "\n5. Workerへ送信中...";
+
+        // D1へ保存
+        const postResponse =
+          await fetch(
+            WORKER_URL,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+              body:
+                JSON.stringify(
+                  packageData
+                )
+            }
+          );
+
+        const postData =
+          await postResponse.json();
+
+        if (
+          !postResponse.ok ||
+          postData.ok !== true
+        ) {
+          throw new Error(
+            "保存に失敗しました: " +
+            JSON.stringify(postData)
+          );
+        }
+
+        result.textContent +=
+          "\n6. D1への保存成功";
+
+        result.textContent +=
+          "\n7. Worker経由で再取得中...";
+
+        // D1から再取得
+        const getResponse =
+          await fetch(
+            WORKER_URL +
+            "?registrationId=" +
+            encodeURIComponent(
+              registrationId
+            )
+          );
+
+        const getData =
+          await getResponse.json();
+
+        if (
+          !getResponse.ok ||
+          getData.ok !== true ||
+          !getData.registration
+        ) {
+          throw new Error(
+            "取得に失敗しました: " +
+            JSON.stringify(getData)
+          );
+        }
+
+        const stored =
+          getData.registration;
+
+        result.textContent +=
+          "\n8. 暗号化データ取得成功";
+
+        // Base64 → ArrayBuffer
+        const encryptedKeyFromD1 =
+          base64ToArrayBuffer(
+            stored.encryptedKey
+          );
+
+        const ivFromD1 =
+          new Uint8Array(
+            base64ToArrayBuffer(
+              stored.iv
+            )
+          );
+
+        const ciphertextFromD1 =
+          base64ToArrayBuffer(
+            stored.ciphertext
+          );
+
+        result.textContent +=
+          "\n9. RSA秘密鍵でAES鍵を復号中...";
+
+        // AES生鍵を復号
+        const decryptedRawAesKey =
+          await crypto.subtle.decrypt(
+            {
+              name: "RSA-OAEP"
+            },
+            rsaKeyPair.privateKey,
+            encryptedKeyFromD1
+          );
+
+        // AES鍵として再インポート
+        const restoredAesKey =
+          await crypto.subtle.importKey(
+            "raw",
+            decryptedRawAesKey,
+            {
+              name: "AES-GCM"
+            },
+            false,
+            ["decrypt"]
+          );
+
+        result.textContent +=
+          "\n10. AES-GCMで本文を復号中...";
+
+        // 本文復号
+        const decryptedBuffer =
+          await crypto.subtle.decrypt(
+            {
+              name: "AES-GCM",
+              iv: ivFromD1
+            },
+            restoredAesKey,
+            ciphertextFromD1
+          );
+
+        const decryptedText =
+          new TextDecoder().decode(
+            decryptedBuffer
+          );
+
+        const decryptedData =
+          JSON.parse(
+            decryptedText
+          );
+
+        // 完全一致確認
+        const isMatch =
+          JSON.stringify(
+            decryptedData
+          ) ===
+          JSON.stringify(
+            plainData
+          );
+
+        result.textContent =
+          "Test10-C 結果\n\n" +
+          "registrationId:\n" +
+          registrationId +
+          "\n\n" +
+          "復号したデータ:\n" +
+          JSON.stringify(
+            decryptedData,
+            null,
+            2
+          ) +
+          "\n\n" +
+          (
+            isMatch
+              ? "✅ 元データと完全一致しました。"
+              : "❌ 元データと一致しません。"
+          );
+
+      } catch (error) {
+        result.textContent =
+          "Test10-C エラー\n\n" +
+          error.message;
+
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function arrayBufferToBase64(buffer) {
+      const bytes =
+        new Uint8Array(buffer);
+
+      let binary = "";
+
+      for (
+        let i = 0;
+        i < bytes.length;
+        i++
+      ) {
+        binary +=
+          String.fromCharCode(
+            bytes[i]
+          );
+      }
+
+      return btoa(binary);
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const binary =
+        atob(base64);
+
+      const bytes =
+        new Uint8Array(
+          binary.length
+        );
+
+      for (
+        let i = 0;
+        i < binary.length;
+        i++
+      ) {
+        bytes[i] =
+          binary.charCodeAt(i);
+      }
+
+      return bytes.buffer;
+    }
+  </script>
+
+</body>
+</html>
