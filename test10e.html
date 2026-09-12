@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スマホde選書 Test10-E</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f5f5f5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>スマホde選書 Test10-E</h1>
+
+  <p>
+    同じregistrationIdを2回送信<br>
+    二重登録・上書き防止テスト
+  </p>
+
+  <button id="runButton">
+    Test10-Eを実行
+  </button>
+
+  <div id="result">
+    まだ実行していません。
+  </div>
+
+  <script>
+    const WORKER_URL =
+      "https://sumaho-de-sensho-test10.maro2888.workers.dev/";
+
+    document
+      .getElementById("runButton")
+      .addEventListener("click", runTest10E);
+
+    async function runTest10E() {
+      const button =
+        document.getElementById("runButton");
+
+      const result =
+        document.getElementById("result");
+
+      button.disabled = true;
+
+      try {
+        const registrationId =
+          "test10e-" +
+          Date.now() +
+          "-" +
+          crypto.randomUUID();
+
+        const firstData = {
+          registrationId: registrationId,
+          eventId: "test10-event-001",
+          iv: "TEST10E_IV_FIRST",
+          encryptedKey:
+            "TEST10E_ENCRYPTED_KEY_FIRST",
+          ciphertext:
+            "TEST10E_CIPHERTEXT_FIRST",
+          schemaVersion: "test10e-1"
+        };
+
+        /*
+         * 同じregistrationIdだが、
+         * 内容はわざと変更する。
+         *
+         * もし上書きされてしまえば、
+         * SECONDがD1に残る。
+         */
+        const secondData = {
+          registrationId: registrationId,
+          eventId: "test10-event-001",
+          iv: "TEST10E_IV_SECOND",
+          encryptedKey:
+            "TEST10E_ENCRYPTED_KEY_SECOND",
+          ciphertext:
+            "TEST10E_CIPHERTEXT_SECOND",
+          schemaVersion: "test10e-1"
+        };
+
+        result.textContent =
+          "1. 1回目を送信中...";
+
+        const firstResponse =
+          await postData(firstData);
+
+        result.textContent +=
+          "\n2. 1回目の応答：" +
+          JSON.stringify(firstResponse);
+
+        result.textContent +=
+          "\n3. 同じregistrationIdを再送中...";
+
+        const secondResponse =
+          await postData(secondData);
+
+        result.textContent +=
+          "\n4. 2回目の応答：" +
+          JSON.stringify(secondResponse);
+
+        result.textContent +=
+          "\n5. D1から再取得中...";
+
+        const getResponse =
+          await fetch(
+            WORKER_URL +
+            "?registrationId=" +
+            encodeURIComponent(
+              registrationId
+            )
+          );
+
+        const getData =
+          await getResponse.json();
+
+        if (
+          !getResponse.ok ||
+          getData.ok !== true ||
+          !getData.registration
+        ) {
+          throw new Error(
+            "再取得に失敗しました: " +
+            JSON.stringify(getData)
+          );
+        }
+
+        const stored =
+          getData.registration;
+
+        const firstWasSaved =
+          firstResponse.ok === true &&
+          firstResponse.status === "saved" &&
+          firstResponse.duplicate === false;
+
+        const secondWasDuplicate =
+          secondResponse.ok === true &&
+          secondResponse.status ===
+            "already_received" &&
+          secondResponse.duplicate === true;
+
+        const originalRemains =
+          stored.iv ===
+            "TEST10E_IV_FIRST" &&
+          stored.encryptedKey ===
+            "TEST10E_ENCRYPTED_KEY_FIRST" &&
+          stored.ciphertext ===
+            "TEST10E_CIPHERTEXT_FIRST";
+
+        result.textContent =
+          "Test10-E 結果\n\n" +
+
+          "registrationId:\n" +
+          registrationId +
+          "\n\n" +
+
+          "1回目:\n" +
+          JSON.stringify(
+            firstResponse,
+            null,
+            2
+          ) +
+          "\n\n" +
+
+          "2回目:\n" +
+          JSON.stringify(
+            secondResponse,
+            null,
+            2
+          ) +
+          "\n\n" +
+
+          "D1に残っている内容:\n" +
+          JSON.stringify(
+            stored,
+            null,
+            2
+          ) +
+          "\n\n" +
+
+          "確認結果:\n" +
+          "1回目を新規保存 = " +
+          (firstWasSaved ? "OK" : "NG") +
+          "\n" +
+
+          "2回目を重複扱い = " +
+          (secondWasDuplicate ? "OK" : "NG") +
+          "\n" +
+
+          "1回目の内容を維持 = " +
+          (originalRemains ? "OK" : "NG") +
+          "\n\n" +
+
+          (
+            firstWasSaved &&
+            secondWasDuplicate &&
+            originalRemains
+              ? "✅ 同じregistrationIdを再送しても、二重登録・上書きされませんでした。"
+              : "❌ 想定どおりの結果ではありません。"
+          );
+
+      } catch (error) {
+        result.textContent =
+          "Test10-E エラー\n\n" +
+          error.message;
+
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function postData(data) {
+      const response =
+        await fetch(
+          WORKER_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body:
+              JSON.stringify(data)
+          }
+        );
+
+      const responseData =
+        await response.json();
+
+      if (
+        !response.ok ||
+        responseData.ok !== true
+      ) {
+        throw new Error(
+          "送信に失敗しました: " +
+          JSON.stringify(
+            responseData
+          )
+        );
+      }
+
+      return responseData;
+    }
+  </script>
+
+</body>
+</html>
