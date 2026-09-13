@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    スマホde選書 Test11-D 司書側
+  </title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    .box {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 12px;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .note {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    #result {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f5f5f5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>
+    スマホde選書 Test11-D
+  </h1>
+
+  <p>
+    司書側・リプレイ防止実証
+  </p>
+
+  <div class="box">
+
+    <p>
+      対象イベント：
+      <strong>test11-event-001</strong>
+    </p>
+
+    <button id="generateButton">
+      1. 署名用鍵を生成する
+    </button>
+
+    <button
+      id="registerButton"
+      disabled
+    >
+      2. 公開鍵を登録する
+    </button>
+
+    <button
+      id="openButton"
+      disabled
+    >
+      3. 新しいOPEN命令を送信する
+    </button>
+
+    <button
+      id="replayButton"
+      disabled
+    >
+      4. 同じOPEN命令を再送する
+    </button>
+
+    <button
+      id="oldTimestampButton"
+      disabled
+    >
+      5. 10分前のOPEN命令を送信する
+    </button>
+
+    <button
+      id="closeButton"
+      disabled
+    >
+      6. 新しいCLOSE命令を送信する
+    </button>
+
+    <p class="note">
+      Test11-Dでは、
+      timestampとnonceを署名対象に含めます。
+      同じnonceの再利用と、古すぎる命令を
+      Worker側で拒否できるか確認します。
+    </p>
+
+  </div>
+
+  <div id="result">
+    まだ操作していません。
+  </div>
+
+
+  <script>
+
+    const WORKER_URL =
+      "https://sumaho-de-sensho-test10.maro2888.workers.dev";
+
+    const EVENT_ID =
+      "test11-event-001";
+
+    let signingKeyPair = null;
+
+    let publicKeyJwk = null;
+
+    let lastOpenRequest = null;
+
+
+    // =========================================================
+    // ボタン
+    // =========================================================
+
+    document
+      .getElementById(
+        "generateButton"
+      )
+      .addEventListener(
+        "click",
+        generateSigningKeys
+      );
+
+
+    document
+      .getElementById(
+        "registerButton"
+      )
+      .addEventListener(
+        "click",
+        registerPublicKey
+      );
+
+
+    document
+      .getElementById(
+        "openButton"
+      )
+      .addEventListener(
+        "click",
+        sendFreshOpen
+      );
+
+
+    document
+      .getElementById(
+        "replayButton"
+      )
+      .addEventListener(
+        "click",
+        replayOpen
+      );
+
+
+    document
+      .getElementById(
+        "oldTimestampButton"
+      )
+      .addEventListener(
+        "click",
+        sendOldTimestampOpen
+      );
+
+
+    document
+      .getElementById(
+        "closeButton"
+      )
+      .addEventListener(
+        "click",
+        sendFreshClose
+      );
+
+
+    // =========================================================
+    // 1. 鍵生成
+    // =========================================================
+
+    async function generateSigningKeys() {
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+      result.textContent =
+        "署名用鍵を生成しています...";
+
+      disableAfterKeyGeneration();
+
+      try {
+
+        signingKeyPair =
+          await crypto.subtle.generateKey(
+            {
+              name: "ECDSA",
+              namedCurve: "P-256"
+            },
+            true,
+            [
+              "sign",
+              "verify"
+            ]
+          );
+
+
+        publicKeyJwk =
+          await crypto.subtle.exportKey(
+            "jwk",
+            signingKeyPair.publicKey
+          );
+
+
+        document
+          .getElementById(
+            "registerButton"
+          )
+          .disabled = false;
+
+
+        result.textContent =
+          "署名用鍵の生成に成功しました。\n\n" +
+
+          "方式：ECDSA P-256 / SHA-256\n\n" +
+
+          "公開鍵（JWK）:\n" +
+
+          JSON.stringify(
+            publicKeyJwk,
+            null,
+            2
+          ) +
+
+          "\n\n" +
+
+          "秘密鍵はこのブラウザ内だけに保持しています。\n\n" +
+
+          "次に「2. 公開鍵を登録する」を押してください。";
+
+      } catch (error) {
+
+        result.textContent =
+          "鍵生成エラー\n\n" +
+          error.message;
+      }
+    }
+
+
+    // =========================================================
+    // 2. 公開鍵登録
+    // =========================================================
+
+    async function registerPublicKey() {
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+      if (
+        !signingKeyPair ||
+        !publicKeyJwk
+      ) {
+
+        result.textContent =
+          "先に署名用鍵を生成してください。";
+
+        return;
+      }
+
+
+      result.textContent =
+        "公開鍵を登録しています...";
+
+
+      try {
+
+        const response =
+          await fetch(
+            WORKER_URL +
+            "/test11c/register-public-key",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+                  eventId:
+                    EVENT_ID,
+
+                  signingPublicKey:
+                    publicKeyJwk
+                })
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (
+          !response.ok ||
+          !data.ok
+        ) {
+
+          result.textContent =
+            "公開鍵登録エラー\n\n" +
+
+            "HTTP Status: " +
+            response.status +
+
+            "\n\n" +
+
+            JSON.stringify(
+              data,
+              null,
+              2
+            );
+
+          return;
+        }
+
+
+        document
+          .getElementById(
+            "openButton"
+          )
+          .disabled = false;
+
+
+        document
+          .getElementById(
+            "oldTimestampButton"
+          )
+          .disabled = false;
+
+
+        document
+          .getElementById(
+            "closeButton"
+          )
+          .disabled = false;
+
+
+        result.textContent =
+          "公開鍵の登録に成功しました。\n\n" +
+
+          "HTTP Status: " +
+          response.status +
+
+          "\n\n" +
+
+          JSON.stringify(
+            data,
+            null,
+            2
+          ) +
+
+          "\n\n" +
+
+          "次に「3. 新しいOPEN命令を送信する」を押してください。";
+
+      } catch (error) {
+
+        result.textContent =
+          "公開鍵登録エラー\n\n" +
+          error.message;
+      }
+    }
+
+
+    // =========================================================
+    // 3. 新しいOPEN
+    // =========================================================
+
+    async function sendFreshOpen() {
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+
+      if (!signingKeyPair) {
+
+        result.textContent =
+          "署名用秘密鍵がありません。";
+
+        return;
+      }
+
+
+      const timestamp =
+        new Date().toISOString();
+
+
+      const nonce =
+        crypto.randomUUID();
+
+
+      const requestData =
+        await createSignedCommand(
+          "OPEN",
+          timestamp,
+          nonce
+        );
+
+
+      // ---------------------------------------------------------
+      // リプレイ試験用に
+      // 「署名を含めて完全に同じリクエスト」を保存
+      // ---------------------------------------------------------
+
+      lastOpenRequest =
+        JSON.parse(
+          JSON.stringify(
+            requestData
+          )
+        );
+
+
+      result.textContent =
+        "新しいOPEN命令を送信しています...\n\n" +
+
+        "timestamp:\n" +
+        timestamp +
+
+        "\n\nnonce:\n" +
+        nonce;
+
+
+      const responseResult =
+        await sendCommandRequest(
+          requestData
+        );
+
+
+      if (
+        responseResult.response.ok &&
+        responseResult.data.ok
+      ) {
+
+        document
+          .getElementById(
+            "replayButton"
+          )
+          .disabled = false;
+      }
+
+
+      showResponse(
+        "新しいOPEN命令",
+        responseResult.response,
+        responseResult.data,
+        requestData
+      );
+    }
+
+
+    // =========================================================
+    // 4. 同じOPENをそのまま再送
+    // =========================================================
+
+    async function replayOpen() {
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+
+      if (!lastOpenRequest) {
+
+        result.textContent =
+          "再送するOPEN命令がありません。";
+
+        return;
+      }
+
+
+      result.textContent =
+        "先ほどとまったく同じOPEN命令を再送しています...\n\n" +
+
+        "同じtimestamp:\n" +
+        lastOpenRequest.timestamp +
+
+        "\n\n同じnonce:\n" +
+        lastOpenRequest.nonce;
+
+
+      const responseResult =
+        await sendCommandRequest(
+          lastOpenRequest
+        );
+
+
+      showResponse(
+        "同じOPEN命令の再送",
+        responseResult.response,
+        responseResult.data,
+        lastOpenRequest
+      );
+    }
+
+
+    // =========================================================
+    // 5. 10分前のOPEN
+    // =========================================================
+
+    async function sendOldTimestampOpen() {
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+
+      if (!signingKeyPair) {
+
+        result.textContent =
+          "署名用秘密鍵がありません。";
+
+        return;
+      }
+
+
+      const oldTime =
+        new Date(
+          Date.now() -
+          10 * 60 * 1000
+        );
+
+
+      const timestamp =
+        oldTime.toISOString();
+
+
+      const nonce =
+        crypto.randomUUID();
+
+
+      // ---------------------------------------------------------
+      // 古いtimestampを含めた状態で
+      // 正しく署名する
+      // ---------------------------------------------------------
+
+      const requestData =
+        await createSignedCommand(
+          "OPEN",
+          timestamp,
+          nonce
+        );
+
+
+      result.textContent =
+        "10分前のtimestampで正しく署名したOPEN命令を送信しています...\n\n" +
+
+        "timestamp:\n" +
+        timestamp +
+
+        "\n\nnonce:\n" +
+        nonce;
+
+
+      const responseResult =
+        await sendCommandRequest(
+          requestData
+        );
+
+
+      showResponse(
+        "10分前のOPEN命令",
+        responseResult.response,
+        responseResult.data,
+        requestData
+      );
+    }
+
+
+    // =========================================================
+    // 6. 新しいCLOSE
+    // =========================================================
+
+    async function sendFreshClose() {
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+
+      if (!signingKeyPair) {
+
+        result.textContent =
+          "署名用秘密鍵がありません。";
+
+        return;
+      }
+
+
+      const timestamp =
+        new Date().toISOString();
+
+
+      const nonce =
+        crypto.randomUUID();
+
+
+      const requestData =
+        await createSignedCommand(
+          "CLOSE",
+          timestamp,
+          nonce
+        );
+
+
+      result.textContent =
+        "新しいCLOSE命令を送信しています...\n\n" +
+
+        "timestamp:\n" +
+        timestamp +
+
+        "\n\nnonce:\n" +
+        nonce;
+
+
+      const responseResult =
+        await sendCommandRequest(
+          requestData
+        );
+
+
+      showResponse(
+        "新しいCLOSE命令",
+        responseResult.response,
+        responseResult.data,
+        requestData
+      );
+    }
+
+
+    // =========================================================
+    // 署名付き命令を作る
+    // =========================================================
+
+    async function createSignedCommand(
+      command,
+      timestamp,
+      nonce
+    ) {
+
+      // ---------------------------------------------------------
+      // Workerと完全に同じ署名対象
+      //
+      // eventId
+      // command
+      // timestamp
+      // nonce
+      //
+      // 各項目を改行で連結
+      // ---------------------------------------------------------
+
+      const message =
+        EVENT_ID +
+        "\n" +
+        command +
+        "\n" +
+        timestamp +
+        "\n" +
+        nonce;
+
+
+      const signatureBuffer =
+        await crypto.subtle.sign(
+          {
+            name: "ECDSA",
+            hash: "SHA-256"
+          },
+
+          signingKeyPair.privateKey,
+
+          new TextEncoder().encode(
+            message
+          )
+        );
+
+
+      const signature =
+        uint8ArrayToBase64Url(
+          new Uint8Array(
+            signatureBuffer
+          )
+        );
+
+
+      return {
+        eventId:
+          EVENT_ID,
+
+        command:
+          command,
+
+        timestamp:
+          timestamp,
+
+        nonce:
+          nonce,
+
+        signature:
+          signature
+      };
+    }
+
+
+    // =========================================================
+    // Workerへ送信
+    // =========================================================
+
+    async function sendCommandRequest(
+      requestData
+    ) {
+
+      try {
+
+        const response =
+          await fetch(
+            WORKER_URL +
+            "/test11d/event-command",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify(
+                  requestData
+                )
+            }
+          );
+
+
+        let data;
+
+
+        try {
+
+          data =
+            await response.json();
+
+        } catch {
+
+          data = {
+            error:
+              "レスポンスをJSONとして読み取れませんでした。"
+          };
+        }
+
+
+        return {
+          response:
+            response,
+
+          data:
+            data
+        };
+
+      } catch (error) {
+
+        return {
+          response: {
+            ok: false,
+            status: 0
+          },
+
+          data: {
+            ok: false,
+            error:
+              error.message
+          }
+        };
+      }
+    }
+
+
+    // =========================================================
+    // 結果表示
+    // =========================================================
+
+    function showResponse(
+      title,
+      response,
+      data,
+      requestData
+    ) {
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+
+      let judgement = "";
+
+
+      if (
+        title ===
+        "新しいOPEN命令"
+      ) {
+
+        judgement =
+          response.ok &&
+          data.ok
+            ? "【期待どおり】新しいOPEN命令は受理されました。"
+            : "【想定外】新しいOPEN命令が失敗しました。";
+      }
+
+
+      if (
+        title ===
+        "同じOPEN命令の再送"
+      ) {
+
+        judgement =
+          response.status === 409 &&
+          data.error ===
+            "Nonce has already been used"
+            ? "【期待どおり】同じnonceの再送は拒否されました。"
+            : "【要確認】期待したリプレイ拒否結果と異なります。";
+      }
+
+
+      if (
+        title ===
+        "10分前のOPEN命令"
+      ) {
+
+        judgement =
+          response.status === 403 &&
+          data.error ===
+            "Command timestamp is outside the allowed time window"
+            ? "【期待どおり】古い命令は拒否されました。"
+            : "【要確認】期待したtimestamp拒否結果と異なります。";
+      }
+
+
+      if (
+        title ===
+        "新しいCLOSE命令"
+      ) {
+
+        judgement =
+          response.ok &&
+          data.ok
+            ? "【期待どおり】新しいCLOSE命令は受理されました。"
+            : "【想定外】新しいCLOSE命令が失敗しました。";
+      }
+
+
+      result.textContent =
+        title +
+        "\n\n" +
+
+        "HTTP Status: " +
+        response.status +
+
+        "\n\n" +
+
+        JSON.stringify(
+          data,
+          null,
+          2
+        ) +
+
+        "\n\n" +
+
+        "timestamp:\n" +
+        requestData.timestamp +
+
+        "\n\n" +
+
+        "nonce:\n" +
+        requestData.nonce +
+
+        "\n\n" +
+
+        judgement;
+    }
+
+
+    // =========================================================
+    // 鍵再生成時のボタン状態
+    // =========================================================
+
+    function disableAfterKeyGeneration() {
+
+      lastOpenRequest = null;
+
+
+      document
+        .getElementById(
+          "registerButton"
+        )
+        .disabled = true;
+
+
+      document
+        .getElementById(
+          "openButton"
+        )
+        .disabled = true;
+
+
+      document
+        .getElementById(
+          "replayButton"
+        )
+        .disabled = true;
+
+
+      document
+        .getElementById(
+          "oldTimestampButton"
+        )
+        .disabled = true;
+
+
+      document
+        .getElementById(
+          "closeButton"
+        )
+        .disabled = true;
+    }
+
+
+    // =========================================================
+    // Base64URL変換
+    // =========================================================
+
+    function uint8ArrayToBase64Url(
+      bytes
+    ) {
+
+      let binary = "";
+
+
+      for (
+        let i = 0;
+        i < bytes.length;
+        i++
+      ) {
+
+        binary +=
+          String.fromCharCode(
+            bytes[i]
+          );
+      }
+
+
+      return btoa(binary)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
+    }
+
+  </script>
+
+</body>
+</html>
