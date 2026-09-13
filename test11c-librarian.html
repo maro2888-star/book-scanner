@@ -33,6 +33,11 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
     #result {
       margin-top: 24px;
       padding: 16px;
@@ -64,26 +69,71 @@
     </p>
 
     <button id="generateButton">
-      署名用鍵を生成する
+      1. 署名用鍵を生成する
+    </button>
+
+    <button id="registerButton" disabled>
+      2. 公開鍵を登録する
+    </button>
+
+    <button id="openButton" disabled>
+      3. 受付を開始する
+    </button>
+
+    <button id="closeButton" disabled>
+      4. 受付を終了する
     </button>
 
     <p class="note">
       Test11-Cでは、秘密鍵はこのブラウザ内だけに保持します。
-      Cloudflare側へ送るのは公開鍵だけです。
+      Cloudflare側へ送るのは公開鍵と署名だけです。
     </p>
 
   </div>
 
   <div id="result">
-    まだ署名用鍵を生成していません。
+    まだ操作していません。
   </div>
 
   <script>
+    const WORKER_URL =
+      "https://sumaho-de-sensho-test10.maro2888.workers.dev";
+
+    const EVENT_ID =
+      "test11-event-001";
+
     let signingKeyPair = null;
+    let publicKeyJwk = null;
+
 
     document
       .getElementById("generateButton")
-      .addEventListener("click", generateSigningKeys);
+      .addEventListener(
+        "click",
+        generateSigningKeys
+      );
+
+    document
+      .getElementById("registerButton")
+      .addEventListener(
+        "click",
+        registerPublicKey
+      );
+
+    document
+      .getElementById("openButton")
+      .addEventListener(
+        "click",
+        () => sendEventCommand("OPEN")
+      );
+
+    document
+      .getElementById("closeButton")
+      .addEventListener(
+        "click",
+        () => sendEventCommand("CLOSE")
+      );
+
 
     async function generateSigningKeys() {
 
@@ -92,6 +142,8 @@
 
       result.textContent =
         "署名用鍵を生成しています...";
+
+      disableCommandButtons();
 
       try {
 
@@ -105,11 +157,15 @@
             ["sign", "verify"]
           );
 
-        const publicKeyJwk =
+        publicKeyJwk =
           await crypto.subtle.exportKey(
             "jwk",
             signingKeyPair.publicKey
           );
+
+        document
+          .getElementById("registerButton")
+          .disabled = false;
 
         result.textContent =
           "署名用鍵の生成に成功しました。\n\n" +
@@ -121,7 +177,8 @@
             2
           ) +
           "\n\n" +
-          "秘密鍵：ブラウザ内に保持しています。";
+          "秘密鍵：ブラウザ内に保持しています。\n\n" +
+          "次に「2. 公開鍵を登録する」を押してください。";
 
       } catch (error) {
 
@@ -129,6 +186,255 @@
           "鍵生成エラー\n\n" +
           error.message;
       }
+    }
+
+
+    async function registerPublicKey() {
+
+      const result =
+        document.getElementById("result");
+
+      if (
+        !signingKeyPair ||
+        !publicKeyJwk
+      ) {
+        result.textContent =
+          "先に署名用鍵を生成してください。";
+        return;
+      }
+
+      result.textContent =
+        "公開鍵を登録しています...";
+
+      try {
+
+        const response =
+          await fetch(
+            WORKER_URL +
+            "/test11c/register-public-key",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+              body:
+                JSON.stringify({
+                  eventId:
+                    EVENT_ID,
+                  signingPublicKey:
+                    publicKeyJwk
+                })
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !data.ok
+        ) {
+          result.textContent =
+            "公開鍵登録エラー\n\n" +
+            "HTTP Status: " +
+            response.status +
+            "\n\n" +
+            JSON.stringify(
+              data,
+              null,
+              2
+            );
+          return;
+        }
+
+        document
+          .getElementById("openButton")
+          .disabled = false;
+
+        document
+          .getElementById("closeButton")
+          .disabled = false;
+
+        result.textContent =
+          "公開鍵の登録に成功しました。\n\n" +
+          "HTTP Status: " +
+          response.status +
+          "\n\n" +
+          JSON.stringify(
+            data,
+            null,
+            2
+          ) +
+          "\n\n" +
+          "次に「3. 受付を開始する」を押せます。";
+
+      } catch (error) {
+
+        result.textContent =
+          "公開鍵登録エラー\n\n" +
+          error.message;
+      }
+    }
+
+
+    async function sendEventCommand(
+      command
+    ) {
+
+      const result =
+        document.getElementById("result");
+
+      if (!signingKeyPair) {
+        result.textContent =
+          "署名用秘密鍵がありません。";
+        return;
+      }
+
+      const timestamp =
+        new Date().toISOString();
+
+      const message =
+        EVENT_ID +
+        "\n" +
+        command +
+        "\n" +
+        timestamp;
+
+      result.textContent =
+        command +
+        "命令に署名しています...";
+
+      try {
+
+        const signatureBuffer =
+          await crypto.subtle.sign(
+            {
+              name: "ECDSA",
+              hash: "SHA-256"
+            },
+            signingKeyPair.privateKey,
+            new TextEncoder().encode(
+              message
+            )
+          );
+
+        const signature =
+          uint8ArrayToBase64Url(
+            new Uint8Array(
+              signatureBuffer
+            )
+          );
+
+        const response =
+          await fetch(
+            WORKER_URL +
+            "/test11c/event-command",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+              body:
+                JSON.stringify({
+                  eventId:
+                    EVENT_ID,
+                  command:
+                    command,
+                  timestamp:
+                    timestamp,
+                  signature:
+                    signature
+                })
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !data.ok
+        ) {
+          result.textContent =
+            "イベント状態変更エラー\n\n" +
+            "HTTP Status: " +
+            response.status +
+            "\n\n" +
+            JSON.stringify(
+              data,
+              null,
+              2
+            );
+          return;
+        }
+
+        const japaneseCommand =
+          command === "OPEN"
+            ? "受付開始"
+            : "受付終了";
+
+        result.textContent =
+          japaneseCommand +
+          "に成功しました。\n\n" +
+          "HTTP Status: " +
+          response.status +
+          "\n\n" +
+          JSON.stringify(
+            data,
+            null,
+            2
+          ) +
+          "\n\n" +
+          "署名検証：成功";
+
+      } catch (error) {
+
+        result.textContent =
+          "イベント状態変更エラー\n\n" +
+          error.message;
+      }
+    }
+
+
+    function disableCommandButtons() {
+
+      document
+        .getElementById("registerButton")
+        .disabled = true;
+
+      document
+        .getElementById("openButton")
+        .disabled = true;
+
+      document
+        .getElementById("closeButton")
+        .disabled = true;
+    }
+
+
+    function uint8ArrayToBase64Url(
+      bytes
+    ) {
+
+      let binary = "";
+
+      for (
+        let i = 0;
+        i < bytes.length;
+        i++
+      ) {
+        binary +=
+          String.fromCharCode(
+            bytes[i]
+          );
+      }
+
+      return btoa(binary)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
     }
   </script>
 
