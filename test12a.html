@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>スマホde選書会 Test12-A</title>
+
+  <style>
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        "Meiryo",
+        sans-serif;
+
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+      line-height: 1.6;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 32px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 6px;
+    }
+
+    .description {
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 18px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      box-sizing: border-box;
+      width: 100%;
+      font-size: 18px;
+      padding: 12px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px 16px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #222;
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .status {
+      margin-top: 16px;
+      font-weight: bold;
+    }
+
+    .success {
+      color: #167329;
+    }
+
+    .error {
+      color: #b00020;
+    }
+
+    .warning {
+      background: #fff3f3;
+      border: 1px solid #e0aaaa;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 20px;
+      color: #8a1111;
+      font-weight: bold;
+    }
+
+    .notice {
+      background: #f2f6ff;
+      border: 1px solid #b7c7e6;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+
+    .result-item {
+      margin-top: 18px;
+    }
+
+    .result-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: #f3f3f3;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 0;
+      font-size: 13px;
+      max-height: 280px;
+      overflow: auto;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>スマホde選書会 Test12-A</h1>
+
+  <div class="description">
+    選書会を作成するときに必要なID・暗号鍵・署名鍵・受付用トークンを、
+    ブラウザ内で自動生成できることを確認する実証テストです。
+  </div>
+
+
+  <div class="card">
+
+    <label for="eventName">選書会名</label>
+
+    <input
+      id="eventName"
+      type="text"
+      placeholder="例：テスト選書会"
+      autocomplete="off"
+    >
+
+    <button id="createButton">
+      選書会を作成する
+    </button>
+
+    <div id="status" class="status"></div>
+
+  </div>
+
+
+  <div class="notice">
+    Test12-Aでは、D1への保存も「スマホde選書 管理データ」への保存も行いません。
+    このページのブラウザ内で生成するだけです。
+  </div>
+
+
+  <div id="resultArea" class="hidden">
+
+    <div class="warning">
+      Test12-Aでは動作確認のため秘密鍵を画面に表示しています。
+      本番画面では秘密鍵を表示しません。
+    </div>
+
+
+    <h2>基本情報</h2>
+
+    <div class="result-item">
+      <div class="result-label">選書会名</div>
+      <pre id="resultEventName"></pre>
+    </div>
+
+    <div class="result-item">
+      <div class="result-label">eventId</div>
+      <pre id="resultEventId"></pre>
+    </div>
+
+    <div class="result-item">
+      <div class="result-label">createdAt</div>
+      <pre id="resultCreatedAt"></pre>
+    </div>
+
+    <div class="result-item">
+      <div class="result-label">初期状態</div>
+      <pre id="resultStatus"></pre>
+    </div>
+
+
+    <h2>データ暗号化用鍵ペア</h2>
+
+    <div class="result-item">
+      <div class="result-label">
+        公開鍵
+        （RSA-OAEP 2048 / SHA-256）
+      </div>
+      <pre id="resultEncryptionPublicKey"></pre>
+    </div>
+
+    <div class="result-item">
+      <div class="result-label">
+        秘密鍵
+        （RSA-OAEP 2048 / SHA-256）
+      </div>
+      <pre id="resultEncryptionPrivateKey"></pre>
+    </div>
+
+
+    <h2>OPEN / CLOSE署名用鍵ペア</h2>
+
+    <div class="result-item">
+      <div class="result-label">
+        公開鍵
+        （ECDSA P-256）
+      </div>
+      <pre id="resultSigningPublicKey"></pre>
+    </div>
+
+    <div class="result-item">
+      <div class="result-label">
+        秘密鍵
+        （ECDSA P-256）
+      </div>
+      <pre id="resultSigningPrivateKey"></pre>
+    </div>
+
+
+    <h2>受付用トークン</h2>
+
+    <div class="result-item">
+      <div class="result-label">
+        受付用トークン
+      </div>
+      <pre id="resultReceptionToken"></pre>
+    </div>
+
+    <div class="result-item">
+      <div class="result-label">
+        受付用トークン SHA-256
+      </div>
+      <pre id="resultReceptionTokenHash"></pre>
+    </div>
+
+  </div>
+
+
+  <script>
+
+    const eventNameInput =
+      document.getElementById("eventName");
+
+    const createButton =
+      document.getElementById("createButton");
+
+    const statusElement =
+      document.getElementById("status");
+
+    const resultArea =
+      document.getElementById("resultArea");
+
+
+    createButton.addEventListener(
+      "click",
+      createEventData
+    );
+
+
+    async function createEventData() {
+
+      const eventName =
+        eventNameInput.value.trim();
+
+
+      if (!eventName) {
+
+        showError(
+          "選書会名を入力してください。"
+        );
+
+        return;
+      }
+
+
+      createButton.disabled = true;
+
+      statusElement.className = "status";
+      statusElement.textContent =
+        "生成しています…";
+
+      resultArea.classList.add("hidden");
+
+
+      try {
+
+        /*
+         * ① eventId
+         */
+
+        const eventId =
+          createUuid();
+
+
+        /*
+         * ② createdAt
+         */
+
+        const createdAt =
+          new Date().toISOString();
+
+
+        /*
+         * ③ 初期状態
+         */
+
+        const eventStatus =
+          "CLOSED";
+
+
+        /*
+         * ④ データ暗号化用
+         * RSA-OAEP鍵ペア
+         */
+
+        const encryptionKeyPair =
+          await crypto.subtle.generateKey(
+            {
+              name: "RSA-OAEP",
+              modulusLength: 2048,
+              publicExponent:
+                new Uint8Array(
+                  [1, 0, 1]
+                ),
+              hash: "SHA-256"
+            },
+            true,
+            [
+              "encrypt",
+              "decrypt"
+            ]
+          );
+
+
+        const encryptionPublicJwk =
+          await crypto.subtle.exportKey(
+            "jwk",
+            encryptionKeyPair.publicKey
+          );
+
+
+        const encryptionPrivateJwk =
+          await crypto.subtle.exportKey(
+            "jwk",
+            encryptionKeyPair.privateKey
+          );
+
+
+        /*
+         * ⑤ OPEN/CLOSE署名用
+         * ECDSA P-256鍵ペア
+         */
+
+        const signingKeyPair =
+          await crypto.subtle.generateKey(
+            {
+              name: "ECDSA",
+              namedCurve: "P-256"
+            },
+            true,
+            [
+              "sign",
+              "verify"
+            ]
+          );
+
+
+        const signingPublicJwk =
+          await crypto.subtle.exportKey(
+            "jwk",
+            signingKeyPair.publicKey
+          );
+
+
+        const signingPrivateJwk =
+          await crypto.subtle.exportKey(
+            "jwk",
+            signingKeyPair.privateKey
+          );
+
+
+        /*
+         * ⑥ 受付用トークン
+         * 32バイト乱数
+         */
+
+        const tokenBytes =
+          new Uint8Array(32);
+
+        crypto.getRandomValues(
+          tokenBytes
+        );
+
+
+        const receptionToken =
+          bytesToBase64Url(
+            tokenBytes
+          );
+
+
+        /*
+         * SHA-256
+         *
+         * 将来Worker側で、
+         * QRから受け取ったトークン文字列を
+         * 同じ方法でSHA-256化して比較できるよう、
+         * Base64URL文字列そのものをUTF-8化して
+         * ハッシュする。
+         */
+
+        const tokenTextBytes =
+          new TextEncoder().encode(
+            receptionToken
+          );
+
+
+        const tokenHashBuffer =
+          await crypto.subtle.digest(
+            "SHA-256",
+            tokenTextBytes
+          );
+
+
+        const receptionTokenHash =
+          bytesToBase64Url(
+            new Uint8Array(
+              tokenHashBuffer
+            )
+          );
+
+
+        /*
+         * 結果表示
+         */
+
+        setText(
+          "resultEventName",
+          eventName
+        );
+
+        setText(
+          "resultEventId",
+          eventId
+        );
+
+        setText(
+          "resultCreatedAt",
+          createdAt
+        );
+
+        setText(
+          "resultStatus",
+          eventStatus
+        );
+
+
+        setJson(
+          "resultEncryptionPublicKey",
+          encryptionPublicJwk
+        );
+
+        setJson(
+          "resultEncryptionPrivateKey",
+          encryptionPrivateJwk
+        );
+
+
+        setJson(
+          "resultSigningPublicKey",
+          signingPublicJwk
+        );
+
+        setJson(
+          "resultSigningPrivateKey",
+          signingPrivateJwk
+        );
+
+
+        setText(
+          "resultReceptionToken",
+          receptionToken
+        );
+
+        setText(
+          "resultReceptionTokenHash",
+          receptionTokenHash
+        );
+
+
+        resultArea.classList.remove(
+          "hidden"
+        );
+
+
+        statusElement.className =
+          "status success";
+
+        statusElement.textContent =
+          "生成に成功しました。";
+
+
+      } catch (error) {
+
+        console.error(error);
+
+        showError(
+          "生成中にエラーが発生しました：" +
+          error.message
+        );
+
+      } finally {
+
+        createButton.disabled = false;
+
+      }
+    }
+
+
+    /*
+     * UUID v4
+     *
+     * randomUUID()に依存しすぎないよう、
+     * getRandomValues()で生成する。
+     */
+
+    function createUuid() {
+
+      const bytes =
+        new Uint8Array(16);
+
+      crypto.getRandomValues(bytes);
+
+      bytes[6] =
+        (bytes[6] & 0x0f) | 0x40;
+
+      bytes[8] =
+        (bytes[8] & 0x3f) | 0x80;
+
+
+      const hex =
+        [...bytes].map(
+          b =>
+            b.toString(16)
+              .padStart(2, "0")
+        );
+
+
+      return (
+        hex.slice(0, 4).join("") +
+        "-" +
+        hex.slice(4, 6).join("") +
+        "-" +
+        hex.slice(6, 8).join("") +
+        "-" +
+        hex.slice(8, 10).join("") +
+        "-" +
+        hex.slice(10, 16).join("")
+      );
+    }
+
+
+    function bytesToBase64Url(
+      bytes
+    ) {
+
+      let binary = "";
+
+      for (
+        let i = 0;
+        i < bytes.length;
+        i++
+      ) {
+
+        binary +=
+          String.fromCharCode(
+            bytes[i]
+          );
+      }
+
+
+      return btoa(binary)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
+    }
+
+
+    function setText(
+      id,
+      value
+    ) {
+
+      document.getElementById(id)
+        .textContent =
+        String(value);
+    }
+
+
+    function setJson(
+      id,
+      value
+    ) {
+
+      document.getElementById(id)
+        .textContent =
+        JSON.stringify(
+          value,
+          null,
+          2
+        );
+    }
+
+
+    function showError(
+      message
+    ) {
+
+      statusElement.className =
+        "status error";
+
+      statusElement.textContent =
+        message;
+    }
+
+  </script>
+
+</body>
+</html>
