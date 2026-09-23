@@ -87,6 +87,40 @@
       opacity: 0.5;
     }
 
+    .secondary-button {
+      background: #666;
+    }
+
+    #memberStatus {
+      display: none;
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: #fff;
+      border-radius: 8px;
+    }
+
+    .current-member-label {
+      margin-bottom: 3px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    #currentMemberName {
+      font-size: 21px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    #countLine {
+      margin-top: 9px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #changeMemberButton {
+      margin-top: 12px;
+    }
+
     .camera-wrap {
       position: relative;
       width: 100%;
@@ -176,16 +210,6 @@
       font-weight: bold;
     }
 
-    #countBox {
-      margin-top: 12px;
-      padding: 12px;
-      background: #fff;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 19px;
-      font-weight: bold;
-    }
-
     #scannerArea,
     #bookCard,
     #registerButton,
@@ -212,10 +236,11 @@
     </div>
 
 
+    <!-- 登録者名入力 -->
     <section id="nameArea" class="card">
 
       <label for="memberName">
-        名前
+        登録者名
       </label>
 
       <input
@@ -234,15 +259,33 @@
     </section>
 
 
-    <div
-      id="countBox"
-      style="display:none;"
-    >
-      登録した本：
-      <span id="bookCount">0</span>冊
-    </div>
+    <!-- 現在の登録者 -->
+    <section id="memberStatus">
+
+      <div class="current-member-label">
+        現在の登録者
+      </div>
+
+      <div id="currentMemberName">
+      </div>
+
+      <div id="countLine">
+        登録した本：
+        <span id="bookCount">0</span>冊
+      </div>
+
+      <button
+        id="changeMemberButton"
+        class="secondary-button"
+        type="button"
+      >
+        登録者を変更する
+      </button>
+
+    </section>
 
 
+    <!-- カメラ -->
     <section id="scannerArea">
 
       <div
@@ -276,13 +319,15 @@
           まだありません
         </div>
 
-        <div id="message"></div>
+        <div id="message">
+        </div>
 
       </section>
 
     </section>
 
 
+    <!-- 書誌確認 -->
     <section
       id="bookCard"
       class="card"
@@ -292,6 +337,7 @@
         <div class="book-label">
           書名
         </div>
+
         <div
           id="bookTitle"
           class="book-value book-title"
@@ -302,6 +348,7 @@
         <div class="book-label">
           出版社
         </div>
+
         <div
           id="bookPublisher"
           class="book-value"
@@ -312,6 +359,7 @@
         <div class="book-label">
           著者
         </div>
+
         <div
           id="bookAuthor"
           class="book-value"
@@ -322,6 +370,7 @@
         <div class="book-label">
           ISBN
         </div>
+
         <div
           id="bookIsbn"
           class="book-value"
@@ -390,11 +439,17 @@
     const startButton =
       document.getElementById("startButton");
 
-    const countBox =
-      document.getElementById("countBox");
+    const memberStatus =
+      document.getElementById("memberStatus");
+
+    const currentMemberName =
+      document.getElementById("currentMemberName");
 
     const bookCount =
       document.getElementById("bookCount");
+
+    const changeMemberButton =
+      document.getElementById("changeMemberButton");
 
     const scannerArea =
       document.getElementById("scannerArea");
@@ -551,10 +606,12 @@
       let result;
 
       try {
+
         result =
           JSON.parse(text);
 
       } catch (error) {
+
         throw new Error(
           "登録冊数を確認できませんでした。"
         );
@@ -562,6 +619,7 @@
 
 
       if (!result.success) {
+
         throw new Error(
           result.message ||
           "登録冊数を取得できませんでした。"
@@ -601,19 +659,28 @@
       scanning = false;
 
       if (animationId) {
-        cancelAnimationFrame(animationId);
+
+        cancelAnimationFrame(
+          animationId
+        );
+
         animationId = null;
       }
 
+
       if (stream) {
+
         stream
           .getTracks()
-          .forEach(function(track) {
-            track.stop();
-          });
+          .forEach(
+            function(track) {
+              track.stop();
+            }
+          );
 
         stream = null;
       }
+
 
       video.srcObject = null;
     }
@@ -654,6 +721,7 @@
               audio: false,
 
               video: {
+
                 facingMode: {
                   ideal: "environment"
                 },
@@ -719,23 +787,28 @@
         return;
       }
 
+
       if (
         video.readyState < 2 ||
         video.videoWidth === 0 ||
         video.videoHeight === 0
       ) {
+
         requestScan();
         return;
       }
+
 
       if (
         decoding ||
         timestamp - lastDecodeTime <
           DECODE_INTERVAL
       ) {
+
         requestScan();
         return;
       }
+
 
       lastDecodeTime =
         timestamp;
@@ -771,7 +844,8 @@
             (sourceHeight - cropHeight) / 2
           );
 
-        const targetWidth = 1200;
+        const targetWidth =
+          1200;
 
         const scale =
           targetWidth / cropWidth;
@@ -916,6 +990,7 @@
 
 
         if (!response.ok) {
+
           throw new Error(
             "HTTP " +
             response.status
@@ -950,7 +1025,9 @@
 
 
         currentBook = {
-          productCode: isbn,
+
+          productCode:
+            isbn,
 
           publisher:
             String(
@@ -967,7 +1044,8 @@
               summary.author || ""
             ),
 
-          price: ""
+          price:
+            ""
         };
 
 
@@ -1042,7 +1120,9 @@
         return;
       }
 
+
       if (!currentRegistrationId) {
+
         currentRegistrationId =
           createRegistrationId();
       }
@@ -1052,6 +1132,9 @@
         true;
 
       nextButton.disabled =
+        true;
+
+      changeMemberButton.disabled =
         true;
 
       setMessage(
@@ -1112,7 +1195,9 @@
 
         let result;
 
+
         try {
+
           result =
             JSON.parse(text);
 
@@ -1136,9 +1221,6 @@
         bookCount.textContent =
           result.count;
 
-        countBox.style.display =
-          "block";
-
 
         if (result.duplicate) {
 
@@ -1156,7 +1238,8 @@
         }
 
 
-        currentRegistrationId = null;
+        currentRegistrationId =
+          null;
 
 
         setTimeout(
@@ -1187,6 +1270,9 @@
 
         nextButton.disabled =
           false;
+
+        changeMemberButton.disabled =
+          false;
       }
     }
 
@@ -1198,15 +1284,19 @@
         const name =
           memberNameInput.value.trim();
 
+
         if (!name) {
+
           alert(
-            "名前を入力してください。"
+            "登録者名を入力してください。"
           );
+
           return;
         }
 
 
-        memberName = name;
+        memberName =
+          name;
 
         startButton.disabled =
           true;
@@ -1220,14 +1310,20 @@
           const savedCount =
             await getSavedBookCount();
 
+
+          currentMemberName.textContent =
+            memberName;
+
           bookCount.textContent =
             savedCount;
+
 
           nameArea.style.display =
             "none";
 
-          countBox.style.display =
+          memberStatus.style.display =
             "block";
+
 
           await startCamera();
 
@@ -1256,6 +1352,47 @@
     );
 
 
+    changeMemberButton.addEventListener(
+      "click",
+      function() {
+
+        /*
+         * 登録者を変更する時点で、
+         * カメラと現在の書誌表示を終了する。
+         */
+        stopCamera();
+
+        clearBookDisplay();
+
+        currentRegistrationId =
+          null;
+
+        memberName =
+          "";
+
+
+        scannerArea.style.display =
+          "none";
+
+        memberStatus.style.display =
+          "none";
+
+        nameArea.style.display =
+          "block";
+
+
+        /*
+         * 前の人の名前を残さない。
+         * 次の人が誤ってそのまま開始するのを防ぐ。
+         */
+        memberNameInput.value =
+          "";
+
+        memberNameInput.focus();
+      }
+    );
+
+
     registerButton.addEventListener(
       "click",
       registerCurrentBook
@@ -1270,6 +1407,7 @@
           currentBook &&
           currentBook.productCode
         ) {
+
           fetchOpenBd(
             currentBook.productCode
           );
@@ -1277,12 +1415,15 @@
           return;
         }
 
+
         const isbn =
           normalizeCode(
             scanResult.textContent
           );
 
+
         if (isIsbn(isbn)) {
+
           fetchOpenBd(isbn);
         }
       }
