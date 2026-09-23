@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -47,6 +48,46 @@
       font-size: 13px;
     }
 
+    .card {
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: #fff;
+      border-radius: 8px;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      font-size: 18px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 13px;
+      border: 0;
+      border-radius: 8px;
+      background: #333;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+    }
+
     .camera-wrap {
       position: relative;
       width: 100%;
@@ -70,7 +111,7 @@
       right: 5%;
       top: 29%;
       height: 34%;
-      border: 3px solid rgba(255, 255, 255, 0.9);
+      border: 3px solid rgba(255,255,255,0.9);
       border-radius: 8px;
       pointer-events: none;
     }
@@ -86,28 +127,16 @@
       text-shadow: 0 1px 3px #000;
     }
 
-    .card {
-      margin-top: 12px;
-      padding: 14px 16px;
-      background: #fff;
-      border-radius: 8px;
-    }
-
-    .center {
-      text-align: center;
-    }
-
     .label {
       margin-bottom: 6px;
       color: #666;
       font-size: 13px;
     }
 
-    #result {
+    #scanResult {
       min-height: 34px;
-      font-size: 23px;
+      font-size: 21px;
       font-weight: bold;
-      letter-spacing: 1px;
       word-break: break-all;
     }
 
@@ -116,6 +145,7 @@
       min-height: 24px;
       font-size: 14px;
       line-height: 1.5;
+      white-space: pre-wrap;
     }
 
     .success {
@@ -147,23 +177,21 @@
       font-weight: bold;
     }
 
-    button {
-      width: 100%;
+    #countBox {
       margin-top: 12px;
-      padding: 13px;
-      border: 0;
+      padding: 12px;
+      background: #fff;
       border-radius: 8px;
-      background: #333;
-      color: #fff;
-      font-size: 16px;
+      text-align: center;
+      font-size: 19px;
+      font-weight: bold;
     }
 
-    button:disabled {
-      opacity: 0.5;
-    }
-
+    #scannerArea,
     #bookCard,
+    #registerButton,
     #nextButton,
+    #retryCameraButton,
     #retryOpenBdButton {
       display: none;
     }
@@ -181,48 +209,89 @@
     <h1>スマホde選書会</h1>
 
     <div class="subtitle">
-      10/14試作版・OpenBD接続テスト
+      10/14試作版
     </div>
 
 
-    <div
-      id="cameraWrap"
-      class="camera-wrap"
+    <!-- 名前入力 -->
+    <section
+      id="nameArea"
+      class="card"
     >
 
-      <video
-        id="video"
-        autoplay
-        muted
-        playsinline>
-      </video>
+      <label for="memberName">
+        名前
+      </label>
 
-      <div class="scan-guide"></div>
+      <input
+        id="memberName"
+        type="text"
+        autocomplete="name"
+      >
 
-      <div class="guide-label">
-        1段目のバーコードをこの枠に合わせてください
-      </div>
-
-    </div>
-
-
-    <section class="card center">
-
-      <div class="label">
-        読み取ったコード
-      </div>
-
-      <div id="result">
-        まだありません
-      </div>
-
-      <div id="message">
-        カメラを起動しています…
-      </div>
+      <button
+        id="startButton"
+        type="button"
+      >
+        選書をはじめる
+      </button>
 
     </section>
 
 
+    <!-- 登録冊数 -->
+    <div
+      id="countBox"
+      style="display:none;"
+    >
+      登録した本：
+      <span id="bookCount">0</span>冊
+    </div>
+
+
+    <!-- カメラ -->
+    <section id="scannerArea">
+
+      <div
+        id="cameraWrap"
+        class="camera-wrap"
+      >
+
+        <video
+          id="video"
+          autoplay
+          muted
+          playsinline>
+        </video>
+
+        <div class="scan-guide"></div>
+
+        <div class="guide-label">
+          1段目のバーコードをこの枠に合わせてください
+        </div>
+
+      </div>
+
+
+      <section class="card center">
+
+        <div class="label">
+          読み取ったコード
+        </div>
+
+        <div id="scanResult">
+          まだありません
+        </div>
+
+        <div id="message">
+        </div>
+
+      </section>
+
+    </section>
+
+
+    <!-- 書誌確認 -->
     <section
       id="bookCard"
       class="card"
@@ -272,11 +341,10 @@
 
 
     <button
-      id="retryCameraButton"
+      id="registerButton"
       type="button"
-      style="display:none;"
     >
-      カメラを再起動する
+      登録
     </button>
 
 
@@ -296,6 +364,14 @@
     </button>
 
 
+    <button
+      id="retryCameraButton"
+      type="button"
+    >
+      カメラを再起動する
+    </button>
+
+
     <canvas id="canvas"></canvas>
 
   </main>
@@ -309,6 +385,31 @@
   <script>
     "use strict";
 
+
+    const GAS_WEB_APP_URL =
+      "https://script.google.com/macros/s/AKfycbzufpnbugp7iXpmeOpsNb-7bYLvpd0X4H7sulGy2BINJdBf7kx7muawnyhO5haLxOrE/exec";
+
+
+    const nameArea =
+      document.getElementById("nameArea");
+
+    const memberNameInput =
+      document.getElementById("memberName");
+
+    const startButton =
+      document.getElementById("startButton");
+
+    const countBox =
+      document.getElementById("countBox");
+
+    const bookCount =
+      document.getElementById("bookCount");
+
+    const scannerArea =
+      document.getElementById("scannerArea");
+
+    const cameraWrap =
+      document.getElementById("cameraWrap");
 
     const video =
       document.getElementById("video");
@@ -324,11 +425,8 @@
         }
       );
 
-    const cameraWrap =
-      document.getElementById("cameraWrap");
-
-    const resultElement =
-      document.getElementById("result");
+    const scanResult =
+      document.getElementById("scanResult");
 
     const messageElement =
       document.getElementById("message");
@@ -348,8 +446,8 @@
     const bookIsbn =
       document.getElementById("bookIsbn");
 
-    const retryCameraButton =
-      document.getElementById("retryCameraButton");
+    const registerButton =
+      document.getElementById("registerButton");
 
     const retryOpenBdButton =
       document.getElementById("retryOpenBdButton");
@@ -357,6 +455,11 @@
     const nextButton =
       document.getElementById("nextButton");
 
+    const retryCameraButton =
+      document.getElementById("retryCameraButton");
+
+
+    let memberName = "";
 
     let stream = null;
     let scanning = false;
@@ -364,9 +467,27 @@
     let animationId = null;
     let lastDecodeTime = 0;
 
-    let currentIsbn = "";
+    let currentBook = null;
+    let currentRegistrationId = null;
 
     const DECODE_INTERVAL = 120;
+
+
+    function createRegistrationId() {
+
+      if (
+        window.crypto &&
+        crypto.randomUUID
+      ) {
+        return crypto.randomUUID();
+      }
+
+      return (
+        Date.now().toString(36) +
+        "-" +
+        Math.random().toString(36).slice(2)
+      );
+    }
 
 
     function normalizeCode(text) {
@@ -412,19 +533,24 @@
 
     function clearBookDisplay() {
 
+      currentBook = null;
+
       bookCard.style.display =
         "none";
 
-      bookTitle.textContent = "";
-      bookPublisher.textContent = "";
-      bookAuthor.textContent = "";
-      bookIsbn.textContent = "";
+      registerButton.style.display =
+        "none";
 
       retryOpenBdButton.style.display =
         "none";
 
       nextButton.style.display =
         "none";
+
+      bookTitle.textContent = "";
+      bookPublisher.textContent = "";
+      bookAuthor.textContent = "";
+      bookIsbn.textContent = "";
     }
 
 
@@ -433,23 +559,16 @@
       scanning = false;
 
       if (animationId) {
-
-        cancelAnimationFrame(
-          animationId
-        );
-
+        cancelAnimationFrame(animationId);
         animationId = null;
       }
 
       if (stream) {
-
         stream
           .getTracks()
-          .forEach(
-            function(track) {
-              track.stop();
-            }
-          );
+          .forEach(function(track) {
+            track.stop();
+          });
 
         stream = null;
       }
@@ -462,22 +581,25 @@
 
       stopCamera();
 
-      currentIsbn = "";
-
       clearBookDisplay();
+
+      currentRegistrationId = null;
+
+      scannerArea.style.display =
+        "block";
 
       cameraWrap.style.display =
         "block";
 
-      resultElement.textContent =
+      scanResult.textContent =
         "まだありません";
+
+      retryCameraButton.style.display =
+        "none";
 
       setMessage(
         "カメラを起動しています…"
       );
-
-      retryCameraButton.style.display =
-        "none";
 
       try {
 
@@ -489,7 +611,6 @@
               audio: false,
 
               video: {
-
                 facingMode: {
                   ideal: "environment"
                 },
@@ -501,10 +622,9 @@
                 height: {
                   ideal: 1080
                 }
-
               }
-
             });
+
 
         video.srcObject =
           stream;
@@ -519,13 +639,13 @@
 
         requestScan();
 
+
       } catch (error) {
 
         console.error(error);
 
         setMessage(
-          "カメラを起動できませんでした。" +
-          "（" +
+          "カメラを起動できませんでした。（" +
           (error.name || "不明なエラー") +
           "）",
           "error"
@@ -561,7 +681,6 @@
         video.videoWidth === 0 ||
         video.videoHeight === 0
       ) {
-
         requestScan();
         return;
       }
@@ -571,7 +690,6 @@
         timestamp - lastDecodeTime <
           DECODE_INTERVAL
       ) {
-
         requestScan();
         return;
       }
@@ -580,6 +698,7 @@
         timestamp;
 
       decoding = true;
+
 
       try {
 
@@ -601,41 +720,34 @@
 
         const cropX =
           Math.floor(
-            (
-              sourceWidth -
-              cropWidth
-            ) / 2
+            (sourceWidth - cropWidth) / 2
           );
 
         const cropY =
           Math.floor(
-            (
-              sourceHeight -
-              cropHeight
-            ) / 2
+            (sourceHeight - cropHeight) / 2
           );
 
-        const targetWidth =
-          1200;
+        const targetWidth = 1200;
 
         const scale =
-          targetWidth /
-          cropWidth;
+          targetWidth / cropWidth;
 
         const targetHeight =
           Math.max(
             180,
             Math.floor(
-              cropHeight *
-              scale
+              cropHeight * scale
             )
           );
+
 
         canvas.width =
           targetWidth;
 
         canvas.height =
           targetHeight;
+
 
         context.drawImage(
           video,
@@ -649,6 +761,7 @@
           targetHeight
         );
 
+
         const imageData =
           context.getImageData(
             0,
@@ -657,18 +770,17 @@
             targetHeight
           );
 
+
         const results =
-          await ZXingWASM
-            .readBarcodes(
-              imageData,
-              {
-                formats: [
-                  "EAN13"
-                ],
-                tryHarder: true,
-                maxNumberOfSymbols: 1
-              }
-            );
+          await ZXingWASM.readBarcodes(
+            imageData,
+            {
+              formats: ["EAN13"],
+              tryHarder: true,
+              maxNumberOfSymbols: 1
+            }
+          );
+
 
         if (
           results &&
@@ -680,12 +792,11 @@
               results[0].text
             );
 
-          resultElement.textContent =
+          scanResult.textContent =
             code;
 
-          if (isIsbn(code)) {
 
-            currentIsbn = code;
+          if (isIsbn(code)) {
 
             stopCamera();
 
@@ -700,6 +811,7 @@
 
             return;
 
+
           } else if (
             isSecondBarcode(code)
           ) {
@@ -708,6 +820,7 @@
               "2段目のバーコードを読み取りました。1段目を読み直してください。",
               "error"
             );
+
 
           } else {
 
@@ -718,12 +831,14 @@
           }
         }
 
+
       } catch (error) {
 
         console.warn(
           "読取エラー",
           error
         );
+
 
       } finally {
 
@@ -742,34 +857,38 @@
       nextButton.style.display =
         "none";
 
+      registerButton.style.display =
+        "none";
+
+
       try {
 
         const url =
           "https://api.openbd.jp/v1/get?isbn=" +
           encodeURIComponent(isbn);
 
+
         const response =
           await fetch(url);
 
-        if (!response.ok) {
 
+        if (!response.ok) {
           throw new Error(
             "HTTP " +
             response.status
           );
         }
 
+
         const data =
           await response.json();
+
 
         if (
           !Array.isArray(data) ||
           data.length === 0 ||
           data[0] === null
         ) {
-
-          bookCard.style.display =
-            "none";
 
           setMessage(
             "OpenBDに書誌情報がありませんでした。",
@@ -787,32 +906,70 @@
           data[0].summary || {};
 
 
+        currentBook = {
+          productCode: isbn,
+
+          publisher:
+            String(
+              summary.publisher || ""
+            ),
+
+          title:
+            String(
+              summary.title || ""
+            ),
+
+          author:
+            String(
+              summary.author || ""
+            ),
+
+          price: ""
+        };
+
+
+        if (!currentBook.title) {
+
+          setMessage(
+            "書名を取得できませんでした。",
+            "error"
+          );
+
+          nextButton.style.display =
+            "block";
+
+          return;
+        }
+
+
         bookTitle.textContent =
-          summary.title ||
-          "（書名なし）";
+          currentBook.title;
 
         bookPublisher.textContent =
-          summary.publisher ||
-          "（出版社なし）";
+          currentBook.publisher ||
+          "（出版社情報なし）";
 
         bookAuthor.textContent =
-          summary.author ||
+          currentBook.author ||
           "（著者情報なし）";
 
         bookIsbn.textContent =
-          isbn;
+          currentBook.productCode;
 
 
         bookCard.style.display =
+          "block";
+
+        registerButton.style.display =
+          "block";
+
+        nextButton.style.display =
           "block";
 
         setMessage(
           "書誌情報を取得しました。",
           "success"
         );
-
-        nextButton.style.display =
-          "block";
 
 
       } catch (error) {
@@ -836,9 +993,203 @@
     }
 
 
-    retryCameraButton.addEventListener(
+    async function registerCurrentBook() {
+
+      if (!currentBook) {
+        return;
+      }
+
+      if (!currentRegistrationId) {
+        currentRegistrationId =
+          createRegistrationId();
+      }
+
+
+      registerButton.disabled =
+        true;
+
+      nextButton.disabled =
+        true;
+
+      setMessage(
+        "登録しています…"
+      );
+
+
+      const data = {
+
+        memberName:
+          memberName,
+
+        productCode:
+          currentBook.productCode,
+
+        publisher:
+          currentBook.publisher,
+
+        title:
+          currentBook.title,
+
+        author:
+          currentBook.author,
+
+        price:
+          currentBook.price,
+
+        registrationId:
+          currentRegistrationId
+      };
+
+
+      try {
+
+        const response =
+          await fetch(
+            GAS_WEB_APP_URL,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "text/plain;charset=utf-8"
+              },
+
+              body:
+                JSON.stringify(data)
+            }
+          );
+
+
+        const text =
+          await response.text();
+
+
+        let result;
+
+        try {
+          result =
+            JSON.parse(text);
+
+        } catch (error) {
+
+          throw new Error(
+            "登録結果を確認できませんでした。"
+          );
+        }
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "登録できませんでした。"
+          );
+        }
+
+
+        bookCount.textContent =
+          result.count;
+
+        countBox.style.display =
+          "block";
+
+
+        if (result.duplicate) {
+
+          setMessage(
+            "登録済みです。二重登録はしていません。",
+            "success"
+          );
+
+        } else {
+
+          setMessage(
+            "登録しました。",
+            "success"
+          );
+        }
+
+
+        /*
+         * 保存成功が確認できた時だけ
+         * registrationIdを破棄する。
+         */
+        currentRegistrationId = null;
+
+
+        /*
+         * 登録完了後は少しだけ結果を見せてから
+         * 次の読み取りへ進む。
+         */
+        setTimeout(
+          function() {
+            startCamera();
+          },
+          900
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "登録エラー",
+          error
+        );
+
+        setMessage(
+          "登録できませんでした。\nもう一度［登録］を押してください。",
+          "error"
+        );
+
+
+      } finally {
+
+        registerButton.disabled =
+          false;
+
+        nextButton.disabled =
+          false;
+      }
+    }
+
+
+    startButton.addEventListener(
       "click",
-      startCamera
+      function() {
+
+        const name =
+          memberNameInput.value.trim();
+
+        if (!name) {
+          alert(
+            "名前を入力してください。"
+          );
+          return;
+        }
+
+        memberName = name;
+
+        nameArea.style.display =
+          "none";
+
+        countBox.style.display =
+          "block";
+
+        /*
+         * 現段階では開始時の冊数取得はまだ接続しない。
+         * 保存成功時にはGASから実際の冊数が返る。
+         */
+        bookCount.textContent =
+          "0";
+
+        startCamera();
+      }
+    );
+
+
+    registerButton.addEventListener(
+      "click",
+      registerCurrentBook
     );
 
 
@@ -846,17 +1197,25 @@
       "click",
       function() {
 
-        if (!currentIsbn) {
+        if (
+          currentBook &&
+          currentBook.productCode
+        ) {
+          fetchOpenBd(
+            currentBook.productCode
+          );
+
           return;
         }
 
-        setMessage(
-          "書誌情報を再検索しています…"
-        );
+        const isbn =
+          normalizeCode(
+            scanResult.textContent
+          );
 
-        fetchOpenBd(
-          currentIsbn
-        );
+        if (isIsbn(isbn)) {
+          fetchOpenBd(isbn);
+        }
       }
     );
 
@@ -867,9 +1226,15 @@
     );
 
 
+    retryCameraButton.addEventListener(
+      "click",
+      startCamera
+    );
+
+
     window.addEventListener(
       "load",
-      async function() {
+      function() {
 
         if (
           typeof ZXingWASM ===
@@ -879,15 +1244,10 @@
             "function"
         ) {
 
-          setMessage(
-            "バーコード読み取りプログラムを読み込めませんでした。",
-            "error"
+          alert(
+            "バーコード読み取りプログラムを読み込めませんでした。"
           );
-
-          return;
         }
-
-        await startCamera();
       }
     );
 
