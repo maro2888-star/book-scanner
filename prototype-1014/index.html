@@ -1,1 +1,609 @@
-<!-- スマホde選書会 10/14試作版 -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>スマホde選書会 10/14試作版</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 14px;
+      background: #f7f7f7;
+      color: #222;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 4px 0 6px;
+      text-align: center;
+      font-size: 21px;
+    }
+
+    .subtitle {
+      margin-bottom: 14px;
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .camera-wrap {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      overflow: hidden;
+      background: #000;
+      border-radius: 10px;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .scan-guide {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      top: 29%;
+      height: 34%;
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    .guide-label {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 8px;
+      text-align: center;
+      color: #fff;
+      font-size: 13px;
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .card {
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: #fff;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .label {
+      margin-bottom: 6px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    #result {
+      min-height: 34px;
+      font-size: 23px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      word-break: break-all;
+    }
+
+    #message {
+      margin-top: 8px;
+      min-height: 24px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .success {
+      color: #146c2e;
+    }
+
+    .error {
+      color: #b00020;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 13px;
+      border: 0;
+      border-radius: 8px;
+      background: #333;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    canvas {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>スマホde選書会</h1>
+
+    <div class="subtitle">
+      10/14試作版・バーコード読取テスト
+    </div>
+
+    <div class="camera-wrap">
+
+      <video
+        id="video"
+        autoplay
+        muted
+        playsinline>
+      </video>
+
+      <div class="scan-guide"></div>
+
+      <div class="guide-label">
+        1段目のバーコードをこの枠に合わせてください
+      </div>
+
+    </div>
+
+    <section class="card">
+
+      <div class="label">
+        読み取ったコード
+      </div>
+
+      <div id="result">
+        まだありません
+      </div>
+
+      <div id="message">
+        カメラを起動しています…
+      </div>
+
+    </section>
+
+    <button
+      id="retryButton"
+      type="button"
+      style="display:none;">
+      カメラを再起動する
+    </button>
+
+    <canvas id="canvas"></canvas>
+
+  </main>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/zxing-wasm/dist/iife/reader/index.js">
+  </script>
+
+
+  <script>
+    "use strict";
+
+    const video =
+      document.getElementById("video");
+
+    const canvas =
+      document.getElementById("canvas");
+
+    const context =
+      canvas.getContext(
+        "2d",
+        {
+          willReadFrequently: true
+        }
+      );
+
+    const resultElement =
+      document.getElementById("result");
+
+    const messageElement =
+      document.getElementById("message");
+
+    const retryButton =
+      document.getElementById("retryButton");
+
+
+    let stream = null;
+    let scanning = false;
+    let decoding = false;
+    let animationId = null;
+    let lastDecodeTime = 0;
+
+    const DECODE_INTERVAL = 120;
+
+
+    function normalizeCode(text) {
+
+      return String(text || "")
+        .replace(/\D/g, "");
+    }
+
+
+    function isIsbn(code) {
+
+      return (
+        /^\d{13}$/.test(code) &&
+        (
+          code.startsWith("978") ||
+          code.startsWith("979")
+        )
+      );
+    }
+
+
+    function isSecondBarcode(code) {
+
+      return (
+        /^\d{13}$/.test(code) &&
+        code.startsWith("192")
+      );
+    }
+
+
+    function setMessage(
+      text,
+      className = ""
+    ) {
+
+      messageElement.textContent =
+        text;
+
+      messageElement.className =
+        className;
+    }
+
+
+    function stopCamera() {
+
+      scanning = false;
+
+      if (animationId) {
+
+        cancelAnimationFrame(
+          animationId
+        );
+
+        animationId = null;
+      }
+
+      if (stream) {
+
+        stream
+          .getTracks()
+          .forEach(
+            function(track) {
+              track.stop();
+            }
+          );
+
+        stream = null;
+      }
+
+      video.srcObject = null;
+    }
+
+
+    async function startCamera() {
+
+      stopCamera();
+
+      resultElement.textContent =
+        "まだありません";
+
+      setMessage(
+        "カメラを起動しています…"
+      );
+
+      retryButton.style.display =
+        "none";
+
+      try {
+
+        stream =
+          await navigator
+            .mediaDevices
+            .getUserMedia({
+
+              audio: false,
+
+              video: {
+
+                facingMode: {
+                  ideal: "environment"
+                },
+
+                width: {
+                  ideal: 1920
+                },
+
+                height: {
+                  ideal: 1080
+                }
+
+              }
+
+            });
+
+        video.srcObject =
+          stream;
+
+        await video.play();
+
+        scanning = true;
+
+        setMessage(
+          "バーコードを枠に合わせてください。"
+        );
+
+        requestScan();
+
+      } catch (error) {
+
+        console.error(error);
+
+        setMessage(
+          "カメラを起動できませんでした。" +
+          "（" +
+          (error.name || "不明なエラー") +
+          "）",
+          "error"
+        );
+
+        retryButton.style.display =
+          "block";
+      }
+    }
+
+
+    function requestScan() {
+
+      if (!scanning) {
+        return;
+      }
+
+      animationId =
+        requestAnimationFrame(
+          scanFrame
+        );
+    }
+
+
+    async function scanFrame(timestamp) {
+
+      if (!scanning) {
+        return;
+      }
+
+      if (
+        video.readyState < 2 ||
+        video.videoWidth === 0 ||
+        video.videoHeight === 0
+      ) {
+
+        requestScan();
+        return;
+      }
+
+      if (
+        decoding ||
+        timestamp - lastDecodeTime <
+          DECODE_INTERVAL
+      ) {
+
+        requestScan();
+        return;
+      }
+
+      lastDecodeTime =
+        timestamp;
+
+      decoding = true;
+
+      try {
+
+        const sourceWidth =
+          video.videoWidth;
+
+        const sourceHeight =
+          video.videoHeight;
+
+        const cropWidth =
+          Math.floor(
+            sourceWidth * 0.90
+          );
+
+        const cropHeight =
+          Math.floor(
+            sourceHeight * 0.30
+          );
+
+        const cropX =
+          Math.floor(
+            (
+              sourceWidth -
+              cropWidth
+            ) / 2
+          );
+
+        const cropY =
+          Math.floor(
+            (
+              sourceHeight -
+              cropHeight
+            ) / 2
+          );
+
+        const targetWidth =
+          1200;
+
+        const scale =
+          targetWidth /
+          cropWidth;
+
+        const targetHeight =
+          Math.max(
+            180,
+            Math.floor(
+              cropHeight *
+              scale
+            )
+          );
+
+        canvas.width =
+          targetWidth;
+
+        canvas.height =
+          targetHeight;
+
+        context.drawImage(
+          video,
+          cropX,
+          cropY,
+          cropWidth,
+          cropHeight,
+          0,
+          0,
+          targetWidth,
+          targetHeight
+        );
+
+        const imageData =
+          context.getImageData(
+            0,
+            0,
+            targetWidth,
+            targetHeight
+          );
+
+        const results =
+          await ZXingWASM
+            .readBarcodes(
+              imageData,
+              {
+                formats: [
+                  "EAN13"
+                ],
+                tryHarder: true,
+                maxNumberOfSymbols: 1
+              }
+            );
+
+        if (
+          results &&
+          results.length > 0
+        ) {
+
+          const code =
+            normalizeCode(
+              results[0].text
+            );
+
+          resultElement.textContent =
+            code;
+
+          if (isIsbn(code)) {
+
+            setMessage(
+              "ISBNを読み取りました。",
+              "success"
+            );
+
+          } else if (
+            isSecondBarcode(code)
+          ) {
+
+            setMessage(
+              "2段目のバーコードを読み取りました。1段目を読み直してください。",
+              "error"
+            );
+
+          } else {
+
+            setMessage(
+              "書籍のISBNではありません。",
+              "error"
+            );
+          }
+        }
+
+      } catch (error) {
+
+        console.warn(
+          "読取エラー",
+          error
+        );
+
+      } finally {
+
+        decoding = false;
+
+        requestScan();
+      }
+    }
+
+
+    retryButton.addEventListener(
+      "click",
+      startCamera
+    );
+
+
+    window.addEventListener(
+      "load",
+      async function() {
+
+        if (
+          typeof ZXingWASM ===
+            "undefined" ||
+          typeof ZXingWASM
+            .readBarcodes !==
+            "function"
+        ) {
+
+          setMessage(
+            "バーコード読み取りプログラムを読み込めませんでした。",
+            "error"
+          );
+
+          return;
+        }
+
+        await startCamera();
+      }
+    );
+
+
+    window.addEventListener(
+      "pagehide",
+      stopCamera
+    );
+
+  </script>
+
+</body>
+</html>
