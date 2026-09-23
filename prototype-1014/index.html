@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -213,11 +212,7 @@
     </div>
 
 
-    <!-- 名前入力 -->
-    <section
-      id="nameArea"
-      class="card"
-    >
+    <section id="nameArea" class="card">
 
       <label for="memberName">
         名前
@@ -239,7 +234,6 @@
     </section>
 
 
-    <!-- 登録冊数 -->
     <div
       id="countBox"
       style="display:none;"
@@ -249,7 +243,6 @@
     </div>
 
 
-    <!-- カメラ -->
     <section id="scannerArea">
 
       <div
@@ -283,15 +276,13 @@
           まだありません
         </div>
 
-        <div id="message">
-        </div>
+        <div id="message"></div>
 
       </section>
 
     </section>
 
 
-    <!-- 書誌確認 -->
     <section
       id="bookCard"
       class="card"
@@ -531,6 +522,57 @@
     }
 
 
+    async function getSavedBookCount() {
+
+      const response =
+        await fetch(
+          GAS_WEB_APP_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
+            },
+
+            body:
+              JSON.stringify({
+                action: "getCount",
+                memberName: memberName
+              })
+          }
+        );
+
+
+      const text =
+        await response.text();
+
+
+      let result;
+
+      try {
+        result =
+          JSON.parse(text);
+
+      } catch (error) {
+        throw new Error(
+          "登録冊数を確認できませんでした。"
+        );
+      }
+
+
+      if (!result.success) {
+        throw new Error(
+          result.message ||
+          "登録冊数を取得できませんでした。"
+        );
+      }
+
+
+      return Number(result.count) || 0;
+    }
+
+
     function clearBookDisplay() {
 
       currentBook = null;
@@ -600,6 +642,7 @@
       setMessage(
         "カメラを起動しています…"
       );
+
 
       try {
 
@@ -1018,6 +1061,9 @@
 
       const data = {
 
+        action:
+          "register",
+
         memberName:
           memberName,
 
@@ -1110,17 +1156,9 @@
         }
 
 
-        /*
-         * 保存成功が確認できた時だけ
-         * registrationIdを破棄する。
-         */
         currentRegistrationId = null;
 
 
-        /*
-         * 登録完了後は少しだけ結果を見せてから
-         * 次の読み取りへ進む。
-         */
         setTimeout(
           function() {
             startCamera();
@@ -1155,7 +1193,7 @@
 
     startButton.addEventListener(
       "click",
-      function() {
+      async function() {
 
         const name =
           memberNameInput.value.trim();
@@ -1167,22 +1205,53 @@
           return;
         }
 
+
         memberName = name;
 
-        nameArea.style.display =
-          "none";
+        startButton.disabled =
+          true;
 
-        countBox.style.display =
-          "block";
+        startButton.textContent =
+          "確認しています…";
 
-        /*
-         * 現段階では開始時の冊数取得はまだ接続しない。
-         * 保存成功時にはGASから実際の冊数が返る。
-         */
-        bookCount.textContent =
-          "0";
 
-        startCamera();
+        try {
+
+          const savedCount =
+            await getSavedBookCount();
+
+          bookCount.textContent =
+            savedCount;
+
+          nameArea.style.display =
+            "none";
+
+          countBox.style.display =
+            "block";
+
+          await startCamera();
+
+
+        } catch (error) {
+
+          console.error(
+            "冊数取得エラー",
+            error
+          );
+
+          alert(
+            "登録冊数を確認できませんでした。\n通信状況を確認して、もう一度お試しください。"
+          );
+
+
+        } finally {
+
+          startButton.disabled =
+            false;
+
+          startButton.textContent =
+            "選書をはじめる";
+        }
       }
     );
 
