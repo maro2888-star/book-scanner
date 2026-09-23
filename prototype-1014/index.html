@@ -660,6 +660,9 @@ let currentBook = null;
 let currentRegistrationId = null;
 let manualMode = false;
 
+let candidateCode = "";
+let candidateCodeCount = 0;
+
 const DECODE_INTERVAL = 120;
 
 
@@ -856,10 +859,14 @@ function stopCamera() {
 
 async function startCamera() {
 
+
   stopCamera();
   clearBookDisplay();
 
   currentRegistrationId = null;
+
+  candidateCode = "";
+  candidateCodeCount = 0;
 
   scannerArea.style.display = "block";
   cameraWrap.style.display = "block";
@@ -1017,8 +1024,21 @@ async function scanFrame(timestamp) {
     if (results && results.length > 0) {
 
       const code =
+        
         normalizeCode(results[0].text);
+      if (code === candidateCode) {
 
+  candidateCodeCount++;
+
+} else {
+
+  candidateCode = code;
+  candidateCodeCount = 1;
+}
+
+if (candidateCodeCount < 2) {
+  return;
+}
       scanResult.textContent = code;
 
       if (isIsbn(code)) {
