@@ -681,6 +681,75 @@ function normalizeCode(text) {
   return String(text || "").replace(/\D/g, "");
 }
 
+function findValueByKey(obj, keys) {
+
+  if (!obj || typeof obj !== "object") {
+    return "";
+  }
+
+  for (const key of keys) {
+
+    if (
+      Object.prototype.hasOwnProperty.call(obj, key) &&
+      obj[key] !== null &&
+      obj[key] !== ""
+    ) {
+      return obj[key];
+    }
+  }
+
+  for (const value of Object.values(obj)) {
+
+    if (value && typeof value === "object") {
+
+      const found =
+        findValueByKey(value, keys);
+
+      if (
+        found !== null &&
+        found !== ""
+      ) {
+        return found;
+      }
+    }
+  }
+
+  return "";
+}
+
+function getPriceFromOpenBd(book) {
+
+  const productSupply =
+    book.onix?.ProductSupply;
+
+  if (!productSupply) {
+    return "";
+  }
+
+  const rawPrice =
+    findValueByKey(
+      productSupply,
+      ["PriceAmount"]
+    );
+
+  if (!rawPrice) {
+    return "";
+  }
+
+  const cleaned =
+    String(rawPrice).replace(/[^\d.]/g, "");
+
+  const number = Number(cleaned);
+
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
+    return "";
+  }
+
+  return String(Math.round(number));
+}
 
 function isIsbn(code) {
 
@@ -1087,6 +1156,9 @@ async function fetchOpenBd(isbn) {
     const summary =
       data[0].summary || {};
 
+    const price =
+  getPriceFromOpenBd(data[0]);
+    
     currentBook = {
       productCode: isbn,
       publisher:
@@ -1095,7 +1167,7 @@ async function fetchOpenBd(isbn) {
         String(summary.title || ""),
       author:
         String(summary.author || ""),
-      price: ""
+      price: price
     };
 
     if (!currentBook.title) {
