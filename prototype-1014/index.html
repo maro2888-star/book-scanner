@@ -964,11 +964,13 @@ async function scanFrame(timestamp) {
 
       } else {
 
-        setMessage(
-          "書籍のISBNではありません。",
-          "error"
-        );
-      }
+  showManualEntry(
+    code,
+    "jan。"
+  );
+
+  return;
+}
     }
 
   } catch (error) {
@@ -995,16 +997,22 @@ function showManualEntry(productCode, reason) {
   bookCard.style.display = "none";
   retryOpenBdButton.style.display = "none";
 
-  if (reason === "openbd") {
+ if (reason === "openbd") {
 
-    manualNote.textContent =
-      "この本の書誌情報が見つかりませんでした。分かる範囲で入力してください。";
+  manualNote.textContent =
+    "この本の書誌情報が見つかりませんでした。分かる範囲で入力してください。";
 
-  } else {
+} else if (reason === "jan") {
 
-    manualNote.textContent =
-      "バーコードがない・読み取れない本は、分かる範囲で入力してください。";
-  }
+  manualNote.textContent =
+    "書籍のISBNではありません。商品コードを使って、分かる範囲で入力してください。";
+
+} else {
+
+  manualNote.textContent =
+    "バーコードがない・読み取れない本は、分かる範囲で入力してください。";
+
+}
 
   manualIsbn.value = productCode || "";
   manualTitle.value = "";
