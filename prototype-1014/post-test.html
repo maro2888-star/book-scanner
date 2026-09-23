@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <title>外部POSTテスト</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+    }
+
+    #message {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>外部POSTテスト</h2>
+
+  <button id="sendButton">
+    テストデータを送信
+  </button>
+
+  <div id="message"></div>
+
+
+  <script>
+    "use strict";
+
+    const GAS_WEB_APP_URL =
+      "https://script.google.com/macros/s/AKfycbzufpnbugp7iXpmeOpsNb-7bYLvpd0X4H7sulGy2BINJdBf7kx7muawnyhO5haLxOrE/exec";
+
+
+    function createRegistrationId() {
+
+      if (
+        window.crypto &&
+        crypto.randomUUID
+      ) {
+        return crypto.randomUUID();
+      }
+
+      return (
+        Date.now().toString(36) +
+        "-" +
+        Math.random().toString(36).slice(2)
+      );
+    }
+
+
+    async function sendTest() {
+
+      const button =
+        document.getElementById("sendButton");
+
+      const message =
+        document.getElementById("message");
+
+      button.disabled = true;
+
+      message.textContent =
+        "送信しています…";
+
+
+      const data = {
+        memberName:
+          "GitHub外部テスト",
+
+        title:
+          "外部POSTテストの本",
+
+        registrationId:
+          createRegistrationId()
+      };
+
+
+      try {
+
+        const response =
+          await fetch(
+            GAS_WEB_APP_URL,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "text/plain;charset=utf-8"
+              },
+
+              body:
+                JSON.stringify(data)
+            }
+          );
+
+
+        const text =
+          await response.text();
+
+
+        let result;
+
+        try {
+          result =
+            JSON.parse(text);
+
+        } catch (error) {
+
+          throw new Error(
+            "GASからJSON以外の応答が返りました。\n" +
+            text.slice(0, 300)
+          );
+        }
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "登録に失敗しました。"
+          );
+        }
+
+
+        message.textContent =
+          "送信成功\n" +
+          "登録冊数：" +
+          result.count +
+          "冊";
+
+
+      } catch (error) {
+
+        console.error(error);
+
+        message.textContent =
+          "送信失敗\n" +
+          (error.message || String(error));
+
+      } finally {
+
+        button.disabled = false;
+      }
+    }
+
+
+    document
+      .getElementById("sendButton")
+      .addEventListener(
+        "click",
+        sendTest
+      );
+
+  </script>
+
+</body>
+</html>
