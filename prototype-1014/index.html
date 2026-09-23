@@ -87,6 +87,10 @@
       background: #666;
     }
 
+    .light-button {
+      background: #777;
+    }
+
     #memberStatus {
       display: none;
       margin-top: 12px;
@@ -323,6 +327,14 @@
 
       <div id="message"></div>
 
+      <button
+        id="manualEntryButton"
+        class="secondary-button"
+        type="button"
+      >
+        バーコードがない・読み取れない本を登録する
+      </button>
+
     </section>
 
   </section>
@@ -375,19 +387,22 @@
     class="card"
   >
 
-    <div class="manual-note">
-      この本の書誌情報が見つかりませんでした。<br>
+    <div
+      id="manualNote"
+      class="manual-note"
+    >
       分かる範囲で入力してください。
     </div>
 
     <label for="manualIsbn">
-      ISBN
+      商品コード（ISBN）
     </label>
 
     <input
       id="manualIsbn"
       type="text"
-      readonly
+      inputmode="numeric"
+      maxlength="13"
     >
 
     <label for="manualTitle">
@@ -396,6 +411,15 @@
 
     <input
       id="manualTitle"
+      type="text"
+    >
+
+    <label for="manualAuthor">
+      著者名（任意）
+    </label>
+
+    <input
+      id="manualAuthor"
       type="text"
     >
 
@@ -527,6 +551,9 @@ const scanResult =
 const messageElement =
   document.getElementById("message");
 
+const manualEntryButton =
+  document.getElementById("manualEntryButton");
+
 const bookCard =
   document.getElementById("bookCard");
 
@@ -545,11 +572,17 @@ const bookIsbn =
 const manualArea =
   document.getElementById("manualArea");
 
+const manualNote =
+  document.getElementById("manualNote");
+
 const manualIsbn =
   document.getElementById("manualIsbn");
 
 const manualTitle =
   document.getElementById("manualTitle");
+
+const manualAuthor =
+  document.getElementById("manualAuthor");
 
 const manualPublisher =
   document.getElementById("manualPublisher");
@@ -712,6 +745,7 @@ function clearBookDisplay() {
 
   manualIsbn.value = "";
   manualTitle.value = "";
+  manualAuthor.value = "";
   manualPublisher.value = "";
   manualPrice.value = "";
 }
@@ -768,6 +802,9 @@ async function startCamera() {
 
   retryCameraButton.style.display =
     "none";
+
+  manualEntryButton.style.display =
+    "block";
 
   setMessage(
     "カメラを起動しています…"
@@ -983,6 +1020,9 @@ async function scanFrame(timestamp) {
         cameraWrap.style.display =
           "none";
 
+        manualEntryButton.style.display =
+          "none";
+
         setMessage(
           "ISBNを読み取りました。書誌情報を検索しています…"
         );
@@ -1029,11 +1069,22 @@ async function scanFrame(timestamp) {
 }
 
 
-function showManualEntry(isbn) {
+function showManualEntry(
+  productCode,
+  reason
+) {
+
+  stopCamera();
 
   manualMode = true;
 
   currentBook = null;
+
+  cameraWrap.style.display =
+    "none";
+
+  manualEntryButton.style.display =
+    "none";
 
   bookCard.style.display =
     "none";
@@ -1041,12 +1092,27 @@ function showManualEntry(isbn) {
   retryOpenBdButton.style.display =
     "none";
 
+
+  if (reason === "openbd") {
+
+    manualNote.textContent =
+      "この本の書誌情報が見つかりませんでした。分かる範囲で入力してください。";
+
+  } else {
+
+    manualNote.textContent =
+      "バーコードがない・読み取れない本は、分かる範囲で入力してください。";
+  }
+
+
   manualIsbn.value =
-    isbn;
+    productCode || "";
 
   manualTitle.value = "";
+  manualAuthor.value = "";
   manualPublisher.value = "";
   manualPrice.value = "";
+
 
   manualArea.style.display =
     "block";
@@ -1108,7 +1174,10 @@ async function fetchOpenBd(isbn) {
         "error"
       );
 
-      showManualEntry(isbn);
+      showManualEntry(
+        isbn,
+        "openbd"
+      );
 
       return;
     }
@@ -1150,7 +1219,10 @@ async function fetchOpenBd(isbn) {
         "error"
       );
 
-      showManualEntry(isbn);
+      showManualEntry(
+        isbn,
+        "openbd"
+      );
 
       return;
     }
@@ -1211,8 +1283,16 @@ async function fetchOpenBd(isbn) {
 
 function createManualBook() {
 
+  const productCode =
+    normalizeCode(
+      manualIsbn.value
+    );
+
   const title =
     manualTitle.value.trim();
+
+  const author =
+    manualAuthor.value.trim();
 
   const publisher =
     manualPublisher.value.trim();
@@ -1237,7 +1317,7 @@ function createManualBook() {
   return {
 
     productCode:
-      manualIsbn.value.trim(),
+      productCode,
 
     publisher:
       publisher,
@@ -1246,7 +1326,7 @@ function createManualBook() {
       title,
 
     author:
-      "",
+      author,
 
     price:
       price
@@ -1526,6 +1606,28 @@ changeMemberButton.addEventListener(
       "";
 
     memberNameInput.focus();
+  }
+);
+
+
+manualEntryButton.addEventListener(
+  "click",
+  function() {
+
+    currentRegistrationId =
+      null;
+
+    scanResult.textContent =
+      "手入力";
+
+    setMessage(
+      "手入力で登録します。"
+    );
+
+    showManualEntry(
+      "",
+      "manual"
+    );
   }
 );
 
