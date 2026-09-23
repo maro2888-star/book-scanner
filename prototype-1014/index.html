@@ -273,6 +273,7 @@
     #nextButton,
     #retryCameraButton,
     #retryOpenBdButton,
+    #openBdManualButton,
     #finishedArea {
       display: none;
     }
@@ -522,10 +523,19 @@
     書誌情報を再検索する
   </button>
 
+  <button
+  id="openBdManualButton"
+  class="secondary-button"
+  type="button"
+>
+  手入力する
+</button>
+  
   <button id="nextButton" type="button">
     次の本を読み取る
   </button>
-
+  
+ 
   <button id="retryCameraButton" type="button">
     カメラを再起動する
   </button>
@@ -627,6 +637,7 @@ const manualPrice = document.getElementById("manualPrice");
 
 const registerButton = document.getElementById("registerButton");
 const retryOpenBdButton = document.getElementById("retryOpenBdButton");
+const openBdManualButton = document.getElementById("openBdManualButton");
 const nextButton = document.getElementById("nextButton");
 const retryCameraButton = document.getElementById("retryCameraButton");
 
@@ -738,6 +749,7 @@ function clearBookDisplay() {
   manualArea.style.display = "none";
   registerButton.style.display = "none";
   retryOpenBdButton.style.display = "none";
+  openBdManualButton.style.display = "none";
   nextButton.style.display = "none";
 
   bookTitle.textContent = "";
@@ -996,12 +1008,18 @@ function showManualEntry(productCode, reason) {
   manualEntryButton.style.display = "none";
   bookCard.style.display = "none";
   retryOpenBdButton.style.display = "none";
+  openBdManualButton.style.display = "none";
 
  if (reason === "openbd") {
 
   manualNote.textContent =
     "この本の書誌情報が見つかりませんでした。分かる範囲で入力してください。";
 
+} else if (reason === "openbd-error") {
+
+  manualNote.textContent =
+    "書誌情報を取得できませんでした。ISBNは読み取り済みです。分かる範囲で入力してください。";
+   
 } else if (reason === "jan") {
 
   manualNote.textContent =
@@ -1031,6 +1049,7 @@ function showManualEntry(productCode, reason) {
 async function fetchOpenBd(isbn) {
 
   retryOpenBdButton.style.display = "none";
+  openBdManualButton.style.display = "none";
   nextButton.style.display = "none";
   registerButton.style.display = "none";
 
@@ -1128,6 +1147,7 @@ async function fetchOpenBd(isbn) {
     );
 
     retryOpenBdButton.style.display = "block";
+    openBdManualButton.style.display = "block";
     nextButton.style.display = "block";
   }
 }
@@ -1494,6 +1514,21 @@ retryOpenBdButton.addEventListener(
   }
 );
 
+openBdManualButton.addEventListener(
+  "click",
+  function() {
+
+    const isbn =
+      normalizeCode(
+        scanResult.textContent
+      );
+
+    showManualEntry(
+      isbn,
+      "openbd-error"
+    );
+  }
+);
 
 nextButton.addEventListener(
   "click",
