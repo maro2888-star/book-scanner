@@ -1314,7 +1314,16 @@ async function registerCurrentBook() {
 
   setMessage("登録しています…");
 
-  const data = {
+const slowMessageTimer = setTimeout(
+  function() {
+    setMessage(
+      "通信に時間がかかっています。\nそのままお待ちください…"
+    );
+  },
+  8000
+);
+
+const data = {
     action: "register",
     memberName: memberName,
     productCode:
@@ -1397,6 +1406,8 @@ async function registerCurrentBook() {
 
   } finally {
 
+    clearTimeout(slowMessageTimer);
+    
     registerButton.disabled = false;
     nextButton.disabled = false;
     changeMemberButton.disabled = false;
